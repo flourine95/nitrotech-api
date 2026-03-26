@@ -25,7 +25,7 @@ repositories {
 
 ext {
 	mapstructVersion = '1.6.3'
-	jjwtVersion = '0.12.6'
+	jjwtVersion = '0.13.0'
 }
 
 dependencies {
@@ -54,10 +54,6 @@ dependencies {
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
-	// Annotation processors — thứ tự quan trọng:
-	// 1. lombok-mapstruct-binding: đảm bảo Lombok chạy trước MapStruct
-	// 2. lombok: generate Getter/Setter trước
-	// 3. mapstruct-processor: đọc Getter/Setter từ Lombok để generate mapper
 	annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
 	annotationProcessor 'org.projectlombok:lombok'
 	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
