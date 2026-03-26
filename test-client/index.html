@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Nitrotech API Test Client</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: monospace; background: #0f0f0f; color: #e0e0e0; display: flex; height: 100vh; }
+
+    .sidebar { width: 260px; background: #1a1a1a; border-right: 1px solid #2a2a2a; padding: 16px; overflow-y: auto; }
+    .sidebar h2 { font-size: 13px; color: #888; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; }
+    .endpoint { padding: 8px 10px; border-radius: 4px; cursor: pointer; margin-bottom: 4px; font-size: 13px; display: flex; gap: 8px; align-items: center; }
+    .endpoint:hover { background: #252525; }
+    .endpoint.active { background: #252525; border-left: 2px solid #4ade80; }
+    .method { font-size: 11px; font-weight: bold; padding: 2px 5px; border-radius: 3px; }
+    .POST { background: #1a3a1a; color: #4ade80; }
+    .GET  { background: #1a2a3a; color: #60a5fa; }
+
+    .main { flex: 1; display: flex; flex-direction: column; }
+    .toolbar { padding: 12px 16px; background: #1a1a1a; border-bottom: 1px solid #2a2a2a; display: flex; gap: 8px; align-items: center; }
+    .url-bar { flex: 1; background: #0f0f0f; border: 1px solid #333; border-radius: 4px; padding: 6px 10px; color: #e0e0e0; font-family: monospace; font-size: 13px; }
+    .btn { padding: 6px 16px; border-radius: 4px; border: none; cursor: pointer; font-family: monospace; font-size: 13px; font-weight: bold; }
+    .btn-send { background: #4ade80; color: #000; }
+    .btn-send:hover { background: #22c55e; }
+    .btn-clear { background: #333; color: #aaa; }
+    .btn-clear:hover { background: #444; }
+
+    .content { flex: 1; display: flex; overflow: hidden; }
+    .panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .panel-header { padding: 8px 16px; background: #161616; border-bottom: 1px solid #2a2a2a; font-size: 12px; color: #888; display: flex; justify-content: space-between; align-items: center; }
+    .panel-body { flex: 1; overflow-y: auto; padding: 12px 16px; }
+    .divider { width: 1px; background: #2a2a2a; }
+
+    textarea { width: 100%; height: 100%; background: transparent; border: none; color: #e0e0e0; font-family: monospace; font-size: 13px; resize: none; outline: none; line-height: 1.6; }
+
+    .response-body { font-size: 13px; line-height: 1.6; white-space: pre-wrap; word-break: break-all; }
+    .status { padding: 2px 8px; border-radius: 3px; font-size: 12px; font-weight: bold; }
+    .s2xx { background: #1a3a1a; color: #4ade80; }
+    .s4xx { background: #3a1a1a; color: #f87171; }
+    .s5xx { background: #3a1a1a; color: #f87171; }
+
+    .token-bar { padding: 8px 16px; background: #161616; border-top: 1px solid #2a2a2a; display: flex; gap: 8px; align-items: center; font-size: 12px; color: #888; }
+    .token-bar input { flex: 1; background: #0f0f0f; border: 1px solid #333; border-radius: 4px; padding: 4px 8px; color: #4ade80; font-family: monospace; font-size: 12px; }
+    .token-bar .btn-sm { padding: 3px 10px; font-size: 11px; background: #333; color: #aaa; border: none; border-radius: 3px; cursor: pointer; }
+    .token-bar .btn-sm:hover { background: #444; }
+
+    .key { color: #60a5fa; }
+    .str { color: #4ade80; }
+    .num { color: #fb923c; }
+    .bool { color: #c084fc; }
+    .null { color: #888; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <h2>Auth</h2>
+  <div class="endpoint active" onclick="loadEndpoint('register')">
+    <span class="method POST">POST</span> /auth/register
+  </div>
+  <div class="endpoint" onclick="loadEndpoint('login')">
+    <span class="method POST">POST</span> /auth/login
+  </div>
+  <h2 style="margin-top:16px">Protected</h2>
+  <div class="endpoint" onclick="loadEndpoint('me')">
+    <span class="method GET">GET</span> /auth/me
+  </div>
+</div>
+
+<div class="main">
+  <div class="toolbar">
+    <input class="url-bar" id="urlBar" value="http://localhost:8080/api/auth/register" readonly>
+    <button class="btn btn-send" onclick="sendRequest()">Send</button>
+    <button class="btn btn-clear" onclick="clearResponse()">Clear</button>
+  </div>
+
+  <div class="content">
+    <div class="panel">
+      <div class="panel-header">
+        Request Body
+        <span style="color:#555;font-size:11px">application/json</span>
+      </div>
+      <div class="panel-body">
+        <textarea id="requestBody" spellcheck="false"></textarea>
+      </div>
+    </div>
+    <div class="divider"></div>
+    <div class="panel">
+      <div class="panel-header">
+        Response
+        <span id="statusBadge"></span>
+      </div>
+      <div class="panel-body">
+        <div class="response-body" id="responseBody">// Hit Send to see response</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="token-bar">
+    <span>JWT Token:</span>
+    <input id="tokenInput" placeholder="Auto-filled after login/register..." readonly>
+    <button class="btn-sm" onclick="copyToken()">Copy</button>
+    <button class="btn-sm" onclick="clearToken()">Clear</button>
+  </div>
+</div>
+
+<script>
+  const BASE = 'http://localhost:8080';
+
+  const endpoints = {
+    register: {
+      method: 'POST',
+      url: `${BASE}/api/auth/register`,
+      body: JSON.stringify({ name: 'Test User', email: 'test@example.com', password: '123456' }, null, 2)
+    },
+    login: {
+      method: 'POST',
+      url: `${BASE}/api/auth/login`,
+      body: JSON.stringify({ email: 'test@example.com', password: '123456' }, null, 2)
+    },
+    me: {
+      method: 'GET',
+      url: `${BASE}/api/auth/me`,
+      body: ''
+    }
+  };
+
+  let currentMethod = 'POST';
+
+  function loadEndpoint(key) {
+    document.querySelectorAll('.endpoint').forEach(e => e.classList.remove('active'));
+    event.currentTarget.classList.add('active');
+    const ep = endpoints[key];
+    currentMethod = ep.method;
+    document.getElementById('urlBar').value = ep.url;
+    document.getElementById('requestBody').value = ep.body;
+    clearResponse();
+  }
+
+  async function sendRequest() {
+    const url = document.getElementById('urlBar').value;
+    const body = document.getElementById('requestBody').value.trim();
+    const token = document.getElementById('tokenInput').value;
+
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const options = { method: currentMethod, headers };
+    if (body && currentMethod !== 'GET') options.body = body;
+
+    const responseEl = document.getElementById('responseBody');
+    responseEl.textContent = '// Loading...';
+
+    try {
+      const res = await fetch(url, options);
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { data = text; }
+
+      const statusClass = res.status < 300 ? 's2xx' : res.status < 500 ? 's4xx' : 's5xx';
+      document.getElementById('statusBadge').innerHTML =
+        `<span class="status ${statusClass}">${res.status} ${res.statusText}</span>`;
+
+      responseEl.innerHTML = highlight(typeof data === 'object' ? JSON.stringify(data, null, 2) : data);
+
+      // auto-fill token
+      if (data?.data?.accessToken) {
+        document.getElementById('tokenInput').value = data.data.accessToken;
+      }
+    } catch (err) {
+      document.getElementById('statusBadge').innerHTML = '<span class="status s5xx">Network Error</span>';
+      responseEl.textContent = err.message;
+    }
+  }
+
+  function highlight(json) {
+    return json
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => {
+        if (/^"/.test(match)) return match.endsWith(':') ? `<span class="key">${match}</span>` : `<span class="str">${match}</span>`;
+        if (/true|false/.test(match)) return `<span class="bool">${match}</span>`;
+        if (/null/.test(match)) return `<span class="null">${match}</span>`;
+        return `<span class="num">${match}</span>`;
+      });
+  }
+
+  function clearResponse() {
+    document.getElementById('responseBody').textContent = '// Hit Send to see response';
+    document.getElementById('statusBadge').innerHTML = '';
+  }
+
+  function copyToken() {
+    const t = document.getElementById('tokenInput').value;
+    if (t) navigator.clipboard.writeText(t);
+  }
+
+  function clearToken() {
+    document.getElementById('tokenInput').value = '';
+  }
+
+  // init
+  document.getElementById('requestBody').value = endpoints.register.body;
+</script>
+</body>
+</html>

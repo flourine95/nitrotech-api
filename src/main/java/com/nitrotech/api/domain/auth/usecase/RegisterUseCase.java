@@ -4,7 +4,10 @@ import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.domain.auth.dto.RegisterCommand;
 import com.nitrotech.api.domain.auth.exception.EmailAlreadyExistsException;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
+@Service
 public class RegisterUseCase {
 
     private final UserRepository userRepository;

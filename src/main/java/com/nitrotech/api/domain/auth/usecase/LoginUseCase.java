@@ -4,7 +4,10 @@ import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.domain.auth.dto.LoginCommand;
 import com.nitrotech.api.domain.auth.exception.InvalidCredentialsException;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
+@Service
 public class LoginUseCase {
 
     private final UserRepository userRepository;
