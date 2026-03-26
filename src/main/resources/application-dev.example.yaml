@@ -1,0 +1,17 @@
+# Template cho local dev
+# Copy file này và đổi tên: cp application-dev.example.yaml application-dev.yaml
+# Sau đó chỉnh lại thông tin kết nối phù hợp với máy local của bạn
+
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/nitrotech_dev
+    username: root
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+
+logging:
+  level:
+    com.nitrotech.api: DEBUG

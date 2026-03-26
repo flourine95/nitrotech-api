@@ -23,6 +23,11 @@ repositories {
 	mavenCentral()
 }
 
+ext {
+	mapstructVersion = '1.6.3'
+	jjwtVersion = '0.12.6'
+}
+
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
@@ -32,12 +37,31 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	implementation 'org.flywaydb:flyway-mysql'
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
+
+	// MapStruct — compile-time type-safe entity/DTO mapping
+	implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+
+	// JWT
+	implementation "io.jsonwebtoken:jjwt-api:${jjwtVersion}"
+	runtimeOnly "io.jsonwebtoken:jjwt-impl:${jjwtVersion}"
+	runtimeOnly "io.jsonwebtoken:jjwt-jackson:${jjwtVersion}"
+
+	// Lombok — chỉ dùng cho JPA Entities (@Getter, @Setter, @NoArgsConstructor)
 	compileOnly 'org.projectlombok:lombok'
+
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+
+	// Annotation processors — thứ tự quan trọng:
+	// 1. lombok-mapstruct-binding: đảm bảo Lombok chạy trước MapStruct
+	// 2. lombok: generate Getter/Setter trước
+	// 3. mapstruct-processor: đọc Getter/Setter từ Lombok để generate mapper
+	annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
 	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-data-jpa-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-flyway-test'
 	testImplementation 'org.springframework.boot:spring-boot-starter-restclient-test'

@@ -35,3 +35,14 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Spring Boot - sensitive configs ###
+**/application-dev.yaml
+**/application-dev.yml
+**/application-prod.yaml
+**/application-prod.yml
+
+### Environment variables ###
+.env
+.env.*
+!.env.example
