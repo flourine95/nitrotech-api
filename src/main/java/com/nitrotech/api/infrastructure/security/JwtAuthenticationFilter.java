@@ -19,18 +19,19 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenProvider tokenProvider;
+    private final TokenBlacklist tokenBlacklist;
 
-    public JwtAuthenticationFilter(TokenProvider tokenProvider) {
+    public JwtAuthenticationFilter(TokenProvider tokenProvider, TokenBlacklist tokenBlacklist) {
         this.tokenProvider = tokenProvider;
+        this.tokenBlacklist = tokenBlacklist;
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain)
-            throws ServletException, IOException {
-
+    protected void doFilterInternal(@NonNull HttpServletRequest request, @NonNull HttpServletResponse response,
+                                    @NonNull FilterChain filterChain) throws ServletException, IOException {
         String token = extractToken(request);
 
-        if (token != null && tokenProvider.isValid(token)) {
+        if (token != null && tokenProvider.isValid(token) && !tokenBlacklist.isBlacklisted(token)) {
             String email = tokenProvider.extractSubject(token);
             UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
                     email, null, Collections.emptyList()

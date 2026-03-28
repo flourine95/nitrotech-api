@@ -1,10 +1,13 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.auth.dto.AuthResult;
+import com.nitrotech.api.domain.auth.dto.UserProfileData;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
+import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -27,6 +30,7 @@ public class UserRepositoryImpl implements UserRepository {
         entity.setName(name);
         entity.setEmail(email);
         entity.setPassword(hashedPassword);
+        entity.setStatus(UserEntity.Status.active);
         UserEntity saved = jpa.save(entity);
         return new AuthResult.UserData(saved.getId(), saved.getName(), saved.getEmail());
     }
@@ -34,6 +38,47 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public Optional<UserCredential> findCredentialByEmail(String email) {
         return jpa.findByEmail(email)
-                .map(e -> new UserCredential(e.getId(), e.getName(), e.getEmail(), e.getPassword()));
+                .map(e -> new UserCredential(
+                        e.getId(), e.getName(), e.getEmail(),
+                        e.getPassword(), e.getStatus().name()
+                ));
+    }
+
+    @Override
+    public Optional<UserProfileData> findById(Long id) {
+        return jpa.findById(id).map(this::toProfileData);
+    }
+
+    @Override
+    public Optional<UserProfileData> findByEmail(String email) {
+        return jpa.findByEmail(email).map(this::toProfileData);
+    }
+
+    @Override
+    public UserProfileData updateProfile(Long id, String name, String phone, String avatar) {
+        UserEntity entity = jpa.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        if (name != null) entity.setName(name);
+        if (phone != null) entity.setPhone(phone);
+        if (avatar != null) entity.setAvatar(avatar);
+        entity.setUpdatedAt(LocalDateTime.now());
+        return toProfileData(jpa.save(entity));
+    }
+
+    @Override
+    public void updatePassword(Long id, String hashedPassword) {
+        UserEntity entity = jpa.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        entity.setPassword(hashedPassword);
+        entity.setUpdatedAt(LocalDateTime.now());
+        jpa.save(entity);
+    }
+
+    private UserProfileData toProfileData(UserEntity e) {
+        return new UserProfileData(
+                e.getId(), e.getName(), e.getEmail(),
+                e.getPhone(), e.getAvatar(),
+                e.getStatus().name(), e.getProvider().name()
+        );
     }
 }

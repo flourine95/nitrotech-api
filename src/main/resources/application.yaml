@@ -18,13 +18,22 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
+  data:
+    redis:
+      url: ${REDIS_URL:redis://localhost:6379}
+  cache:
+    type: redis
 
 server:
   port: ${SERVER_PORT:8080}
 
 jwt:
   secret: ${JWT_SECRET:default-dev-secret-key-must-be-32-chars!!}
-  expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  access-expiration-ms: ${JWT_ACCESS_EXPIRATION_MS:900000}
+
+resend:
+  api-key: ${RESEND_API_KEY}
+  from: ${RESEND_FROM:noreply@yourdomain.com}
 
 springdoc:
   api-docs:
