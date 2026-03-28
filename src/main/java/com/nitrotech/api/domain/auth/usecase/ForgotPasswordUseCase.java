@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.auth.usecase;
 
+import com.nitrotech.api.domain.auth.exception.EmailNotFoundException;
 import com.nitrotech.api.domain.auth.repository.PasswordResetTokenRepository;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,11 +25,11 @@ public class ForgotPasswordUseCase {
     }
 
     public void execute(String email) {
-        // Không báo lỗi nếu email không tồn tại — tránh email enumeration attack
-        userRepository.findByEmail(email).ifPresent(user -> {
-            String token = resetTokenRepository.create(user.id(), 15);
-            String resetLink = frontendUrl + "/reset-password?token=" + token;
-            emailSender.sendPasswordReset(email, resetLink);
-        });
+        var user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new EmailNotFoundException(email));
+
+        String token = resetTokenRepository.create(user.id(), 15);
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        emailSender.sendPasswordReset(email, resetLink);
     }
 }
