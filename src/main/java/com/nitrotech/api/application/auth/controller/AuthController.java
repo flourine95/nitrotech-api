@@ -4,7 +4,9 @@ import com.nitrotech.api.application.auth.request.*;
 import com.nitrotech.api.domain.auth.dto.*;
 import com.nitrotech.api.domain.auth.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
+import com.nitrotech.api.shared.util.CookieUtil;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +28,7 @@ public class AuthController {
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final VerifyEmailUseCase verifyEmailUseCase;
     private final ResendVerificationUseCase resendVerificationUseCase;
+    private final CookieUtil cookieUtil;
 
     public AuthController(RegisterUseCase registerUseCase, LoginUseCase loginUseCase,
                           RefreshTokenUseCase refreshTokenUseCase, LogoutUseCase logoutUseCase,
@@ -34,7 +37,8 @@ public class AuthController {
                           ForgotPasswordUseCase forgotPasswordUseCase,
                           ResetPasswordUseCase resetPasswordUseCase,
                           VerifyEmailUseCase verifyEmailUseCase,
-                          ResendVerificationUseCase resendVerificationUseCase) {
+                          ResendVerificationUseCase resendVerificationUseCase,
+                          CookieUtil cookieUtil) {
         this.registerUseCase = registerUseCase;
         this.loginUseCase = loginUseCase;
         this.refreshTokenUseCase = refreshTokenUseCase;
@@ -46,42 +50,78 @@ public class AuthController {
         this.resetPasswordUseCase = resetPasswordUseCase;
         this.verifyEmailUseCase = verifyEmailUseCase;
         this.resendVerificationUseCase = resendVerificationUseCase;
+        this.cookieUtil = cookieUtil;
     }
 
     @PostMapping("/register")
-    public ResponseEntity<ApiResponse<AuthResult>> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<ApiResponse<AuthResult>> register(
+            @Valid @RequestBody RegisterRequest request,
+            @RequestHeader(value = "X-Client-Type", defaultValue = "web") String clientType,
+            HttpServletResponse response
+    ) {
+        AuthResult result = registerUseCase.execute(
+                new RegisterCommand(request.name(), request.email(), request.password()));
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.created(registerUseCase.execute(
-                        new RegisterCommand(request.name(), request.email(), request.password()))));
+                .body(ApiResponse.created(toClientResult(result, clientType, response)));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<ApiResponse<AuthResult>> login(@Valid @RequestBody LoginRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(loginUseCase.execute(
-                new LoginCommand(request.email(), request.password()))));
+    public ResponseEntity<ApiResponse<AuthResult>> login(
+            @Valid @RequestBody LoginRequest request,
+            @RequestHeader(value = "X-Client-Type", defaultValue = "web") String clientType,
+            HttpServletResponse response
+    ) {
+        AuthResult result = loginUseCase.execute(new LoginCommand(request.email(), request.password()));
+        return ResponseEntity.ok(ApiResponse.ok(toClientResult(result, clientType, response)));
     }
 
     @PostMapping("/refresh")
-    public ResponseEntity<ApiResponse<TokenPair>> refresh(@Valid @RequestBody RefreshTokenRequest request) {
-        return ResponseEntity.ok(ApiResponse.ok(refreshTokenUseCase.execute(request.refreshToken())));
+    public ResponseEntity<ApiResponse<TokenPair>> refresh(
+            @RequestHeader(value = "X-Client-Type", defaultValue = "web") String clientType,
+            @RequestBody(required = false) RefreshTokenRequest body,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
+    ) {
+        String refreshToken = isWeb(clientType)
+                ? cookieUtil.extractRefreshToken(httpRequest)
+                        .orElseThrow(() -> new com.nitrotech.api.domain.auth.exception.InvalidRefreshTokenException())
+                : (body != null ? body.refreshToken() : null);
+
+        TokenPair tokens = refreshTokenUseCase.execute(refreshToken);
+
+        if (isWeb(clientType)) {
+            cookieUtil.setRefreshTokenCookie(response, tokens.refreshToken(), 30 * 24 * 60 * 60);
+            return ResponseEntity.ok(ApiResponse.ok(TokenPair.of(tokens.accessToken(), null)));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(tokens));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<ApiResponse<Void>> logout(
-            @Valid @RequestBody RefreshTokenRequest request,
-            HttpServletRequest httpRequest
+            @RequestHeader(value = "X-Client-Type", defaultValue = "web") String clientType,
+            @RequestBody(required = false) RefreshTokenRequest body,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
     ) {
-        logoutUseCase.execute(request.refreshToken(), extractToken(httpRequest));
+        String refreshToken = isWeb(clientType)
+                ? cookieUtil.extractRefreshToken(httpRequest).orElse(null)
+                : (body != null ? body.refreshToken() : null);
+
+        logoutUseCase.execute(refreshToken, extractToken(httpRequest));
+        if (isWeb(clientType)) cookieUtil.clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.ok(null, "Logged out successfully"));
     }
 
     @PostMapping("/logout-all")
     public ResponseEntity<ApiResponse<Void>> logoutAll(
             @AuthenticationPrincipal String email,
-            HttpServletRequest httpRequest
+            @RequestHeader(value = "X-Client-Type", defaultValue = "web") String clientType,
+            HttpServletRequest httpRequest,
+            HttpServletResponse response
     ) {
         UserProfileData user = getProfileUseCase.executeByEmail(email);
         logoutUseCase.executeAll(user.id(), extractToken(httpRequest));
+        if (isWeb(clientType)) cookieUtil.clearRefreshTokenCookie(response);
         return ResponseEntity.ok(ApiResponse.ok(null, "Logged out from all devices"));
     }
 
@@ -139,5 +179,19 @@ public class AuthController {
     private String extractToken(HttpServletRequest request) {
         String header = request.getHeader("Authorization");
         return (header != null && header.startsWith("Bearer ")) ? header.substring(7) : null;
+    }
+
+    private boolean isWeb(String clientType) {
+        return !"mobile".equalsIgnoreCase(clientType);
+    }
+
+    // Web: refresh token vào cookie, bỏ khỏi body. Mobile: giữ nguyên trong body.
+    private AuthResult toClientResult(AuthResult result, String clientType, HttpServletResponse response) {
+        if (result.accessToken() == null) return result; // register — chưa có token
+        if (isWeb(clientType)) {
+            cookieUtil.setRefreshTokenCookie(response, result.refreshToken(), 30 * 24 * 60 * 60);
+            return AuthResult.of(TokenPair.of(result.accessToken(), null), result.user());
+        }
+        return result;
     }
 }

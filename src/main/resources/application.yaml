@@ -35,6 +35,13 @@ resend:
   api-key: ${RESEND_API_KEY}
   from: ${RESEND_FROM:noreply@yourdomain.com}
 
+app:
+  frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  cookie:
+    secure: ${COOKIE_SECURE:false}
+    same-site: ${COOKIE_SAME_SITE:Lax}
+    domain: ${COOKIE_DOMAIN:}
+
 springdoc:
   api-docs:
     path: /v3/api-docs
