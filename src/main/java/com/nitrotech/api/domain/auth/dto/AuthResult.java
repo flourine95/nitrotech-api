@@ -10,5 +10,9 @@ public record AuthResult(
         return new AuthResult(tokens.accessToken(), tokens.refreshToken(), "Bearer", user);
     }
 
+    public static AuthResult ofUser(UserData user) {
+        return new AuthResult(null, null, null, user);
+    }
+
     public record UserData(Long id, String name, String email) {}
 }

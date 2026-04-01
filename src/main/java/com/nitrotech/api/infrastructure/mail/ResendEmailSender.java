@@ -40,6 +40,15 @@ public class ResendEmailSender implements EmailSender {
                 "<p>If you didn't request this, ignore this email.</p>");
     }
 
+    @Override
+    @Async
+    public void sendVerificationEmail(String to, String verifyLink) {
+        send(to, "Verify your email address",
+                "<p>Click the link below to verify your email address (expires in 24 hours):</p>" +
+                "<p><a href=\"" + verifyLink + "\">Verify Email</a></p>" +
+                "<p>If you didn't create an account, ignore this email.</p>");
+    }
+
     private void send(String to, String subject, String html) {
         try {
             restClient.post()

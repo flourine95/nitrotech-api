@@ -30,7 +30,7 @@ public class UserRepositoryImpl implements UserRepository {
         entity.setName(name);
         entity.setEmail(email);
         entity.setPassword(hashedPassword);
-        entity.setStatus(UserEntity.Status.active);
+        // status defaults to inactive — activated after email verification
         UserEntity saved = jpa.save(entity);
         return new AuthResult.UserData(saved.getId(), saved.getName(), saved.getEmail());
     }
@@ -70,6 +70,15 @@ public class UserRepositoryImpl implements UserRepository {
         UserEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
         entity.setPassword(hashedPassword);
+        entity.setUpdatedAt(LocalDateTime.now());
+        jpa.save(entity);
+    }
+
+    @Override
+    public void activateUser(Long id) {
+        UserEntity entity = jpa.findById(id)
+                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+        entity.setStatus(UserEntity.Status.active);
         entity.setUpdatedAt(LocalDateTime.now());
         jpa.save(entity);
     }

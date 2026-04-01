@@ -8,9 +8,11 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "password_reset_tokens")
+@Table(name = "user_tokens")
 @Getter @Setter @NoArgsConstructor
-public class PasswordResetTokenEntity {
+public class UserTokenEntity {
+
+    public enum Type { password_reset, email_verification }
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -21,6 +23,10 @@ public class PasswordResetTokenEntity {
 
     @Column(nullable = false, unique = true)
     private String token;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Type type;
 
     @Column(nullable = false)
     private LocalDateTime expiresAt;

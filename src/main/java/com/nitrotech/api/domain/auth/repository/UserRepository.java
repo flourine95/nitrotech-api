@@ -13,6 +13,7 @@ public interface UserRepository {
     Optional<UserProfileData> findByEmail(String email);
     UserProfileData updateProfile(Long id, String name, String phone, String avatar);
     void updatePassword(Long id, String hashedPassword);
+    void activateUser(Long id);
 
     record UserCredential(Long id, String name, String email, String hashedPassword, String status) {}
 }

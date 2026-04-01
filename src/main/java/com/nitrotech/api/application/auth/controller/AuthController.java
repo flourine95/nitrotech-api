@@ -24,13 +24,17 @@ public class AuthController {
     private final ChangePasswordUseCase changePasswordUseCase;
     private final ForgotPasswordUseCase forgotPasswordUseCase;
     private final ResetPasswordUseCase resetPasswordUseCase;
+    private final VerifyEmailUseCase verifyEmailUseCase;
+    private final ResendVerificationUseCase resendVerificationUseCase;
 
     public AuthController(RegisterUseCase registerUseCase, LoginUseCase loginUseCase,
                           RefreshTokenUseCase refreshTokenUseCase, LogoutUseCase logoutUseCase,
                           GetProfileUseCase getProfileUseCase, UpdateProfileUseCase updateProfileUseCase,
                           ChangePasswordUseCase changePasswordUseCase,
                           ForgotPasswordUseCase forgotPasswordUseCase,
-                          ResetPasswordUseCase resetPasswordUseCase) {
+                          ResetPasswordUseCase resetPasswordUseCase,
+                          VerifyEmailUseCase verifyEmailUseCase,
+                          ResendVerificationUseCase resendVerificationUseCase) {
         this.registerUseCase = registerUseCase;
         this.loginUseCase = loginUseCase;
         this.refreshTokenUseCase = refreshTokenUseCase;
@@ -40,6 +44,8 @@ public class AuthController {
         this.changePasswordUseCase = changePasswordUseCase;
         this.forgotPasswordUseCase = forgotPasswordUseCase;
         this.resetPasswordUseCase = resetPasswordUseCase;
+        this.verifyEmailUseCase = verifyEmailUseCase;
+        this.resendVerificationUseCase = resendVerificationUseCase;
     }
 
     @PostMapping("/register")
@@ -90,6 +96,18 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordUseCase.execute(request.token(), request.newPassword());
         return ResponseEntity.ok(ApiResponse.ok(null, "Password reset successfully"));
+    }
+
+    @PostMapping("/verify-email")
+    public ResponseEntity<ApiResponse<Void>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
+        verifyEmailUseCase.execute(request.token());
+        return ResponseEntity.ok(ApiResponse.ok(null, "Email verified successfully"));
+    }
+
+    @PostMapping("/resend-verification")
+    public ResponseEntity<ApiResponse<Void>> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+        resendVerificationUseCase.execute(request.email());
+        return ResponseEntity.ok(ApiResponse.ok(null, "Verification email sent"));
     }
 
     @GetMapping("/me")
