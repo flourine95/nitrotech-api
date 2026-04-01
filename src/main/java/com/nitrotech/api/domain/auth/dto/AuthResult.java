@@ -1,5 +1,8 @@
 package com.nitrotech.api.domain.auth.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record AuthResult(
         String accessToken,
         String refreshToken,
