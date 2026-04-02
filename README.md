@@ -207,6 +207,23 @@ docker compose ps
 docker compose logs postgres
 ```
 
+**Trùng port (5432 hoặc 6379 đã bị dùng)**
+
+Tạo file `.env` ở root project:
+```env
+POSTGRES_PORT=5433
+REDIS_PORT=6380
+```
+Sau đó cập nhật `application-dev.yaml`:
+```yaml
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/nitrotech
+  data:
+    redis:
+      url: redis://localhost:6380
+```
+
 **Lỗi Flyway migration checksum mismatch**
 ```sql
 -- Chạy trong DB

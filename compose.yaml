@@ -5,10 +5,22 @@ services:
       - 'POSTGRES_DB=nitrotech'
       - 'POSTGRES_USER=nitrotech'
       - 'POSTGRES_PASSWORD=nitrotech'
+      - 'PGTZ=Asia/Ho_Chi_Minh'
+      - 'TZ=Asia/Ho_Chi_Minh'
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   redis:
     image: 'redis:7-alpine'
+    environment:
+      - 'TZ=Asia/Ho_Chi_Minh'
     ports:
-      - '6379:6379'
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  redis_data:
