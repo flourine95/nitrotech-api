@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.domain.cart.dto.CartData;
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
+import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.exception.DomainException;
@@ -20,23 +21,33 @@ public class PlaceOrderUseCase {
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final AddressRepository addressRepository;
+    private final InventoryRepository inventoryRepository;
 
     public PlaceOrderUseCase(OrderRepository orderRepository, CartRepository cartRepository,
-                              AddressRepository addressRepository) {
+                              AddressRepository addressRepository,
+                              InventoryRepository inventoryRepository) {
         this.orderRepository = orderRepository;
         this.cartRepository = cartRepository;
         this.addressRepository = addressRepository;
+        this.inventoryRepository = inventoryRepository;
     }
 
     @Transactional
     public OrderData execute(CreateOrderCommand command) {
-        // Lấy cart
         CartData cart = cartRepository.getOrCreateCart(command.userId());
         if (cart.items().isEmpty()) {
             throw new DomainException("CART_EMPTY", "Cart is empty") {};
         }
 
-        // Lấy địa chỉ giao hàng
+        // Check tồn kho từng item
+        cart.items().forEach(item -> {
+            if (!inventoryRepository.hasSufficientStock(item.variantId(), item.quantity())) {
+                int available = inventoryRepository.getQuantity(item.variantId());
+                throw new DomainException("INSUFFICIENT_STOCK",
+                        "Insufficient stock for " + item.variantName() + ". Available: " + available) {};
+            }
+        });
+
         var address = addressRepository.findByIdAndUserId(command.addressId(), command.userId())
                 .orElseThrow(() -> new NotFoundException("ADDRESS_NOT_FOUND", "Address not found"));
 
@@ -48,12 +59,11 @@ public class PlaceOrderUseCase {
                 address.street()
         );
 
-        // Tính toán
         List<OrderItemData> items = cart.items().stream().map(this::toOrderItem).toList();
         BigDecimal totalAmount = items.stream().map(OrderItemData::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal shippingFee = BigDecimal.ZERO; // TODO: tích hợp GHN/GHTK
-        BigDecimal discountAmount = BigDecimal.ZERO; // TODO: tích hợp promotion
+        BigDecimal shippingFee = BigDecimal.ZERO;
+        BigDecimal discountAmount = BigDecimal.ZERO;
         BigDecimal finalAmount = totalAmount.add(shippingFee).subtract(discountAmount);
 
         PlaceOrderData data = new PlaceOrderData(
@@ -64,16 +74,16 @@ public class PlaceOrderUseCase {
 
         OrderData order = orderRepository.place(data);
 
-        // Clear cart sau khi đặt hàng thành công
-        cartRepository.clearCart(command.userId());
+        // Trừ tồn kho
+        cart.items().forEach(item ->
+                inventoryRepository.adjust(item.variantId(), -item.quantity()));
 
+        cartRepository.clearCart(command.userId());
         return order;
     }
 
     private OrderItemData toOrderItem(CartItemData item) {
-        return new OrderItemData(
-                null, item.variantId(), item.variantName(), item.variantSku(),
-                item.quantity(), item.variantPrice(), item.subtotal()
-        );
+        return new OrderItemData(null, item.variantId(), item.variantName(), item.variantSku(),
+                item.quantity(), item.variantPrice(), item.subtotal());
     }
 }
