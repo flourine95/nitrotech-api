@@ -1,0 +1,25 @@
+{
+  "endpoint": "POST /api/auth/logout",
+  "description": "Logout from current device. Revokes refresh token and blacklists access token.",
+  "request": {
+    "headers": {
+      "Authorization": "Bearer <access-token>",
+      "X-Client-Type": "web | mobile (default: web)"
+    },
+    "body_mobile_only": {
+      "refreshToken": "<uuid>"
+    },
+    "cookie_web": "refreshToken=<uuid> (sent automatically by browser)"
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "message": "Logged out successfully"
+      }
+    }
+  },
+  "notes": [
+    "Web: cookie cleared automatically after logout"
+  ]
+}

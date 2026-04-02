@@ -1,0 +1,62 @@
+{
+  "endpoint": "POST /api/auth/register",
+  "description": "Register a new user account. Account is inactive until email is verified. No tokens returned — user must verify email first.",
+  "request": {
+    "headers": {
+      "X-Client-Type": "web | mobile (default: web)"
+    },
+    "body": {
+      "name": "Test User",
+      "email": "test_1775081348@example.com",
+      "password": "password123"
+    }
+  },
+  "responses": {
+    "201_web": {
+      "status": 201,
+      "body": {
+        "data": {
+          "user": {
+            "id": 8,
+            "name": "Test User",
+            "email": "test_1775081348@example.com"
+          }
+        },
+        "message": "Created successfully"
+      }
+    },
+    "201_mobile": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "EMAIL_ALREADY_EXISTS",
+        "message": "Email test_1775081348@example.com is already registered"
+      }
+    },
+    "409_email_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "EMAIL_ALREADY_EXISTS",
+        "message": "Email test_1775081348@example.com is already registered"
+      }
+    },
+    "422_validation": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "password": "Password must be at least 6 characters",
+          "name": "Name is required",
+          "email": "Email must be valid"
+        }
+      }
+    }
+  },
+  "notes": [
+    "Web: no tokens in response (cookie not set yet — user not active)",
+    "Mobile: same, no tokens until email verified"
+  ]
+}

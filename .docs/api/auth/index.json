@@ -1,0 +1,492 @@
+[
+  {
+    "endpoint": "PUT /api/auth/change-password",
+    "description": "Change password for authenticated user. Requires current password.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      },
+      "body": {
+        "currentPassword": "oldpassword",
+        "newPassword": "newpassword123"
+      }
+    },
+    "responses": {
+      "200_success": {
+        "status": 200,
+        "body": {
+          "message": "Password changed successfully"
+        }
+      },
+      "422_wrong_current": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "INVALID_CREDENTIALS",
+          "message": "Invalid credentials"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "newPassword": "New password must be at least 6 characters",
+            "currentPassword": "Current password is required"
+          }
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/forgot-password",
+    "description": "Request password reset link. Always returns 200 to prevent email enumeration.",
+    "request": {
+      "body": {
+        "email": "test_1775081348@example.com"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "If the email exists, a reset link has been sent"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "email": "Email must be valid"
+          }
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/login",
+    "description": "Login with email and password. Account must be active (email verified).",
+    "request": {
+      "headers": {
+        "X-Client-Type": "web | mobile (default: web)"
+      },
+      "body": {
+        "email": "test_1775081348@example.com",
+        "password": "password123"
+      }
+    },
+    "responses": {
+      "200_web": {
+        "status": 200,
+        "body": {
+          "data": {
+            "accessToken": "<jwt>",
+            "tokenType": "Bearer",
+            "user": {
+              "id": 1,
+              "name": "Test User",
+              "email": "test_1775081348@example.com"
+            }
+          }
+        },
+        "set_cookie": "refreshToken=<uuid>; Path=/api/auth; HttpOnly; SameSite=Lax"
+      },
+      "200_mobile": {
+        "status": 200,
+        "body": {
+          "data": {
+            "accessToken": "<jwt>",
+            "refreshToken": "<uuid>",
+            "tokenType": "Bearer",
+            "user": {
+              "id": 1,
+              "name": "Test User",
+              "email": "test_1775081348@example.com"
+            }
+          }
+        }
+      },
+      "422_account_not_active": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "ACCOUNT_NOT_ACTIVE",
+          "message": "Account is inactive and cannot login"
+        }
+      },
+      "422_invalid_credentials": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "INVALID_CREDENTIALS",
+          "message": "Email or password is incorrect"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "password": "Password is required",
+            "email": "Email must be valid"
+          }
+        }
+      }
+    },
+    "notes": [
+      "Web: refreshToken set as httpOnly cookie, NOT in response body",
+      "Mobile: refreshToken returned in body, store in Keychain/EncryptedSharedPreferences"
+    ]
+  },
+  {
+    "endpoint": "POST /api/auth/logout-all",
+    "description": "Logout from all devices. Revokes all refresh tokens for the user.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>",
+        "X-Client-Type": "web | mobile (default: web)"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "Logged out from all devices"
+        }
+      },
+      "401_unauthorized": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "code": "UNAUTHORIZED",
+          "message": "Unauthorized"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/logout",
+    "description": "Logout from current device. Revokes refresh token and blacklists access token.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>",
+        "X-Client-Type": "web | mobile (default: web)"
+      },
+      "body_mobile_only": {
+        "refreshToken": "<uuid>"
+      },
+      "cookie_web": "refreshToken=<uuid> (sent automatically by browser)"
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "Logged out successfully"
+        }
+      }
+    },
+    "notes": [
+      "Web: cookie cleared automatically after logout"
+    ]
+  },
+  {
+    "endpoint": "GET /api/auth/me",
+    "description": "Get current authenticated user profile.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 1,
+            "name": "Test User",
+            "email": "test_1775081348@example.com",
+            "phone": null,
+            "avatar": null,
+            "status": "active",
+            "provider": "local"
+          }
+        }
+      },
+      "401_unauthorized": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "code": "UNAUTHORIZED",
+          "message": "Unauthorized"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/refresh",
+    "description": "Rotate refresh token. Old token is revoked, new token issued.",
+    "request": {
+      "headers": {
+        "X-Client-Type": "web | mobile (default: web)"
+      },
+      "body_mobile_only": {
+        "refreshToken": "<uuid>"
+      },
+      "cookie_web": "refreshToken=<uuid> (sent automatically by browser)"
+    },
+    "responses": {
+      "200_web": {
+        "status": 200,
+        "body": {
+          "data": {
+            "accessToken": "<new-jwt>",
+            "tokenType": "Bearer"
+          }
+        },
+        "set_cookie": "refreshToken=<new-uuid>; Path=/api/auth; HttpOnly; SameSite=Lax"
+      },
+      "200_mobile": {
+        "status": 200,
+        "body": {
+          "data": {
+            "accessToken": "<new-jwt>",
+            "refreshToken": "<new-uuid>",
+            "tokenType": "Bearer"
+          }
+        }
+      },
+      "422_invalid_token": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "INVALID_REFRESH_TOKEN",
+          "message": "Refresh token is invalid or expired"
+        }
+      }
+    },
+    "notes": [
+      "Web: no body needed, cookie sent automatically",
+      "Mobile: send refreshToken in body"
+    ]
+  },
+  {
+    "endpoint": "POST /api/auth/register",
+    "description": "Register a new user account. Account is inactive until email is verified. No tokens returned — user must verify email first.",
+    "request": {
+      "headers": {
+        "X-Client-Type": "web | mobile (default: web)"
+      },
+      "body": {
+        "name": "Test User",
+        "email": "test_1775081348@example.com",
+        "password": "password123"
+      }
+    },
+    "responses": {
+      "201_web": {
+        "status": 201,
+        "body": {
+          "data": {
+            "user": {
+              "id": 8,
+              "name": "Test User",
+              "email": "test_1775081348@example.com"
+            }
+          },
+          "message": "Created successfully"
+        }
+      },
+      "201_mobile": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "EMAIL_ALREADY_EXISTS",
+          "message": "Email test_1775081348@example.com is already registered"
+        }
+      },
+      "409_email_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "EMAIL_ALREADY_EXISTS",
+          "message": "Email test_1775081348@example.com is already registered"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "password": "Password must be at least 6 characters",
+            "name": "Name is required",
+            "email": "Email must be valid"
+          }
+        }
+      }
+    },
+    "notes": [
+      "Web: no tokens in response (cookie not set yet — user not active)",
+      "Mobile: same, no tokens until email verified"
+    ]
+  },
+  {
+    "endpoint": "POST /api/auth/resend-verification",
+    "description": "Resend email verification link. Invalidates previous token.",
+    "request": {
+      "body": {
+        "email": "test_1775081348@example.com"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "Verification email sent"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "USER_NOT_FOUND",
+          "message": "User not found"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "email": "Email must be valid"
+          }
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/reset-password",
+    "description": "Reset password using token from email. Revokes all refresh tokens after success.",
+    "request": {
+      "body": {
+        "token": "<uuid-from-email>",
+        "newPassword": "newpassword123"
+      }
+    },
+    "responses": {
+      "200_success": {
+        "status": 200,
+        "body": {
+          "message": "Password reset successfully"
+        }
+      },
+      "422_invalid_token": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "INVALID_RESET_TOKEN",
+          "message": "Password reset token is invalid or expired"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "newPassword": "Password must be at least 6 characters",
+            "token": "Token is required"
+          }
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "PUT /api/auth/profile",
+    "description": "Update current user profile. All fields are optional.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      },
+      "body": {
+        "name": "New Name",
+        "phone": "0123456789",
+        "avatar": "https://example.com/avatar.png"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 1,
+            "name": "New Name",
+            "email": "test_1775081348@example.com",
+            "phone": "0123456789",
+            "avatar": "https://example.com/avatar.png",
+            "status": "active",
+            "provider": "local"
+          }
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "name": "Name must be between 2 and 255 characters"
+          }
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/auth/verify-email",
+    "description": "Verify email using token from registration email. Activates the account.",
+    "request": {
+      "body": {
+        "token": "<uuid-from-email>"
+      }
+    },
+    "responses": {
+      "200_success": {
+        "status": 200,
+        "body": {
+          "message": "Email verified successfully"
+        }
+      },
+      "422_invalid_token": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "INVALID_VERIFICATION_TOKEN",
+          "message": "Verification token is invalid or has expired"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "token": "Token is required"
+          }
+        }
+      }
+    }
+  }
+]
