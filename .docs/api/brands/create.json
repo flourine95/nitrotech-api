@@ -1,0 +1,47 @@
+{
+  "endpoint": "POST /api/brands",
+  "description": "Create a new brand. Slug must be unique and lowercase-hyphenated.",
+  "request": {
+    "body": {
+      "name": "Test Brand",
+      "slug": "test-brand-1775132621",
+      "logo": "https://example.com/logo.png",
+      "description": "A test brand",
+      "active": true
+    }
+  },
+  "responses": {
+    "201": {
+      "status": 201,
+      "body": {
+        "data": {
+          "id": 2,
+          "name": "Test Brand",
+          "slug": "test-brand-1775132621",
+          "logo": "https://example.com/logo.png",
+          "description": "A test brand",
+          "active": true,
+          "createdAt": "2026-04-02T19:23:41.8286571",
+          "updatedAt": "2026-04-02T19:23:41.8291912"
+        },
+        "message": "Created successfully"
+      }
+    },
+    "409_slug_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "BRAND_SLUG_EXISTS",
+        "message": "Slug already exists"
+      }
+    },
+    "422_validation": {
+      "status": 500,
+      "body": {
+        "status": 500,
+        "code": "INTERNAL_ERROR",
+        "message": "An unexpected error occurred"
+      }
+    }
+  }
+}

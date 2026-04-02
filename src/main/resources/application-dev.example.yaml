@@ -40,3 +40,10 @@ logging:
   level:
     com.nitrotech.api: DEBUG
     org.springframework.security: DEBUG
+
+r2:
+  endpoint: https://<account-id>.r2.cloudflarestorage.com
+  access-key: your-r2-access-key
+  secret-key: your-r2-secret-key
+  bucket: your-bucket-name
+  public-url: https://pub-<hash>.r2.dev  # hoặc custom domain

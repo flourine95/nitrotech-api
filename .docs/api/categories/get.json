@@ -1,0 +1,37 @@
+{
+  "endpoint": "GET /api/categories/{id}",
+  "description": "Get a single category by ID. Includes parentName if has parent.",
+  "request": {
+    "path": {
+      "id": 1
+    }
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 1,
+          "name": "Parent Category",
+          "slug": "parent-cat-1775132622",
+          "description": "Top level category",
+          "image": null,
+          "parentId": null,
+          "parentName": null,
+          "active": true,
+          "children": [],
+          "createdAt": "2026-04-02T19:23:42.125239",
+          "updatedAt": "2026-04-02T19:23:42.125239"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Category not found"
+      }
+    }
+  }
+}

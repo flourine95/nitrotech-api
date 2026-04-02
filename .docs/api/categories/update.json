@@ -1,0 +1,49 @@
+{
+  "endpoint": "PUT /api/categories/{id}",
+  "description": "Update a category. All fields optional. Validates circular reference when changing parentId.",
+  "request": {
+    "path": {
+      "id": 1
+    },
+    "body": {
+      "name": "Updated Category",
+      "active": false
+    }
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 1,
+          "name": "Updated Category",
+          "slug": "parent-cat-1775132622",
+          "description": "Top level category",
+          "image": null,
+          "parentId": null,
+          "parentName": null,
+          "active": false,
+          "children": [],
+          "createdAt": "2026-04-02T19:23:42.125239",
+          "updatedAt": "2026-04-02T19:23:42.316069"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Category not found"
+      }
+    },
+    "409_circular_ref": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "CATEGORY_CIRCULAR_REF",
+        "message": "Circular reference detected"
+      }
+    }
+  }
+}

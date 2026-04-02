@@ -1,0 +1,25 @@
+{
+  "endpoint": "DELETE /api/categories/{id}",
+  "description": "Soft delete a category. Children's parentId is set to NULL (ON DELETE SET NULL).",
+  "request": {
+    "path": {
+      "id": 1
+    }
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "message": "Category deleted successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Category not found"
+      }
+    }
+  }
+}

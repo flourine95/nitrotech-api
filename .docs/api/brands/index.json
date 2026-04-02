@@ -1,0 +1,231 @@
+[
+  {
+    "endpoint": "POST /api/brands",
+    "description": "Create a new brand. Slug must be unique and lowercase-hyphenated.",
+    "request": {
+      "body": {
+        "name": "Test Brand",
+        "slug": "test-brand-1775132621",
+        "logo": "https://example.com/logo.png",
+        "description": "A test brand",
+        "active": true
+      }
+    },
+    "responses": {
+      "201": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 2,
+            "name": "Test Brand",
+            "slug": "test-brand-1775132621",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": true,
+            "createdAt": "2026-04-02T19:23:41.8286571",
+            "updatedAt": "2026-04-02T19:23:41.8291912"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_slug_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "BRAND_SLUG_EXISTS",
+          "message": "Slug already exists"
+        }
+      },
+      "422_validation": {
+        "status": 500,
+        "body": {
+          "status": 500,
+          "code": "INTERNAL_ERROR",
+          "message": "An unexpected error occurred"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "DELETE /api/brands/{id}",
+    "description": "Soft delete a brand. Deleted brands are excluded from all queries.",
+    "request": {
+      "path": {
+        "id": 2
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "Brand deleted successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "GET /api/brands/{id}",
+    "description": "Get a single brand by ID.",
+    "request": {
+      "path": {
+        "id": 2
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 2,
+            "name": "Test Brand",
+            "slug": "test-brand-1775132621",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": true,
+            "createdAt": "2026-04-02T19:23:41.828657",
+            "updatedAt": "2026-04-02T19:23:41.829191"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "GET /api/brands",
+    "description": "List all brands. Filter by active status. Returns all records (no pagination — typically small dataset used for filters/dropdowns).",
+    "request": {
+      "query": {
+        "active": "true | false | (omit for all)"
+      }
+    },
+    "responses": {
+      "200_all": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 1,
+              "name": "123",
+              "slug": "a",
+              "logo": "s",
+              "description": "a",
+              "active": true,
+              "createdAt": "2026-04-02T12:13:29.324747",
+              "updatedAt": "2026-04-02T12:13:29.324747"
+            },
+            {
+              "id": 2,
+              "name": "Test Brand",
+              "slug": "test-brand-1775132621",
+              "logo": "https://example.com/logo.png",
+              "description": "A test brand",
+              "active": true,
+              "createdAt": "2026-04-02T19:23:41.828657",
+              "updatedAt": "2026-04-02T19:23:41.829191"
+            }
+          ]
+        }
+      },
+      "200_active_only": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 1,
+              "name": "123",
+              "slug": "a",
+              "logo": "s",
+              "description": "a",
+              "active": true,
+              "createdAt": "2026-04-02T12:13:29.324747",
+              "updatedAt": "2026-04-02T12:13:29.324747"
+            },
+            {
+              "id": 2,
+              "name": "Test Brand",
+              "slug": "test-brand-1775132621",
+              "logo": "https://example.com/logo.png",
+              "description": "A test brand",
+              "active": true,
+              "createdAt": "2026-04-02T19:23:41.828657",
+              "updatedAt": "2026-04-02T19:23:41.829191"
+            }
+          ]
+        }
+      },
+      "200_inactive_only": {
+        "status": 200,
+        "body": {
+          "data": []
+        }
+      }
+    },
+    "notes": [
+      "No pagination — brands are loaded once and cached client-side for filter/dropdown use"
+    ]
+  },
+  {
+    "endpoint": "PUT /api/brands/{id}",
+    "description": "Update a brand. All fields are optional (partial update).",
+    "request": {
+      "path": {
+        "id": 2
+      },
+      "body": {
+        "name": "Updated Brand",
+        "active": false
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 2,
+            "name": "Updated Brand",
+            "slug": "test-brand-1775132621",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": false,
+            "createdAt": "2026-04-02T19:23:41.828657",
+            "updatedAt": "2026-04-02T19:23:42.0210021"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "slug": "Slug must be lowercase letters, numbers and hyphens"
+          }
+        }
+      }
+    }
+  }
+]

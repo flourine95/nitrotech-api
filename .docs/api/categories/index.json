@@ -1,0 +1,451 @@
+[
+  {
+    "endpoint": "POST /api/categories (with parentId)",
+    "description": "Create a child category under a parent.",
+    "request": {
+      "body": {
+        "name": "Child Category",
+        "slug": "child-cat-1775132622",
+        "description": "Sub category",
+        "parentId": 1,
+        "active": true
+      }
+    },
+    "responses": {
+      "201": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 2,
+            "name": "Child Category",
+            "slug": "child-cat-1775132622",
+            "description": "Sub category",
+            "image": null,
+            "parentId": 1,
+            "parentName": null,
+            "active": true,
+            "children": [],
+            "createdAt": "2026-04-02T19:23:42.1726511",
+            "updatedAt": "2026-04-02T19:23:42.1726511"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_circular_ref": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "CATEGORY_CIRCULAR_REF",
+          "message": "Circular reference detected"
+        }
+      },
+      "404_parent_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Parent category not found"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "POST /api/categories",
+    "description": "Create a new category. Supports tree structure via parentId.",
+    "request": {
+      "body": {
+        "name": "Parent Category",
+        "slug": "parent-cat-1775132622",
+        "description": "Top level category",
+        "active": true
+      }
+    },
+    "responses": {
+      "201": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 1,
+            "name": "Parent Category",
+            "slug": "parent-cat-1775132622",
+            "description": "Top level category",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "children": [],
+            "createdAt": "2026-04-02T19:23:42.125239",
+            "updatedAt": "2026-04-02T19:23:42.125239"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_slug_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "CATEGORY_SLUG_EXISTS",
+          "message": "Slug already exists"
+        }
+      },
+      "422_validation": {
+        "status": 500,
+        "body": {
+          "status": 500,
+          "code": "INTERNAL_ERROR",
+          "message": "An unexpected error occurred"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "DELETE /api/categories/{id}",
+    "description": "Soft delete a category. Children's parentId is set to NULL (ON DELETE SET NULL).",
+    "request": {
+      "path": {
+        "id": 1
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "message": "Category deleted successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Category not found"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "GET /api/categories/{id}",
+    "description": "Get a single category by ID. Includes parentName if has parent.",
+    "request": {
+      "path": {
+        "id": 1
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 1,
+            "name": "Parent Category",
+            "slug": "parent-cat-1775132622",
+            "description": "Top level category",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "children": [],
+            "createdAt": "2026-04-02T19:23:42.125239",
+            "updatedAt": "2026-04-02T19:23:42.125239"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Category not found"
+        }
+      }
+    }
+  },
+  {
+    "endpoint": "GET /api/categories?tree=true",
+    "description": "List categories as nested tree. Children are embedded under their parent.",
+    "request": {
+      "query": {
+        "tree": "true",
+        "active": "true | false | (omit for all)"
+      }
+    },
+    "responses": {
+      "200_full_tree": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 1,
+              "name": "Parent Category",
+              "slug": "parent-cat-1775132622",
+              "description": "Top level category",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "children": [
+                {
+                  "id": 2,
+                  "name": "Child Category",
+                  "slug": "child-cat-1775132622",
+                  "description": "Sub category",
+                  "image": null,
+                  "parentId": 1,
+                  "parentName": null,
+                  "active": true,
+                  "children": [
+                    {
+                      "id": 3,
+                      "name": "Circular",
+                      "slug": "circular-1775132622",
+                      "description": null,
+                      "image": null,
+                      "parentId": 2,
+                      "parentName": null,
+                      "active": true,
+                      "children": [],
+                      "createdAt": "2026-04-02T19:23:42.189178",
+                      "updatedAt": "2026-04-02T19:23:42.189178"
+                    }
+                  ],
+                  "createdAt": "2026-04-02T19:23:42.172651",
+                  "updatedAt": "2026-04-02T19:23:42.172651"
+                }
+              ],
+              "createdAt": "2026-04-02T19:23:42.125239",
+              "updatedAt": "2026-04-02T19:23:42.125239"
+            }
+          ]
+        }
+      },
+      "200_active_tree": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 1,
+              "name": "Parent Category",
+              "slug": "parent-cat-1775132622",
+              "description": "Top level category",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "children": [
+                {
+                  "id": 2,
+                  "name": "Child Category",
+                  "slug": "child-cat-1775132622",
+                  "description": "Sub category",
+                  "image": null,
+                  "parentId": 1,
+                  "parentName": null,
+                  "active": true,
+                  "children": [
+                    {
+                      "id": 3,
+                      "name": "Circular",
+                      "slug": "circular-1775132622",
+                      "description": null,
+                      "image": null,
+                      "parentId": 2,
+                      "parentName": null,
+                      "active": true,
+                      "children": [],
+                      "createdAt": "2026-04-02T19:23:42.189178",
+                      "updatedAt": "2026-04-02T19:23:42.189178"
+                    }
+                  ],
+                  "createdAt": "2026-04-02T19:23:42.172651",
+                  "updatedAt": "2026-04-02T19:23:42.172651"
+                }
+              ],
+              "createdAt": "2026-04-02T19:23:42.125239",
+              "updatedAt": "2026-04-02T19:23:42.125239"
+            }
+          ]
+        }
+      }
+    },
+    "notes": [
+      "Use tree=true for rendering navigation menus with nested structure"
+    ]
+  },
+  {
+    "endpoint": "GET /api/categories",
+    "description": "List categories flat. Filter by active and parentId. No pagination — used for menus and filters.",
+    "request": {
+      "query": {
+        "active": "true | false | (omit for all)",
+        "parentId": "filter by parent (omit for all)",
+        "tree": "false (default)"
+      }
+    },
+    "responses": {
+      "200_all": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 2,
+              "name": "Child Category",
+              "slug": "child-cat-1775132622",
+              "description": "Sub category",
+              "image": null,
+              "parentId": 1,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.172651",
+              "updatedAt": "2026-04-02T19:23:42.172651"
+            },
+            {
+              "id": 3,
+              "name": "Circular",
+              "slug": "circular-1775132622",
+              "description": null,
+              "image": null,
+              "parentId": 2,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.189178",
+              "updatedAt": "2026-04-02T19:23:42.189178"
+            },
+            {
+              "id": 1,
+              "name": "Parent Category",
+              "slug": "parent-cat-1775132622",
+              "description": "Top level category",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.125239",
+              "updatedAt": "2026-04-02T19:23:42.125239"
+            }
+          ]
+        }
+      },
+      "200_active": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 2,
+              "name": "Child Category",
+              "slug": "child-cat-1775132622",
+              "description": "Sub category",
+              "image": null,
+              "parentId": 1,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.172651",
+              "updatedAt": "2026-04-02T19:23:42.172651"
+            },
+            {
+              "id": 3,
+              "name": "Circular",
+              "slug": "circular-1775132622",
+              "description": null,
+              "image": null,
+              "parentId": 2,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.189178",
+              "updatedAt": "2026-04-02T19:23:42.189178"
+            },
+            {
+              "id": 1,
+              "name": "Parent Category",
+              "slug": "parent-cat-1775132622",
+              "description": "Top level category",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.125239",
+              "updatedAt": "2026-04-02T19:23:42.125239"
+            }
+          ]
+        }
+      },
+      "200_by_parent": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 2,
+              "name": "Child Category",
+              "slug": "child-cat-1775132622",
+              "description": "Sub category",
+              "image": null,
+              "parentId": 1,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.172651",
+              "updatedAt": "2026-04-02T19:23:42.172651"
+            }
+          ]
+        }
+      }
+    },
+    "notes": [
+      "No pagination — categories are small datasets used for navigation menus"
+    ]
+  },
+  {
+    "endpoint": "PUT /api/categories/{id}",
+    "description": "Update a category. All fields optional. Validates circular reference when changing parentId.",
+    "request": {
+      "path": {
+        "id": 1
+      },
+      "body": {
+        "name": "Updated Category",
+        "active": false
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 1,
+            "name": "Updated Category",
+            "slug": "parent-cat-1775132622",
+            "description": "Top level category",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": false,
+            "children": [],
+            "createdAt": "2026-04-02T19:23:42.125239",
+            "updatedAt": "2026-04-02T19:23:42.316069"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Category not found"
+        }
+      },
+      "409_circular_ref": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "CATEGORY_CIRCULAR_REF",
+          "message": "Circular reference detected"
+        }
+      }
+    }
+  }
+]
