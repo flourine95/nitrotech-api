@@ -4,7 +4,7 @@
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/nitrotech
+    url: jdbc:postgresql://localhost:5432/nitrotech?TimeZone=Asia/Ho_Chi_Minh
     username: nitrotech
     password: nitrotech
   jpa:
