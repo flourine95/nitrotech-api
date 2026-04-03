@@ -1,0 +1,54 @@
+{
+  "endpoint": "GET /api/upload/folders",
+  "description": "List Cloudinary folders. Used to populate folder selector in media library.",
+  "request": {
+    "headers": {
+      "Authorization": "Bearer <access-token>"
+    },
+    "query": {
+      "parent": "(optional) parent folder path — omit for root folders"
+    }
+  },
+  "responses": {
+    "200_root": {
+      "status": 200,
+      "body": {
+        "data": [
+          {
+            "path": "avatars",
+            "name": "avatars",
+            "external_id": "cd873c9ced89391215af52168e7486841e"
+          },
+          {
+            "path": "brands",
+            "name": "brands",
+            "external_id": "cea8d46be5896ea66f8e273ca6e6543c25"
+          },
+          {
+            "path": "chattrix",
+            "name": "chattrix",
+            "external_id": "cd1888b20d093ac23365bc6de4ee9ab009"
+          }
+        ]
+      }
+    },
+    "200_subfolders": {
+      "status": 200,
+      "body": {
+        "data": []
+      }
+    },
+    "401_no_auth": {
+      "status": 401,
+      "body": {
+        "status": 401,
+        "code": "UNAUTHORIZED",
+        "message": "Authentication required"
+      }
+    }
+  },
+  "notes": [
+    "Root folders: brands, products, categories, avatars, banners",
+    "Each folder has: name, path, external_id"
+  ]
+}

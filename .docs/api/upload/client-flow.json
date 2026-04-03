@@ -1,0 +1,75 @@
+{
+  "title": "Cloudinary Upload Flow (Client-Side)",
+  "description": "Complete flow for uploading an image from client directly to Cloudinary",
+  "steps": [
+    {
+      "step": 1,
+      "action": "Get upload signature from backend",
+      "request": {
+        "method": "POST",
+        "url": "/api/upload/sign",
+        "headers": {
+          "Authorization": "Bearer <access-token>"
+        },
+        "body": {
+          "folder": "brands"
+        }
+      },
+      "response": {
+        "signature": "<sha1-hash>",
+        "timestamp": "1234567890",
+        "apiKey": "<cloudinary-api-key>",
+        "cloudName": "<cloud-name>",
+        "folder": "brands"
+      }
+    },
+    {
+      "step": 2,
+      "action": "Upload file directly to Cloudinary",
+      "request": {
+        "method": "POST",
+        "url": "https://api.cloudinary.com/v1_1/<cloudName>/image/upload",
+        "contentType": "multipart/form-data",
+        "fields": {
+          "file": "<binary file>",
+          "api_key": "<from step 1>",
+          "timestamp": "<from step 1>",
+          "signature": "<from step 1>",
+          "folder": "<from step 1>"
+        }
+      },
+      "response": {
+        "public_id": "brands/uuid-example",
+        "secure_url": "https://res.cloudinary.com/<cloud>/image/upload/brands/uuid-example.jpg",
+        "width": 800,
+        "height": 600,
+        "format": "jpg"
+      }
+    },
+    {
+      "step": 3,
+      "action": "Save public_id or secure_url to backend",
+      "note": "Store public_id (not secure_url) to allow dynamic transformations later",
+      "example": {
+        "method": "POST",
+        "url": "/api/brands",
+        "body": {
+          "name": "Nike",
+          "slug": "nike",
+          "logo": "brands/uuid-example"
+        }
+      }
+    }
+  ],
+  "transformations": {
+    "description": "Build display URLs with on-demand transformations",
+    "base_url": "https://res.cloudinary.com/<cloudName>/image/upload/<transformation>/<public_id>",
+    "examples": {
+      "thumbnail_200x200": "w_200,h_200,c_fill,f_auto,q_auto",
+      "product_800x800": "w_800,h_800,c_fill,f_auto,q_auto",
+      "banner_1920x600": "w_1920,h_600,c_fill,f_auto,q_auto",
+      "avatar_100x100": "w_100,h_100,c_thumb,g_face,f_auto,q_auto",
+      "logo_pad_200x200": "w_200,h_200,c_pad,b_white,f_auto,q_auto"
+    }
+  }
+}

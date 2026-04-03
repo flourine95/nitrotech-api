@@ -1,0 +1,62 @@
+{
+  "endpoint": "POST /api/upload/sign",
+  "description": "Generate a Cloudinary upload signature. Client uses this to upload directly to Cloudinary without going through the backend.",
+  "request": {
+    "headers": {
+      "Authorization": "Bearer <access-token>"
+    },
+    "body": {
+      "folder": "brands"
+    }
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "data": {
+          "signature": "5d476cea693486c36dad0c14a6e4847e07febe06",
+          "timestamp": "1775194851",
+          "apiKey": "498894655339731",
+          "cloudName": "dk3gud5kq",
+          "folder": "brands"
+        }
+      }
+    },
+    "422_invalid_folder": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "folder": "Invalid folder. Allowed: products, brands, categories, avatars, banners"
+        }
+      }
+    },
+    "422_missing_folder": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "folder": "Folder is required"
+        }
+      }
+    },
+    "401_no_auth": {
+      "status": 401,
+      "body": {
+        "status": 401,
+        "code": "UNAUTHORIZED",
+        "message": "Authentication required"
+      }
+    }
+  },
+  "notes": [
+    "Allowed folders: products, brands, categories, avatars, banners",
+    "After getting signature, client POSTs to: https://api.cloudinary.com/v1_1/<cloudName>/image/upload",
+    "Required form fields: file, api_key, timestamp, signature, folder",
+    "Cloudinary returns public_id and secure_url — save public_id to DB"
+  ]
+}

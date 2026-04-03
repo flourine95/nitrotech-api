@@ -1,0 +1,267 @@
+[
+  {
+    "endpoint": "GET /api/upload/assets",
+    "description": "List images from a Cloudinary folder. Used for media library/gallery in dashboard.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      },
+      "query": {
+        "folder": "brands (required)",
+        "maxResults": "50 (default, max 100)",
+        "cursor": "nextCursor from previous response (for pagination)"
+      }
+    },
+    "responses": {
+      "200_brands": {
+        "status": 200,
+        "body": {
+          "data": {
+            "resources": [
+              {
+                "asset_folder": "brands",
+                "format": "png",
+                "resource_type": "image",
+                "secure_url": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "created_at": "2026-04-03T04:45:12Z",
+                "asset_id": "5c5244a946f9324c4d09cfdfe1c627ef",
+                "type": "upload",
+                "display_name": "snawgavec6xtiarpgyda",
+                "version": 1775191512,
+                "url": "http://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "public_id": "brands/snawgavec6xtiarpgyda",
+                "bytes": 947774,
+                "width": 583,
+                "height": 1037
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "200_shape": {
+        "status": 200,
+        "body": {
+          "data": {
+            "resources": [
+              {
+                "public_id": "brands/uuid-example",
+                "secure_url": "https://res.cloudinary.com/<cloud>/image/upload/brands/uuid-example.jpg",
+                "width": 800,
+                "height": 600,
+                "format": "jpg",
+                "created_at": "2026-01-01T00:00:00Z",
+                "bytes": 102400
+              }
+            ],
+            "nextCursor": "<cursor-string-or-null>"
+          }
+        }
+      },
+      "401_no_auth": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "code": "UNAUTHORIZED",
+          "message": "Authentication required"
+        }
+      }
+    },
+    "notes": [
+      "Use nextCursor for pagination — null means no more results",
+      "Each resource has: public_id, secure_url, width, height, format, created_at, bytes",
+      "Build display URL with transformations: https://res.cloudinary.com/<cloud>/image/upload/w_400,h_400,c_fill/<public_id>"
+    ]
+  },
+  {
+    "title": "Cloudinary Upload Flow (Client-Side)",
+    "description": "Complete flow for uploading an image from client directly to Cloudinary",
+    "steps": [
+      {
+        "step": 1,
+        "action": "Get upload signature from backend",
+        "request": {
+          "method": "POST",
+          "url": "/api/upload/sign",
+          "headers": {
+            "Authorization": "Bearer <access-token>"
+          },
+          "body": {
+            "folder": "brands"
+          }
+        },
+        "response": {
+          "signature": "<sha1-hash>",
+          "timestamp": "1234567890",
+          "apiKey": "<cloudinary-api-key>",
+          "cloudName": "<cloud-name>",
+          "folder": "brands"
+        }
+      },
+      {
+        "step": 2,
+        "action": "Upload file directly to Cloudinary",
+        "request": {
+          "method": "POST",
+          "url": "https://api.cloudinary.com/v1_1/<cloudName>/image/upload",
+          "contentType": "multipart/form-data",
+          "fields": {
+            "file": "<binary file>",
+            "api_key": "<from step 1>",
+            "timestamp": "<from step 1>",
+            "signature": "<from step 1>",
+            "folder": "<from step 1>"
+          }
+        },
+        "response": {
+          "public_id": "brands/uuid-example",
+          "secure_url": "https://res.cloudinary.com/<cloud>/image/upload/brands/uuid-example.jpg",
+          "width": 800,
+          "height": 600,
+          "format": "jpg"
+        }
+      },
+      {
+        "step": 3,
+        "action": "Save public_id or secure_url to backend",
+        "note": "Store public_id (not secure_url) to allow dynamic transformations later",
+        "example": {
+          "method": "POST",
+          "url": "/api/brands",
+          "body": {
+            "name": "Nike",
+            "slug": "nike",
+            "logo": "brands/uuid-example"
+          }
+        }
+      }
+    ],
+    "transformations": {
+      "description": "Build display URLs with on-demand transformations",
+      "base_url": "https://res.cloudinary.com/<cloudName>/image/upload/<transformation>/<public_id>",
+      "examples": {
+        "thumbnail_200x200": "w_200,h_200,c_fill,f_auto,q_auto",
+        "product_800x800": "w_800,h_800,c_fill,f_auto,q_auto",
+        "banner_1920x600": "w_1920,h_600,c_fill,f_auto,q_auto",
+        "avatar_100x100": "w_100,h_100,c_thumb,g_face,f_auto,q_auto",
+        "logo_pad_200x200": "w_200,h_200,c_pad,b_white,f_auto,q_auto"
+      }
+    }
+  },
+  {
+    "endpoint": "GET /api/upload/folders",
+    "description": "List Cloudinary folders. Used to populate folder selector in media library.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      },
+      "query": {
+        "parent": "(optional) parent folder path — omit for root folders"
+      }
+    },
+    "responses": {
+      "200_root": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "path": "avatars",
+              "name": "avatars",
+              "external_id": "cd873c9ced89391215af52168e7486841e"
+            },
+            {
+              "path": "brands",
+              "name": "brands",
+              "external_id": "cea8d46be5896ea66f8e273ca6e6543c25"
+            },
+            {
+              "path": "chattrix",
+              "name": "chattrix",
+              "external_id": "cd1888b20d093ac23365bc6de4ee9ab009"
+            }
+          ]
+        }
+      },
+      "200_subfolders": {
+        "status": 200,
+        "body": {
+          "data": []
+        }
+      },
+      "401_no_auth": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "code": "UNAUTHORIZED",
+          "message": "Authentication required"
+        }
+      }
+    },
+    "notes": [
+      "Root folders: brands, products, categories, avatars, banners",
+      "Each folder has: name, path, external_id"
+    ]
+  },
+  {
+    "endpoint": "POST /api/upload/sign",
+    "description": "Generate a Cloudinary upload signature. Client uses this to upload directly to Cloudinary without going through the backend.",
+    "request": {
+      "headers": {
+        "Authorization": "Bearer <access-token>"
+      },
+      "body": {
+        "folder": "brands"
+      }
+    },
+    "responses": {
+      "200": {
+        "status": 200,
+        "body": {
+          "data": {
+            "signature": "5d476cea693486c36dad0c14a6e4847e07febe06",
+            "timestamp": "1775194851",
+            "apiKey": "498894655339731",
+            "cloudName": "dk3gud5kq",
+            "folder": "brands"
+          }
+        }
+      },
+      "422_invalid_folder": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "folder": "Invalid folder. Allowed: products, brands, categories, avatars, banners"
+          }
+        }
+      },
+      "422_missing_folder": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "folder": "Folder is required"
+          }
+        }
+      },
+      "401_no_auth": {
+        "status": 401,
+        "body": {
+          "status": 401,
+          "code": "UNAUTHORIZED",
+          "message": "Authentication required"
+        }
+      }
+    },
+    "notes": [
+      "Allowed folders: products, brands, categories, avatars, banners",
+      "After getting signature, client POSTs to: https://api.cloudinary.com/v1_1/<cloudName>/image/upload",
+      "Required form fields: file, api_key, timestamp, signature, folder",
+      "Cloudinary returns public_id and secure_url — save public_id to DB"
+    ]
+  }
+]
