@@ -20,16 +20,6 @@ public class UploadController {
         this.storageService = storageService;
     }
 
-    /**
-     * Trả về signature để client upload trực tiếp lên Cloudinary.
-     *
-     * Client dùng response này để POST lên:
-     * https://api.cloudinary.com/v1_1/<cloudName>/image/upload
-     *
-     * Form fields cần gửi:
-     * - file: <file binary>
-     * - api_key, timestamp, signature, folder (từ response này)
-     */
     @PostMapping("/sign")
     public ResponseEntity<ApiResponse<CloudinaryStorageService.SignatureResult>> sign(
             @Valid @RequestBody PresignRequest req

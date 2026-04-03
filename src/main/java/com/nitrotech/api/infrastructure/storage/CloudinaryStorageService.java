@@ -1,10 +1,10 @@
 package com.nitrotech.api.infrastructure.storage;
 
 import com.cloudinary.Cloudinary;
-import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.Map;
 
 @Service
@@ -22,12 +22,11 @@ public class CloudinaryStorageService {
     public SignatureResult generateSignature(String folder) {
         long timestamp = System.currentTimeMillis() / 1000;
 
-        Map<String, Object> params = ObjectUtils.asMap(
-                "folder", folder,
-                "timestamp", timestamp
-        );
+        Map<String, Object> params = new HashMap<>();
+        params.put("folder", folder);
+        params.put("timestamp", timestamp);
 
-        String signature = cloudinary.apiSignRequest(params, cloudinary.config.apiSecret);
+        String signature = cloudinary.apiSignRequest(params, cloudinary.config.apiSecret, 1);
 
         return new SignatureResult(
                 signature,
@@ -36,12 +35,6 @@ public class CloudinaryStorageService {
                 cloudName,
                 folder
         );
-    }
-
-    public String buildUrl(String publicId, String transformation) {
-        return cloudinary.url()
-                .transformation(new com.cloudinary.Transformation().rawTransformation(transformation))
-                .generate(publicId);
     }
 
     public record SignatureResult(
