@@ -1,7 +1,7 @@
 package com.nitrotech.api.application.upload.controller;
 
 import com.nitrotech.api.application.upload.request.PresignRequest;
-import com.nitrotech.api.infrastructure.storage.R2StorageService;
+import com.nitrotech.api.infrastructure.storage.CloudinaryStorageService;
 import com.nitrotech.api.shared.response.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -10,30 +10,30 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.Map;
-
 @RestController
 @RequestMapping("/api/upload")
 public class UploadController {
 
-    private final R2StorageService storageService;
+    private final CloudinaryStorageService storageService;
 
-    public UploadController(R2StorageService storageService) {
+    public UploadController(CloudinaryStorageService storageService) {
         this.storageService = storageService;
     }
 
-    @PostMapping("/presign")
-    public ResponseEntity<ApiResponse<Map<String, String>>> presign(
+    /**
+     * Trả về signature để client upload trực tiếp lên Cloudinary.
+     *
+     * Client dùng response này để POST lên:
+     * https://api.cloudinary.com/v1_1/<cloudName>/image/upload
+     *
+     * Form fields cần gửi:
+     * - file: <file binary>
+     * - api_key, timestamp, signature, folder (từ response này)
+     */
+    @PostMapping("/sign")
+    public ResponseEntity<ApiResponse<CloudinaryStorageService.SignatureResult>> sign(
             @Valid @RequestBody PresignRequest req
     ) {
-        String folder = req.folder() != null ? req.folder() : "uploads";
-        R2StorageService.PresignResult result = storageService.generatePresignedUrl(
-                folder, req.filename(), req.contentType());
-
-        return ResponseEntity.ok(ApiResponse.ok(Map.of(
-                "uploadUrl", result.uploadUrl(),
-                "publicUrl", result.publicUrl(),
-                "key", result.key()
-        )));
+        return ResponseEntity.ok(ApiResponse.ok(storageService.generateSignature(req.folder())));
     }
 }

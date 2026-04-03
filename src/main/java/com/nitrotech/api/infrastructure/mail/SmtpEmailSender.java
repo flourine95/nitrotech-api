@@ -1,34 +1,28 @@
 package com.nitrotech.api.infrastructure.mail;
 
 import com.nitrotech.api.domain.auth.usecase.EmailSender;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.MediaType;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.RestClient;
-import org.springframework.web.client.RestClientException;
-
-import java.util.List;
 
 @Component
-public class ResendEmailSender implements EmailSender {
+public class SmtpEmailSender implements EmailSender {
 
-    private static final Logger log = LoggerFactory.getLogger(ResendEmailSender.class);
+    private static final Logger log = LoggerFactory.getLogger(SmtpEmailSender.class);
 
-    private final RestClient restClient;
-    private final String from;
+    private final JavaMailSender mailSender;
 
-    public ResendEmailSender(
-            @Value("${resend.api-key}") String apiKey,
-            @Value("${resend.from}") String from
-    ) {
-        this.from = from;
-        this.restClient = RestClient.builder()
-                .baseUrl("https://api.resend.com")
-                .defaultHeader("Authorization", "Bearer " + apiKey)
-                .build();
+    @Value("${mail.from}")
+    private String from;
+
+    public SmtpEmailSender(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
     }
 
     @Override
@@ -51,16 +45,15 @@ public class ResendEmailSender implements EmailSender {
 
     private void send(String to, String subject, String html) {
         try {
-            restClient.post()
-                    .uri("/emails")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .body(new EmailRequest(from, List.of(to), subject, html))
-                    .retrieve()
-                    .toBodilessEntity();
-        } catch (RestClientException e) {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            helper.setFrom(from);
+            helper.setTo(to);
+            helper.setSubject(subject);
+            helper.setText(html, true);
+            mailSender.send(message);
+        } catch (MessagingException e) {
             log.error("Failed to send email to {}: {}", to, e.getMessage());
         }
     }
-
-    private record EmailRequest(String from, List<String> to, String subject, String html) {}
 }
