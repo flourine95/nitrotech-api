@@ -42,6 +42,6 @@ public class LoginUseCase {
         String refreshToken = refreshTokenRepository.create(credential.id(), 30);
         AuthResult.UserData user = new AuthResult.UserData(credential.id(), credential.name(), credential.email());
 
-        return AuthResult.of(TokenPair.of(accessToken, refreshToken), user);
+        return AuthResult.of(TokenPair.of(accessToken, refreshToken, tokenProvider.getExpirationMs()), user);
     }
 }

@@ -63,4 +63,9 @@ public class JwtTokenProvider implements TokenProvider {
                 .getPayload()
                 .getExpiration();
     }
+
+    @Override
+    public long getExpirationMs() {
+        return expirationMs;
+    }
 }

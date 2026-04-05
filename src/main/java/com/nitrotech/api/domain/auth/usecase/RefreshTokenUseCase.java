@@ -34,6 +34,6 @@ public class RefreshTokenUseCase {
         String newRefreshToken = refreshTokenRepository.create(token.userId(), 30);
         String newAccessToken = tokenProvider.generate(email);
 
-        return TokenPair.of(newAccessToken, newRefreshToken);
+        return TokenPair.of(newAccessToken, newRefreshToken, tokenProvider.getExpirationMs());
     }
 }

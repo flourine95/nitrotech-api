@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 import java.util.Arrays;
 import java.util.Optional;
 
+
 @Component
 public class CookieUtil {
 
@@ -24,14 +25,7 @@ public class CookieUtil {
     private String domain;
 
     public void setRefreshTokenCookie(HttpServletResponse response, String token, int maxAgeSeconds) {
-        Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE, token);
-        cookie.setHttpOnly(true);
-        cookie.setSecure(secure);
-        cookie.setPath("/api/auth");
-        cookie.setMaxAge(maxAgeSeconds);
-        if (!domain.isBlank()) cookie.setDomain(domain);
-        // SameSite via header (Cookie API chưa hỗ trợ trực tiếp)
-        response.addCookie(cookie);
+        // Dùng header thủ công để có SameSite (Cookie API không hỗ trợ trực tiếp)
         response.addHeader("Set-Cookie",
                 buildSetCookieHeader(REFRESH_TOKEN_COOKIE, token, maxAgeSeconds));
     }

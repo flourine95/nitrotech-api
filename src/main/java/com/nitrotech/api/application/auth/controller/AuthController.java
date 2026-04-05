@@ -2,6 +2,7 @@ package com.nitrotech.api.application.auth.controller;
 
 import com.nitrotech.api.application.auth.request.*;
 import com.nitrotech.api.domain.auth.dto.*;
+import com.nitrotech.api.domain.auth.exception.InvalidRefreshTokenException;
 import com.nitrotech.api.domain.auth.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
 import com.nitrotech.api.shared.util.CookieUtil;
@@ -84,14 +85,14 @@ public class AuthController {
     ) {
         String refreshToken = isWeb(clientType)
                 ? cookieUtil.extractRefreshToken(httpRequest)
-                        .orElseThrow(() -> new com.nitrotech.api.domain.auth.exception.InvalidRefreshTokenException())
+                        .orElseThrow(InvalidRefreshTokenException::new)
                 : (body != null ? body.refreshToken() : null);
 
         TokenPair tokens = refreshTokenUseCase.execute(refreshToken);
 
         if (isWeb(clientType)) {
             cookieUtil.setRefreshTokenCookie(response, tokens.refreshToken(), 30 * 24 * 60 * 60);
-            return ResponseEntity.ok(ApiResponse.ok(TokenPair.of(tokens.accessToken(), null)));
+            return ResponseEntity.ok(ApiResponse.ok(TokenPair.ofSeconds(tokens.accessToken(), null, tokens.expiresIn())));
         }
         return ResponseEntity.ok(ApiResponse.ok(tokens));
     }
@@ -190,7 +191,7 @@ public class AuthController {
         if (result.accessToken() == null) return result; // register — chưa có token
         if (isWeb(clientType)) {
             cookieUtil.setRefreshTokenCookie(response, result.refreshToken(), 30 * 24 * 60 * 60);
-            return AuthResult.of(TokenPair.of(result.accessToken(), null), result.user());
+            return AuthResult.of(TokenPair.ofSeconds(result.accessToken(), null, result.expiresIn() != null ? result.expiresIn() : 0), result.user());
         }
         return result;
     }
