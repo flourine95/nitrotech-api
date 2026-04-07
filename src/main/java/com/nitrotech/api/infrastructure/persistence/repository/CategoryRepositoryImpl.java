@@ -1,11 +1,15 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.category.dto.CategoryData;
+import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
+import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -61,10 +65,9 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public List<CategoryData> findAll(Boolean active, Long parentId) {
-        return jpa.findAllActive(active, parentId).stream()
-                .map(e -> toData(e, null, List.of()))
-                .toList();
+    public Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable) {
+        return jpa.findAll(CategorySpecification.from(filter), pageable)
+                .map(e -> toData(e, null, List.of()));
     }
 
     @Override

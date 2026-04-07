@@ -5,6 +5,10 @@ import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -39,16 +43,16 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<ProductData>>> list(
+    public ResponseEntity<ApiResponse<Page<ProductData>>> list(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean deleted,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long brandId,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) String search,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(getProductsUseCase.execute(
-                new ProductListQuery(categoryId, brandId, active, search, page, size)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                getProductsUseCase.execute(new ProductFilter(search, active, deleted, categoryId, brandId), pageable)));
     }
 
     @GetMapping("/{id}")

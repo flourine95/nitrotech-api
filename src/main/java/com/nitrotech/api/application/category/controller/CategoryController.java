@@ -3,11 +3,16 @@ package com.nitrotech.api.application.category.controller;
 import com.nitrotech.api.application.category.request.CreateCategoryRequest;
 import com.nitrotech.api.application.category.request.UpdateCategoryRequest;
 import com.nitrotech.api.domain.category.dto.CategoryData;
+import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,14 +42,20 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<CategoryData>>> list(
+    public ResponseEntity<ApiResponse<Object>> list(
+            @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean deleted,
             @RequestParam(required = false) Long parentId,
-            @RequestParam(defaultValue = "false") boolean tree
+            @RequestParam(defaultValue = "false") boolean tree,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        List<CategoryData> data = tree
-                ? getCategoriesUseCase.executeTree(active)
-                : getCategoriesUseCase.execute(active, parentId);
+        if (tree) {
+            List<CategoryData> data = getCategoriesUseCase.executeTree(active);
+            return ResponseEntity.ok(ApiResponse.ok(data));
+        }
+        Page<CategoryData> data = getCategoriesUseCase.execute(
+                new CategoryFilter(search, active, deleted, parentId), pageable);
         return ResponseEntity.ok(ApiResponse.ok(data));
     }
 

@@ -1,12 +1,11 @@
 package com.nitrotech.api.domain.product.usecase;
 
 import com.nitrotech.api.domain.product.dto.ProductData;
-import com.nitrotech.api.domain.product.dto.ProductListQuery;
+import com.nitrotech.api.domain.product.dto.ProductFilter;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
-import com.nitrotech.api.shared.response.ApiResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class GetProductsUseCase {
@@ -17,9 +16,7 @@ public class GetProductsUseCase {
         this.productRepository = productRepository;
     }
 
-    public ApiResponse<List<ProductData>> execute(ProductListQuery query) {
-        List<ProductData> data = productRepository.findAll(query);
-        long total = productRepository.countAll(query);
-        return ApiResponse.paginated(data, query.page(), query.size(), total);
+    public Page<ProductData> execute(ProductFilter filter, Pageable pageable) {
+        return productRepository.findAll(filter, pageable);
     }
 }

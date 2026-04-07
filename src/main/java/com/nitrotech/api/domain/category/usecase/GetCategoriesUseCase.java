@@ -1,7 +1,10 @@
 package com.nitrotech.api.domain.category.usecase;
 
 import com.nitrotech.api.domain.category.dto.CategoryData;
+import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,8 +18,8 @@ public class GetCategoriesUseCase {
         this.categoryRepository = categoryRepository;
     }
 
-    public List<CategoryData> execute(Boolean active, Long parentId) {
-        return categoryRepository.findAll(active, parentId);
+    public Page<CategoryData> execute(CategoryFilter filter, Pageable pageable) {
+        return categoryRepository.findAll(filter, pageable);
     }
 
     public List<CategoryData> executeTree(Boolean active) {

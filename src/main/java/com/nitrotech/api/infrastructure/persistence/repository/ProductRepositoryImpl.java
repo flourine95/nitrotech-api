@@ -3,9 +3,10 @@ package com.nitrotech.api.infrastructure.persistence.repository;
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.*;
+import com.nitrotech.api.infrastructure.persistence.spec.ProductSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -81,20 +82,8 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public List<ProductData> findAll(ProductListQuery query) {
-        Page<ProductEntity> page = productJpa.findAllFiltered(
-                query.categoryId(), query.brandId(), query.active(), query.search(),
-                PageRequest.of(query.page(), query.size())
-        );
-        return page.getContent().stream().map(this::toData).toList();
-    }
-
-    @Override
-    public long countAll(ProductListQuery query) {
-        return productJpa.findAllFiltered(
-                query.categoryId(), query.brandId(), query.active(), query.search(),
-                PageRequest.of(query.page(), query.size())
-        ).getTotalElements();
+    public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
+        return productJpa.findAll(ProductSpecification.from(filter), pageable).map(this::toData);
     }
 
     @Override

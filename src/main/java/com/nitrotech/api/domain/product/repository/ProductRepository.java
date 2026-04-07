@@ -1,16 +1,16 @@
 package com.nitrotech.api.domain.product.repository;
 
 import com.nitrotech.api.domain.product.dto.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
-import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository {
     ProductData create(CreateProductCommand command);
     ProductData update(UpdateProductCommand command);
     Optional<ProductData> findById(Long id);
-    List<ProductData> findAll(ProductListQuery query);
-    long countAll(ProductListQuery query);
+    Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
