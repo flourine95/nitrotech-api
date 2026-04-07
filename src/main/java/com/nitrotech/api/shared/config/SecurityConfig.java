@@ -1,7 +1,7 @@
 package com.nitrotech.api.shared.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nitrotech.api.infrastructure.security.JwtAuthenticationFilter;
+import com.nitrotech.api.infrastructure.security.SessionAuthenticationFilter;
 import com.nitrotech.api.shared.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -22,7 +22,12 @@ import org.springframework.web.cors.CorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
-            "/api/auth/**",
+            "/api/auth/login",
+            "/api/auth/register",
+            "/api/auth/forgot-password",
+            "/api/auth/reset-password",
+            "/api/auth/verify-email",
+            "/api/auth/resend-verification",
             "/api/categories/**",
             "/api/brands/**",
             "/api/products/**",
@@ -32,14 +37,14 @@ public class SecurityConfig {
             "/swagger-ui.html"
     };
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final CorsConfigurationSource corsConfigurationSource;
+    private final SessionAuthenticationFilter sessionAuthenticationFilter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          CorsConfigurationSource corsConfigurationSource) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+    public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
+                          SessionAuthenticationFilter sessionAuthenticationFilter) {
         this.corsConfigurationSource = corsConfigurationSource;
+        this.sessionAuthenticationFilter = sessionAuthenticationFilter;
     }
 
     @Bean
@@ -47,7 +52,10 @@ public class SecurityConfig {
         return http
                 .cors(cors -> cors.configurationSource(corsConfigurationSource))
                 .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(s -> s
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .maximumSessions(5) // max 5 session per user
+                )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
@@ -69,7 +77,7 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 

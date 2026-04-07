@@ -9,6 +9,7 @@ import org.springframework.data.redis.connection.RedisConnectionFactory;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.data.redis.serializer.GenericJacksonJsonRedisSerializer;
 import org.springframework.data.redis.serializer.RedisSerializationContext;
+import org.springframework.session.data.redis.config.annotation.web.http.EnableRedisIndexedHttpSession;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
 import tools.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
@@ -18,6 +19,7 @@ import java.util.Map;
 
 @Configuration
 @EnableCaching
+@EnableRedisIndexedHttpSession(maxInactiveIntervalInSeconds = 60 * 60 * 24 * 30) // 30 ngày
 public class RedisConfig {
 
     @Bean

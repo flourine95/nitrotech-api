@@ -14,7 +14,6 @@ public class RegisterUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final TokenProvider tokenProvider;
     private final EmailVerificationTokenRepository verificationTokenRepository;
     private final EmailSender emailSender;
 
@@ -22,12 +21,11 @@ public class RegisterUseCase {
     private String frontendUrl;
 
     public RegisterUseCase(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder, TokenProvider tokenProvider,
+                           PasswordEncoder passwordEncoder,
                            EmailVerificationTokenRepository verificationTokenRepository,
                            EmailSender emailSender) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.tokenProvider = tokenProvider;
         this.verificationTokenRepository = verificationTokenRepository;
         this.emailSender = emailSender;
     }
