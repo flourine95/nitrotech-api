@@ -9,9 +9,15 @@ import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -64,10 +70,14 @@ public class AuthController {
     ) {
         AuthResult result = loginUseCase.execute(new LoginCommand(request.email(), request.password()));
 
-        // Tạo session mới, lưu email để Spring Security nhận diện
+        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                result.user().email(), null, List.of());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+
         HttpSession session = httpRequest.getSession(true);
-        session.setAttribute("email", result.user().email());
-        // Lưu index để có thể tìm session theo email (dùng cho logout-all, reset password)
+        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
         session.setAttribute(FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, result.user().email());
 
         return ResponseEntity.ok(ApiResponse.ok(result));
@@ -84,9 +94,7 @@ public class AuthController {
             @AuthenticationPrincipal String email,
             HttpServletRequest request
     ) {
-        // Invalidate session hiện tại — Spring Session Redis tự xử lý các session khác
-        // nếu dùng SessionRegistry hoặc findByPrincipalName
-        logoutUseCase.execute(request);
+        logoutUseCase.executeAll(email, request);
         return ResponseEntity.ok(ApiResponse.ok(null, "Logged out from all devices"));
     }
 
@@ -109,7 +117,7 @@ public class AuthController {
     }
 
     @PostMapping("/resend-verification")
-    public ResponseEntity<ApiResponse<Void>> resendVerification(@Valid @RequestBody ForgotPasswordRequest request) {
+    public ResponseEntity<ApiResponse<Void>> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         resendVerificationUseCase.execute(request.email());
         return ResponseEntity.ok(ApiResponse.ok(null, "Verification email sent"));
     }

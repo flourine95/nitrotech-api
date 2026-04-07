@@ -1,7 +1,6 @@
 package com.nitrotech.api.shared.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nitrotech.api.infrastructure.security.SessionAuthenticationFilter;
 import com.nitrotech.api.shared.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
@@ -38,13 +37,10 @@ public class SecurityConfig {
     };
 
     private final CorsConfigurationSource corsConfigurationSource;
-    private final SessionAuthenticationFilter sessionAuthenticationFilter;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public SecurityConfig(CorsConfigurationSource corsConfigurationSource,
-                          SessionAuthenticationFilter sessionAuthenticationFilter) {
+    public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
         this.corsConfigurationSource = corsConfigurationSource;
-        this.sessionAuthenticationFilter = sessionAuthenticationFilter;
     }
 
     @Bean
@@ -77,7 +73,6 @@ public class SecurityConfig {
                         .requestMatchers("/").permitAll()
                         .anyRequest().authenticated()
                 )
-                .addFilterBefore(sessionAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();
     }
 
