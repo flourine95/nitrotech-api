@@ -1,15 +1,18 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.brand.dto.BrandData;
+import com.nitrotech.api.domain.brand.dto.BrandFilter;
 import com.nitrotech.api.domain.brand.dto.CreateBrandCommand;
 import com.nitrotech.api.domain.brand.dto.UpdateBrandCommand;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.BrandEntity;
+import com.nitrotech.api.infrastructure.persistence.spec.BrandSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -51,8 +54,8 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
-    public List<BrandData> findAll(Boolean active) {
-        return jpa.findAllActive(active).stream().map(this::toData).toList();
+    public Page<BrandData> findAll(BrandFilter filter, Pageable pageable) {
+        return jpa.findAll(BrandSpecification.from(filter), pageable).map(this::toData);
     }
 
     @Override

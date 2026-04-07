@@ -3,16 +3,19 @@ package com.nitrotech.api.application.brand.controller;
 import com.nitrotech.api.application.brand.request.CreateBrandRequest;
 import com.nitrotech.api.application.brand.request.UpdateBrandRequest;
 import com.nitrotech.api.domain.brand.dto.BrandData;
+import com.nitrotech.api.domain.brand.dto.BrandFilter;
 import com.nitrotech.api.domain.brand.dto.CreateBrandCommand;
 import com.nitrotech.api.domain.brand.dto.UpdateBrandCommand;
 import com.nitrotech.api.domain.brand.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/brands")
@@ -35,10 +38,14 @@ public class BrandController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<BrandData>>> list(
-            @RequestParam(required = false) Boolean active
+    public ResponseEntity<ApiResponse<Page<BrandData>>> list(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Boolean active,
+            @RequestParam(required = false) Boolean deleted,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(getBrandsUseCase.execute(active)));
+        return ResponseEntity.ok(ApiResponse.ok(
+                getBrandsUseCase.execute(new BrandFilter(search, active, deleted), pageable)));
     }
 
     @GetMapping("/{id}")

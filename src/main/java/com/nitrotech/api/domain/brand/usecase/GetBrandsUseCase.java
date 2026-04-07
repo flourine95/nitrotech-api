@@ -1,10 +1,11 @@
 package com.nitrotech.api.domain.brand.usecase;
 
 import com.nitrotech.api.domain.brand.dto.BrandData;
+import com.nitrotech.api.domain.brand.dto.BrandFilter;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class GetBrandsUseCase {
@@ -15,7 +16,7 @@ public class GetBrandsUseCase {
         this.brandRepository = brandRepository;
     }
 
-    public List<BrandData> execute(Boolean active) {
-        return brandRepository.findAll(active);
+    public Page<BrandData> execute(BrandFilter filter, Pageable pageable) {
+        return brandRepository.findAll(filter, pageable);
     }
 }
