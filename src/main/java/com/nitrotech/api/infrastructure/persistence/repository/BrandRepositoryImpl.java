@@ -54,6 +54,11 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
+    public Optional<BrandData> findDeletedById(Long id) {
+        return jpa.findDeletedById(id).map(this::toData);
+    }
+
+    @Override
     public Page<BrandData> findAll(BrandFilter filter, Pageable pageable) {
         return jpa.findAll(BrandSpecification.from(filter), pageable).map(this::toData);
     }
@@ -65,12 +70,12 @@ public class BrandRepositoryImpl implements BrandRepository {
 
     @Override
     public boolean existsBySlug(String slug) {
-        return jpa.existsBySlug(slug);
+        return jpa.existsActiveBySlug(slug);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, Long id) {
-        return jpa.existsBySlugAndIdNot(slug, id);
+        return jpa.existsActiveBySlugAndIdNot(slug, id);
     }
 
     @Override
@@ -79,6 +84,19 @@ public class BrandRepositoryImpl implements BrandRepository {
             e.setDeletedAt(LocalDateTime.now());
             jpa.save(e);
         });
+    }
+
+    @Override
+    public void restore(Long id) {
+        jpa.findDeletedById(id).ifPresent(e -> {
+            e.setDeletedAt(null);
+            jpa.save(e);
+        });
+    }
+
+    @Override
+    public void hardDelete(Long id) {
+        jpa.deleteById(id);
     }
 
     private BrandData toData(BrandEntity e) {

@@ -13,9 +13,12 @@ public interface BrandRepository {
     BrandData create(CreateBrandCommand command);
     BrandData update(UpdateBrandCommand command);
     Optional<BrandData> findById(Long id);
+    Optional<BrandData> findDeletedById(Long id);
     Page<BrandData> findAll(BrandFilter filter, Pageable pageable);
     boolean existsById(Long id);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
     void softDelete(Long id);
+    void restore(Long id);
+    void hardDelete(Long id);
 }

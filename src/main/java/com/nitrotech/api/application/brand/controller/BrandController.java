@@ -26,15 +26,21 @@ public class BrandController {
     private final CreateBrandUseCase createBrandUseCase;
     private final UpdateBrandUseCase updateBrandUseCase;
     private final DeleteBrandUseCase deleteBrandUseCase;
+    private final RestoreBrandUseCase restoreBrandUseCase;
+    private final HardDeleteBrandUseCase hardDeleteBrandUseCase;
 
     public BrandController(GetBrandsUseCase getBrandsUseCase, GetBrandUseCase getBrandUseCase,
                             CreateBrandUseCase createBrandUseCase, UpdateBrandUseCase updateBrandUseCase,
-                            DeleteBrandUseCase deleteBrandUseCase) {
+                            DeleteBrandUseCase deleteBrandUseCase,
+                            RestoreBrandUseCase restoreBrandUseCase,
+                            HardDeleteBrandUseCase hardDeleteBrandUseCase) {
         this.getBrandsUseCase = getBrandsUseCase;
         this.getBrandUseCase = getBrandUseCase;
         this.createBrandUseCase = createBrandUseCase;
         this.updateBrandUseCase = updateBrandUseCase;
         this.deleteBrandUseCase = deleteBrandUseCase;
+        this.restoreBrandUseCase = restoreBrandUseCase;
+        this.hardDeleteBrandUseCase = hardDeleteBrandUseCase;
     }
 
     @GetMapping
@@ -76,5 +82,17 @@ public class BrandController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         deleteBrandUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Brand deleted successfully"));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Long id) {
+        restoreBrandUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Brand restored successfully"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<ApiResponse<Void>> hardDelete(@PathVariable Long id) {
+        hardDeleteBrandUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Brand permanently deleted"));
     }
 }

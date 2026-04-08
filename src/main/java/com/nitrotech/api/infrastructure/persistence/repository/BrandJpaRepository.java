@@ -11,11 +11,17 @@ import java.util.Optional;
 public interface BrandJpaRepository extends JpaRepository<BrandEntity, Long>,
         JpaSpecificationExecutor<BrandEntity> {
 
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, Long id);
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN TRUE ELSE FALSE END FROM BrandEntity b WHERE b.slug = :slug AND b.deletedAt IS NULL")
+    boolean existsActiveBySlug(@Param("slug") String slug);
+
+    @Query("SELECT CASE WHEN COUNT(b) > 0 THEN TRUE ELSE FALSE END FROM BrandEntity b WHERE b.slug = :slug AND b.deletedAt IS NULL AND b.id != :excludeId")
+    boolean existsActiveBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
 
     @Query("SELECT b FROM BrandEntity b WHERE b.id = :id AND b.deletedAt IS NULL")
     Optional<BrandEntity> findActiveById(@Param("id") Long id);
+
+    @Query("SELECT b FROM BrandEntity b WHERE b.id = :id AND b.deletedAt IS NOT NULL")
+    Optional<BrandEntity> findDeletedById(@Param("id") Long id);
 
     @Query("SELECT CASE WHEN COUNT(b) > 0 THEN TRUE ELSE FALSE END FROM BrandEntity b WHERE b.id = :id AND b.deletedAt IS NULL")
     boolean existsActiveById(@Param("id") Long id);

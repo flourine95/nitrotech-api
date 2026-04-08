@@ -23,4 +23,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.categoryId = :categoryId")
     boolean existsAnyByCategoryId(@Param("categoryId") Long categoryId);
+
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.brandId = :brandId")
+    boolean existsAnyByBrandId(@Param("brandId") Long brandId);
 }
