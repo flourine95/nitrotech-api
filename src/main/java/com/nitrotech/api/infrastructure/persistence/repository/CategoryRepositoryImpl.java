@@ -65,6 +65,11 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    public Optional<CategoryData> findDeletedById(Long id) {
+        return jpa.findDeletedById(id).map(e -> toData(e, null, List.of()));
+    }
+
+    @Override
     public Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable) {
         return jpa.findAll(CategorySpecification.from(filter), pageable)
                 .map(e -> toData(e, null, List.of()));
@@ -89,13 +94,28 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    public boolean hasActiveChildren(Long id) {
+        return jpa.existsActiveChildrenByParentId(id);
+    }
+
+    @Override
+    public boolean hasAnyChildren(Long id) {
+        return jpa.existsAnyChildrenByParentId(id);
+    }
+
+    @Override
+    public boolean existsActiveBySlugAndIdNot(String slug, Long excludeId) {
+        return jpa.existsActiveBySlugAndIdNot(slug, excludeId);
+    }
+
+    @Override
     public boolean existsBySlug(String slug) {
-        return jpa.existsBySlug(slug);
+        return jpa.existsActiveBySlug(slug);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, Long id) {
-        return jpa.existsBySlugAndIdNot(slug, id);
+        return jpa.existsActiveBySlugAndIdNot(slug, id);
     }
 
     @Override
@@ -116,6 +136,19 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             e.setDeletedAt(LocalDateTime.now());
             jpa.save(e);
         });
+    }
+
+    @Override
+    public void restore(Long id) {
+        jpa.findDeletedById(id).ifPresent(e -> {
+            e.setDeletedAt(null);
+            jpa.save(e);
+        });
+    }
+
+    @Override
+    public void hardDelete(Long id) {
+        jpa.deleteById(id);
     }
 
     private CategoryData buildTree(CategoryEntity entity, Map<Long, List<CategoryEntity>> byParent) {

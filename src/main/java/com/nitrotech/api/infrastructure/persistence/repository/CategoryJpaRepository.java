@@ -12,9 +12,8 @@ import java.util.Optional;
 public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Long>,
         JpaSpecificationExecutor<CategoryEntity> {
 
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, Long id);
-
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.slug = :slug AND c.deletedAt IS NULL")
+    boolean existsActiveBySlug(@Param("slug") String slug);
     @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) AND (:parentId IS NULL OR c.parentId = :parentId) ORDER BY c.name")
     List<CategoryEntity> findAllActive(@Param("active") Boolean active, @Param("parentId") Long parentId);
 
@@ -26,4 +25,16 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")
     boolean existsActiveById(@Param("id") Long id);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.parentId = :parentId AND c.deletedAt IS NULL")
+    boolean existsActiveChildrenByParentId(@Param("parentId") Long parentId);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.parentId = :parentId")
+    boolean existsAnyChildrenByParentId(@Param("parentId") Long parentId);
+
+    @Query("SELECT c FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NOT NULL")
+    Optional<CategoryEntity> findDeletedById(@Param("id") Long id);
+
+    @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.slug = :slug AND c.deletedAt IS NULL AND c.id != :excludeId")
+    boolean existsActiveBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
 }

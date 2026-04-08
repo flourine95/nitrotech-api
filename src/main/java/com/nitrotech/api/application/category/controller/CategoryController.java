@@ -28,17 +28,23 @@ public class CategoryController {
     private final CreateCategoryUseCase createCategoryUseCase;
     private final UpdateCategoryUseCase updateCategoryUseCase;
     private final DeleteCategoryUseCase deleteCategoryUseCase;
+    private final RestoreCategoryUseCase restoreCategoryUseCase;
+    private final HardDeleteCategoryUseCase hardDeleteCategoryUseCase;
 
     public CategoryController(GetCategoriesUseCase getCategoriesUseCase,
                                GetCategoryUseCase getCategoryUseCase,
                                CreateCategoryUseCase createCategoryUseCase,
                                UpdateCategoryUseCase updateCategoryUseCase,
-                               DeleteCategoryUseCase deleteCategoryUseCase) {
+                               DeleteCategoryUseCase deleteCategoryUseCase,
+                               RestoreCategoryUseCase restoreCategoryUseCase,
+                               HardDeleteCategoryUseCase hardDeleteCategoryUseCase) {
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.getCategoryUseCase = getCategoryUseCase;
         this.createCategoryUseCase = createCategoryUseCase;
         this.updateCategoryUseCase = updateCategoryUseCase;
         this.deleteCategoryUseCase = deleteCategoryUseCase;
+        this.restoreCategoryUseCase = restoreCategoryUseCase;
+        this.hardDeleteCategoryUseCase = hardDeleteCategoryUseCase;
     }
 
     @GetMapping
@@ -89,5 +95,17 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         deleteCategoryUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Category deleted successfully"));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Long id) {
+        restoreCategoryUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Category restored successfully"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<ApiResponse<Void>> hardDelete(@PathVariable Long id) {
+        hardDeleteCategoryUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Category permanently deleted"));
     }
 }
