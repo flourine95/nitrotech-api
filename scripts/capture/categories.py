@@ -134,4 +134,73 @@ def capture(s: requests.Session):
                "Block nếu có products liên kết"]
     ))
 
+    # move — gộp cả reorder và move cross-parent
+    # Tạo 3 categories để test
+    s1 = call(s, "post", "/api/categories", {"name": "Sort A", "slug": f"{slug}-s1", "active": True})
+    s2 = call(s, "post", "/api/categories", {"name": "Sort B", "slug": f"{slug}-s2", "active": True})
+    s3 = call(s, "post", "/api/categories", {"name": "Sort C", "slug": f"{slug}-s3", "active": True})
+    s1_id = s1["body"].get("data", {}).get("id")
+    s2_id = s2["body"].get("data", {}).get("id")
+    s3_id = s3["body"].get("data", {}).get("id")
+
+    # Reorder trong cùng root (fromParentId = toParentId = null)
+    reorder_same = call(s, "patch", "/api/categories/move", {
+        "movedId": s3_id, "fromParentId": None, "toParentId": None,
+        "targetOrderedIds": [s3_id, s1_id, s2_id]
+    }) if s1_id and s2_id and s3_id else {"skipped": True}
+
+    # Move s2 vào s1 (cross-parent)
+    move_cross = call(s, "patch", "/api/categories/move", {
+        "movedId": s2_id, "fromParentId": None, "toParentId": s1_id,
+        "sourceOrderedIds": [s3_id, s1_id],
+        "targetOrderedIds": [s2_id]
+    }) if s1_id and s2_id and s3_id else {"skipped": True}
+
+    # Move s2 về root
+    move_to_root = call(s, "patch", "/api/categories/move", {
+        "movedId": s2_id, "fromParentId": s1_id, "toParentId": None,
+        "sourceOrderedIds": [],
+        "targetOrderedIds": [s3_id, s1_id, s2_id]
+    }) if s1_id and s2_id else {"skipped": True}
+
+    # Circular ref
+    move_circular = call(s, "patch", "/api/categories/move", {
+        "movedId": s1_id, "fromParentId": None, "toParentId": s2_id,
+        "targetOrderedIds": [s1_id]
+    }) if s1_id and s2_id else {"skipped": True}
+
+    save("categories", "move", build_doc(
+        endpoint="PATCH /api/categories/move",
+        description="Di chuyển và/hoặc sắp xếp lại categories. Xử lý cả reorder trong cùng parent lẫn move cross-parent trong 1 request duy nhất.",
+        request={
+            "body": {
+                "movedId": "number (required) — id của category được kéo",
+                "fromParentId": "number | null — parent cũ (null = từ root)",
+                "toParentId": "number | null — parent mới (null = move lên root)",
+                "targetOrderedIds": "number[] (required) — thứ tự mới của tất cả siblings ở parent mới",
+                "sourceOrderedIds": "number[] (optional) — thứ tự mới của siblings còn lại ở parent cũ (chỉ cần khi cross-parent)"
+            }
+        },
+        responses={
+            "200_reorder_same_parent": reorder_same,
+            "200_move_cross_parent": move_cross,
+            "200_move_to_root": move_to_root,
+            "409_circular_ref": move_circular,
+            "404_not_found": call(s, "patch", "/api/categories/move", {
+                "movedId": 999999, "toParentId": None, "targetOrderedIds": [999999]
+            }),
+        },
+        notes=[
+            "Reorder trong cùng parent: fromParentId = toParentId, không cần sourceOrderedIds",
+            "Move cross-parent: cần sourceOrderedIds để reindex siblings ở parent cũ",
+            "targetOrderedIds phải chứa toàn bộ siblings của parent mới sau khi drop",
+            "Frontend nên dùng optimistic update: đổi state local khi drag, gọi API khi drop"
+        ]
+    ))
+
+    # cleanup
+    for sid in [s1_id, s2_id, s3_id]:
+        if sid:
+            call(s, "delete", f"/api/categories/{sid}")
+
     save_index("categories")

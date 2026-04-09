@@ -20,6 +20,34 @@
         "data": {
           "content": [
             {
+              "id": 11,
+              "name": "sua hu",
+              "slug": "sua-hu",
+              "description": "day la sua hu, nam trong thu muc goc",
+              "image": null,
+              "parentId": 10,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "createdAt": "2026-04-09T12:23:39.990272",
+              "updatedAt": "2026-04-09T12:23:39.990272"
+            },
+            {
+              "id": 10,
+              "name": "sữa tươi",
+              "slug": "sa-ti",
+              "description": "day la danh muc goc",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 4,
+              "children": [],
+              "createdAt": "2026-04-09T12:23:08.912303",
+              "updatedAt": "2026-04-09T12:23:08.912303"
+            },
+            {
               "id": 5,
               "name": "Phones",
               "slug": "phones",
@@ -28,6 +56,7 @@
               "parentId": 4,
               "parentName": null,
               "active": true,
+              "sortOrder": 0,
               "children": [],
               "createdAt": "2026-04-08T16:06:45.673728",
               "updatedAt": "2026-04-08T16:06:45.673728"
@@ -41,6 +70,7 @@
               "parentId": null,
               "parentName": null,
               "active": true,
+              "sortOrder": 1,
               "children": [],
               "createdAt": "2026-04-08T16:05:44.129302",
               "updatedAt": "2026-04-08T16:05:44.129302"
@@ -54,6 +84,7 @@
               "parentId": 2,
               "parentName": null,
               "active": true,
+              "sortOrder": 0,
               "children": [],
               "createdAt": "2026-04-02T19:23:42.189178",
               "updatedAt": "2026-04-02T19:23:42.189178"
@@ -63,7 +94,7 @@
           "first": true,
           "last": true,
           "number": 0,
-          "numberOfElements": 3,
+          "numberOfElements": 5,
           "pageable": {
             "offset": 0,
             "pageNumber": 0,
@@ -82,7 +113,7 @@
             "sorted": true,
             "unsorted": false
           },
-          "totalElements": 3,
+          "totalElements": 5,
           "totalPages": 1
         }
       }
@@ -100,6 +131,7 @@
             "parentId": null,
             "parentName": null,
             "active": true,
+            "sortOrder": 1,
             "children": [
               {
                 "id": 5,
@@ -110,6 +142,7 @@
                 "parentId": 4,
                 "parentName": null,
                 "active": true,
+                "sortOrder": 0,
                 "children": [],
                 "createdAt": "2026-04-08T16:06:45.673728",
                 "updatedAt": "2026-04-08T16:06:45.673728"
@@ -117,6 +150,35 @@
             ],
             "createdAt": "2026-04-08T16:05:44.129302",
             "updatedAt": "2026-04-08T16:05:44.129302"
+          },
+          {
+            "id": 10,
+            "name": "sữa tươi",
+            "slug": "sa-ti",
+            "description": "day la danh muc goc",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 4,
+            "children": [
+              {
+                "id": 11,
+                "name": "sua hu",
+                "slug": "sua-hu",
+                "description": "day la sua hu, nam trong thu muc goc",
+                "image": null,
+                "parentId": 10,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T12:23:39.990272",
+                "updatedAt": "2026-04-09T12:23:39.990272"
+              }
+            ],
+            "createdAt": "2026-04-09T12:23:08.912303",
+            "updatedAt": "2026-04-09T12:23:08.912303"
           }
         ]
       }

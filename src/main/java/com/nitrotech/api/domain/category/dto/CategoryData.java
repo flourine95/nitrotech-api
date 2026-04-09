@@ -12,6 +12,7 @@ public record CategoryData(
         Long parentId,
         String parentName,
         boolean active,
+        int sortOrder,
         List<CategoryData> children,
         LocalDateTime createdAt,
         LocalDateTime updatedAt

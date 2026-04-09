@@ -3,6 +3,8 @@ package com.nitrotech.api.infrastructure.persistence.repository;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
@@ -151,6 +153,46 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         jpa.deleteById(id);
     }
 
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
+        LocalDateTime now = LocalDateTime.now();
+        List<CategoryData> updated = new java.util.ArrayList<>();
+
+        // 1. Update parentId cho node được move
+        CategoryEntity moved = jpa.findActiveById(command.movedId())
+                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+        moved.setParentId(command.toParentId());
+        moved.setUpdatedAt(now);
+        jpa.save(moved);
+
+        // 2. Reindex target siblings (parent mới)
+        for (int i = 0; i < command.targetOrderedIds().size(); i++) {
+            Long siblingId = command.targetOrderedIds().get(i);
+            jpa.findById(siblingId).ifPresent(e -> {
+                e.setSortOrder(command.targetOrderedIds().indexOf(siblingId));
+                e.setUpdatedAt(now);
+                updated.add(toData(jpa.save(e), null, List.of()));
+            });
+        }
+
+        // 3. Reindex source siblings (parent cũ) nếu cross-parent move
+        boolean isCrossParent = !java.util.Objects.equals(command.fromParentId(), command.toParentId());
+        if (isCrossParent && command.sourceOrderedIds() != null) {
+            for (int i = 0; i < command.sourceOrderedIds().size(); i++) {
+                final int sortOrder = i;
+                Long siblingId = command.sourceOrderedIds().get(i);
+                jpa.findById(siblingId).ifPresent(e -> {
+                    e.setSortOrder(sortOrder);
+                    e.setUpdatedAt(now);
+                    updated.add(toData(jpa.save(e), null, List.of()));
+                });
+            }
+        }
+
+        return new MoveCategoryResult(updated);
+    }
+
     private CategoryData buildTree(CategoryEntity entity, Map<Long, List<CategoryEntity>> byParent) {
         List<CategoryData> children = byParent.getOrDefault(entity.getId(), List.of())
                 .stream()
@@ -162,7 +204,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children) {
         return new CategoryData(
                 e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
-                e.getParentId(), parentName, e.isActive(), children,
+                e.getParentId(), parentName, e.isActive(), e.getSortOrder(), children,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }

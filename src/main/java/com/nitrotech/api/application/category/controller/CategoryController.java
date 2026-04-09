@@ -1,10 +1,13 @@
 package com.nitrotech.api.application.category.controller;
 
 import com.nitrotech.api.application.category.request.CreateCategoryRequest;
+import com.nitrotech.api.application.category.request.MoveCategoryRequest;
 import com.nitrotech.api.application.category.request.UpdateCategoryRequest;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
@@ -30,6 +33,7 @@ public class CategoryController {
     private final DeleteCategoryUseCase deleteCategoryUseCase;
     private final RestoreCategoryUseCase restoreCategoryUseCase;
     private final HardDeleteCategoryUseCase hardDeleteCategoryUseCase;
+    private final MoveCategoryUseCase moveCategoryUseCase;
 
     public CategoryController(GetCategoriesUseCase getCategoriesUseCase,
                                GetCategoryUseCase getCategoryUseCase,
@@ -37,7 +41,8 @@ public class CategoryController {
                                UpdateCategoryUseCase updateCategoryUseCase,
                                DeleteCategoryUseCase deleteCategoryUseCase,
                                RestoreCategoryUseCase restoreCategoryUseCase,
-                               HardDeleteCategoryUseCase hardDeleteCategoryUseCase) {
+                               HardDeleteCategoryUseCase hardDeleteCategoryUseCase,
+                               MoveCategoryUseCase moveCategoryUseCase) {
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.getCategoryUseCase = getCategoryUseCase;
         this.createCategoryUseCase = createCategoryUseCase;
@@ -45,6 +50,7 @@ public class CategoryController {
         this.deleteCategoryUseCase = deleteCategoryUseCase;
         this.restoreCategoryUseCase = restoreCategoryUseCase;
         this.hardDeleteCategoryUseCase = hardDeleteCategoryUseCase;
+        this.moveCategoryUseCase = moveCategoryUseCase;
     }
 
     @GetMapping
@@ -107,5 +113,13 @@ public class CategoryController {
     public ResponseEntity<ApiResponse<Void>> hardDelete(@PathVariable Long id) {
         hardDeleteCategoryUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Category permanently deleted"));
+    }
+
+    @PatchMapping("/move")
+    public ResponseEntity<ApiResponse<MoveCategoryResult>> move(
+            @Valid @RequestBody MoveCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(moveCategoryUseCase.execute(
+                new MoveCategoryCommand(request.movedId(), request.fromParentId(),
+                        request.toParentId(), request.sourceOrderedIds(), request.targetOrderedIds()))));
     }
 }

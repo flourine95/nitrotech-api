@@ -17,7 +17,7 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) AND (:parentId IS NULL OR c.parentId = :parentId) ORDER BY c.name")
     List<CategoryEntity> findAllActive(@Param("active") Boolean active, @Param("parentId") Long parentId);
 
-    @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) ORDER BY c.parentId NULLS FIRST, c.name")
+    @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) ORDER BY c.parentId NULLS FIRST, c.sortOrder ASC, c.name ASC")
     List<CategoryEntity> findAllForTree(@Param("active") Boolean active);
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")

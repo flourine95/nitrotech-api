@@ -3,6 +3,8 @@ package com.nitrotech.api.domain.category.repository;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
+import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -27,4 +29,5 @@ public interface CategoryRepository {
     void softDelete(Long id);
     void restore(Long id);
     void hardDelete(Long id);
+    MoveCategoryResult moveCategory(MoveCategoryCommand command);
 }

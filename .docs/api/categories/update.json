@@ -19,17 +19,18 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 8,
+          "id": 21,
           "name": "Updated Category",
-          "slug": "test-cat-1775710498",
+          "slug": "test-cat-1775737114",
           "description": "Test",
           "image": null,
           "parentId": null,
           "parentName": null,
           "active": true,
+          "sortOrder": 0,
           "children": [],
-          "createdAt": "2026-04-09T11:54:58.872719",
-          "updatedAt": "2026-04-09T11:54:59.0413601"
+          "createdAt": "2026-04-09T19:18:34.823028",
+          "updatedAt": "2026-04-09T19:18:34.956053"
         }
       }
     },

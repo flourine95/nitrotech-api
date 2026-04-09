@@ -17,17 +17,18 @@
         "status": 201,
         "body": {
           "data": {
-            "id": 8,
+            "id": 21,
             "name": "Test Category",
-            "slug": "test-cat-1775710498",
+            "slug": "test-cat-1775737114",
             "description": "Test",
             "image": null,
             "parentId": null,
             "parentName": null,
             "active": true,
+            "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T11:54:58.8727193",
-            "updatedAt": "2026-04-09T11:54:58.8727193"
+            "createdAt": "2026-04-09T19:18:34.8230283",
+            "updatedAt": "2026-04-09T19:18:34.8230283"
           },
           "message": "Created successfully"
         }
@@ -99,17 +100,18 @@
         "status": 200,
         "body": {
           "data": {
-            "id": 8,
+            "id": 21,
             "name": "Test Category",
-            "slug": "test-cat-1775710498",
+            "slug": "test-cat-1775737114",
             "description": "Test",
             "image": null,
             "parentId": null,
             "parentName": null,
             "active": true,
+            "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T11:54:58.872719",
-            "updatedAt": "2026-04-09T11:54:58.872719"
+            "createdAt": "2026-04-09T19:18:34.823028",
+            "updatedAt": "2026-04-09T19:18:34.823028"
           }
         }
       },
@@ -177,6 +179,34 @@
           "data": {
             "content": [
               {
+                "id": 11,
+                "name": "sua hu",
+                "slug": "sua-hu",
+                "description": "day la sua hu, nam trong thu muc goc",
+                "image": null,
+                "parentId": 10,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T12:23:39.990272",
+                "updatedAt": "2026-04-09T12:23:39.990272"
+              },
+              {
+                "id": 10,
+                "name": "sữa tươi",
+                "slug": "sa-ti",
+                "description": "day la danh muc goc",
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 4,
+                "children": [],
+                "createdAt": "2026-04-09T12:23:08.912303",
+                "updatedAt": "2026-04-09T12:23:08.912303"
+              },
+              {
                 "id": 5,
                 "name": "Phones",
                 "slug": "phones",
@@ -185,6 +215,7 @@
                 "parentId": 4,
                 "parentName": null,
                 "active": true,
+                "sortOrder": 0,
                 "children": [],
                 "createdAt": "2026-04-08T16:06:45.673728",
                 "updatedAt": "2026-04-08T16:06:45.673728"
@@ -198,6 +229,7 @@
                 "parentId": null,
                 "parentName": null,
                 "active": true,
+                "sortOrder": 1,
                 "children": [],
                 "createdAt": "2026-04-08T16:05:44.129302",
                 "updatedAt": "2026-04-08T16:05:44.129302"
@@ -211,6 +243,7 @@
                 "parentId": 2,
                 "parentName": null,
                 "active": true,
+                "sortOrder": 0,
                 "children": [],
                 "createdAt": "2026-04-02T19:23:42.189178",
                 "updatedAt": "2026-04-02T19:23:42.189178"
@@ -220,7 +253,7 @@
             "first": true,
             "last": true,
             "number": 0,
-            "numberOfElements": 3,
+            "numberOfElements": 5,
             "pageable": {
               "offset": 0,
               "pageNumber": 0,
@@ -239,7 +272,7 @@
               "sorted": true,
               "unsorted": false
             },
-            "totalElements": 3,
+            "totalElements": 5,
             "totalPages": 1
           }
         }
@@ -257,6 +290,7 @@
               "parentId": null,
               "parentName": null,
               "active": true,
+              "sortOrder": 1,
               "children": [
                 {
                   "id": 5,
@@ -267,6 +301,7 @@
                   "parentId": 4,
                   "parentName": null,
                   "active": true,
+                  "sortOrder": 0,
                   "children": [],
                   "createdAt": "2026-04-08T16:06:45.673728",
                   "updatedAt": "2026-04-08T16:06:45.673728"
@@ -274,11 +309,245 @@
               ],
               "createdAt": "2026-04-08T16:05:44.129302",
               "updatedAt": "2026-04-08T16:05:44.129302"
+            },
+            {
+              "id": 10,
+              "name": "sữa tươi",
+              "slug": "sa-ti",
+              "description": "day la danh muc goc",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 4,
+              "children": [
+                {
+                  "id": 11,
+                  "name": "sua hu",
+                  "slug": "sua-hu",
+                  "description": "day la sua hu, nam trong thu muc goc",
+                  "image": null,
+                  "parentId": 10,
+                  "parentName": null,
+                  "active": true,
+                  "sortOrder": 0,
+                  "children": [],
+                  "createdAt": "2026-04-09T12:23:39.990272",
+                  "updatedAt": "2026-04-09T12:23:39.990272"
+                }
+              ],
+              "createdAt": "2026-04-09T12:23:08.912303",
+              "updatedAt": "2026-04-09T12:23:08.912303"
             }
           ]
         }
       }
     }
+  },
+  "move": {
+    "endpoint": "PATCH /api/categories/move",
+    "description": "Di chuyển và/hoặc sắp xếp lại categories. Xử lý cả reorder trong cùng parent lẫn move cross-parent trong 1 request duy nhất.",
+    "request": {
+      "body": {
+        "movedId": "number (required) — id của category được kéo",
+        "fromParentId": "number | null — parent cũ (null = từ root)",
+        "toParentId": "number | null — parent mới (null = move lên root)",
+        "targetOrderedIds": "number[] (required) — thứ tự mới của tất cả siblings ở parent mới",
+        "sourceOrderedIds": "number[] (optional) — thứ tự mới của siblings còn lại ở parent cũ (chỉ cần khi cross-parent)"
+      }
+    },
+    "responses": {
+      "200_reorder_same_parent": {
+        "status": 200,
+        "body": {
+          "data": {
+            "updated": [
+              {
+                "id": 25,
+                "name": "Sort C",
+                "slug": "test-cat-1775737114-s3",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.298502",
+                "updatedAt": "2026-04-09T19:18:35.3222572"
+              },
+              {
+                "id": 23,
+                "name": "Sort A",
+                "slug": "test-cat-1775737114-s1",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 1,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.246242",
+                "updatedAt": "2026-04-09T19:18:35.3222572"
+              },
+              {
+                "id": 24,
+                "name": "Sort B",
+                "slug": "test-cat-1775737114-s2",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 2,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.27389",
+                "updatedAt": "2026-04-09T19:18:35.3222572"
+              }
+            ]
+          }
+        }
+      },
+      "200_move_cross_parent": {
+        "status": 200,
+        "body": {
+          "data": {
+            "updated": [
+              {
+                "id": 24,
+                "name": "Sort B",
+                "slug": "test-cat-1775737114-s2",
+                "description": null,
+                "image": null,
+                "parentId": 23,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.27389",
+                "updatedAt": "2026-04-09T19:18:35.3660082"
+              },
+              {
+                "id": 25,
+                "name": "Sort C",
+                "slug": "test-cat-1775737114-s3",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.298502",
+                "updatedAt": "2026-04-09T19:18:35.3660082"
+              },
+              {
+                "id": 23,
+                "name": "Sort A",
+                "slug": "test-cat-1775737114-s1",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 1,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.246242",
+                "updatedAt": "2026-04-09T19:18:35.3660082"
+              }
+            ]
+          }
+        }
+      },
+      "200_move_to_root": {
+        "status": 200,
+        "body": {
+          "data": {
+            "updated": [
+              {
+                "id": 25,
+                "name": "Sort C",
+                "slug": "test-cat-1775737114-s3",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.298502",
+                "updatedAt": "2026-04-09T19:18:35.4090453"
+              },
+              {
+                "id": 23,
+                "name": "Sort A",
+                "slug": "test-cat-1775737114-s1",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 1,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.246242",
+                "updatedAt": "2026-04-09T19:18:35.4090453"
+              },
+              {
+                "id": 24,
+                "name": "Sort B",
+                "slug": "test-cat-1775737114-s2",
+                "description": null,
+                "image": null,
+                "parentId": null,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 2,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.27389",
+                "updatedAt": "2026-04-09T19:18:35.4090453"
+              }
+            ]
+          }
+        }
+      },
+      "409_circular_ref": {
+        "status": 200,
+        "body": {
+          "data": {
+            "updated": [
+              {
+                "id": 23,
+                "name": "Sort A",
+                "slug": "test-cat-1775737114-s1",
+                "description": null,
+                "image": null,
+                "parentId": 24,
+                "parentName": null,
+                "active": true,
+                "sortOrder": 0,
+                "children": [],
+                "createdAt": "2026-04-09T19:18:35.246242",
+                "updatedAt": "2026-04-09T19:18:35.4389248"
+              }
+            ]
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Category not found"
+        }
+      }
+    },
+    "notes": [
+      "Reorder trong cùng parent: fromParentId = toParentId, không cần sourceOrderedIds",
+      "Move cross-parent: cần sourceOrderedIds để reindex siblings ở parent cũ",
+      "targetOrderedIds phải chứa toàn bộ siblings của parent mới sau khi drop",
+      "Frontend nên dùng optimistic update: đổi state local khi drag, gọi API khi drop"
+    ]
   },
   "restore": {
     "endpoint": "PATCH /api/categories/{id}/restore",
@@ -326,17 +595,18 @@
         "status": 200,
         "body": {
           "data": {
-            "id": 8,
+            "id": 21,
             "name": "Updated Category",
-            "slug": "test-cat-1775710498",
+            "slug": "test-cat-1775737114",
             "description": "Test",
             "image": null,
             "parentId": null,
             "parentName": null,
             "active": true,
+            "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T11:54:58.872719",
-            "updatedAt": "2026-04-09T11:54:59.0413601"
+            "createdAt": "2026-04-09T19:18:34.823028",
+            "updatedAt": "2026-04-09T19:18:34.956053"
           }
         }
       },
