@@ -1,0 +1,29 @@
+{
+  "endpoint": "DELETE /api/brands/{id}/permanent",
+  "description": "Xóa vĩnh viễn brand. Chỉ cho phép với brand đã soft deleted. Block nếu có products.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Brand permanently deleted"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "BRAND_NOT_FOUND",
+        "message": "Deleted brand not found. Soft delete first before permanent delete."
+      }
+    }
+  },
+  "notes": [
+    "Phải soft delete trước",
+    "Block nếu brand có products liên kết"
+  ]
+}

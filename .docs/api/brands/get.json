@@ -1,0 +1,34 @@
+{
+  "endpoint": "GET /api/brands/{id}",
+  "description": "Lấy chi tiết brand theo id.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 15,
+          "name": "Test Brand",
+          "slug": "test-brand-1775710498",
+          "logo": "https://example.com/logo.png",
+          "description": "A test brand",
+          "active": true,
+          "createdAt": "2026-04-09T11:54:58.506284",
+          "updatedAt": "2026-04-09T11:54:58.506284"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "BRAND_NOT_FOUND",
+        "message": "Brand not found"
+      }
+    }
+  }
+}

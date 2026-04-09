@@ -1,0 +1,441 @@
+{
+  "create": {
+    "endpoint": "POST /api/brands",
+    "description": "Tạo brand mới. Slug phải unique trong active records.",
+    "request": {
+      "body": {
+        "name": "string (required)",
+        "slug": "string (required, unique)",
+        "logo": "string (optional, url)",
+        "description": "string (optional)",
+        "active": "boolean (required)"
+      }
+    },
+    "responses": {
+      "201_created": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 15,
+            "name": "Test Brand",
+            "slug": "test-brand-1775710498",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": true,
+            "createdAt": "2026-04-09T11:54:58.506284",
+            "updatedAt": "2026-04-09T11:54:58.506284"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_slug_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "BRAND_SLUG_EXISTS",
+          "message": "Slug already exists"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "name": "Name is required",
+            "slug": "Slug is required"
+          }
+        }
+      }
+    }
+  },
+  "delete": {
+    "endpoint": "DELETE /api/brands/{id}",
+    "description": "Soft delete brand. Brand vẫn còn trong DB, có thể restore.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Brand deleted successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      }
+    }
+  },
+  "get": {
+    "endpoint": "GET /api/brands/{id}",
+    "description": "Lấy chi tiết brand theo id.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 15,
+            "name": "Test Brand",
+            "slug": "test-brand-1775710498",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": true,
+            "createdAt": "2026-04-09T11:54:58.506284",
+            "updatedAt": "2026-04-09T11:54:58.506284"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      }
+    }
+  },
+  "hard-delete": {
+    "endpoint": "DELETE /api/brands/{id}/permanent",
+    "description": "Xóa vĩnh viễn brand. Chỉ cho phép với brand đã soft deleted. Block nếu có products.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Brand permanently deleted"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Deleted brand not found. Soft delete first before permanent delete."
+        }
+      }
+    },
+    "notes": [
+      "Phải soft delete trước",
+      "Block nếu brand có products liên kết"
+    ]
+  },
+  "list": {
+    "endpoint": "GET /api/brands",
+    "description": "Danh sách brands với filter, search, sort, pagination.",
+    "request": {
+      "params": {
+        "search": "string (optional)",
+        "active": "boolean (optional) — true/false/bỏ qua=tất cả",
+        "deleted": "boolean (optional) — true=đã xóa, false=chưa xóa, bỏ qua=tất cả",
+        "page": "number (default: 0)",
+        "size": "number (default: 20)",
+        "sort": "field,direction — vd: name,asc | createdAt,desc"
+      }
+    },
+    "responses": {
+      "200_default": {
+        "status": 200,
+        "body": {
+          "data": {
+            "content": [
+              {
+                "id": 13,
+                "name": "Nguyen Phi Long",
+                "slug": "nguyen-phi-long-3",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1766376450/avatars/user_v2_17.png",
+                "description": "12132",
+                "active": true,
+                "createdAt": "2026-04-07T20:21:37.559589",
+                "updatedAt": "2026-04-07T20:21:37.559589"
+              },
+              {
+                "id": 12,
+                "name": "Nguyen Phi Long",
+                "slug": "nguyen-phi-long-2",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "description": "asdasd",
+                "active": true,
+                "createdAt": "2026-04-07T20:20:55.175551",
+                "updatedAt": "2026-04-07T20:20:55.175551"
+              },
+              {
+                "id": 11,
+                "name": "concax gi day troi",
+                "slug": "concax-gi-day-troi",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "description": "qweqweqwe",
+                "active": true,
+                "createdAt": "2026-04-03T15:37:45.547368",
+                "updatedAt": "2026-04-07T20:02:54.117657"
+              },
+              {
+                "id": 10,
+                "name": "sữa tươi",
+                "slug": "sa-ti",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775204664/brands/wy5us6vtxrs2fetonxff.png",
+                "description": null,
+                "active": false,
+                "createdAt": "2026-04-03T15:24:29.150905",
+                "updatedAt": "2026-04-06T13:41:17.013576"
+              },
+              {
+                "id": 9,
+                "name": "Phi Long Nguyễn",
+                "slug": "phi-long-nguyn",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1765471453/avatars/user_102.png",
+                "description": null,
+                "active": true,
+                "createdAt": "2026-04-03T15:24:13.95746",
+                "updatedAt": "2026-04-03T15:24:13.95746"
+              },
+              {
+                "id": 8,
+                "name": "Nguyen Phi Long",
+                "slug": "day-la-san-pham-ckbox2",
+                "logo": null,
+                "description": null,
+                "active": true,
+                "createdAt": "2026-04-03T15:19:54.064729",
+                "updatedAt": "2026-04-03T15:19:54.064729"
+              },
+              {
+                "id": 7,
+                "name": "day la san pham ckbox",
+                "slug": "day-la-san-pham-ckbox",
+                "logo": null,
+                "description": null,
+                "active": true,
+                "createdAt": "2026-04-03T15:19:42.115609",
+                "updatedAt": "2026-04-03T15:19:42.115609"
+              },
+              {
+                "id": 6,
+                "name": "Phi Long Nguyễn",
+                "slug": "nguyen-phi-long2",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "description": "123",
+                "active": true,
+                "createdAt": "2026-04-03T11:45:03.653855",
+                "updatedAt": "2026-04-03T11:45:03.653855"
+              },
+              {
+                "id": 5,
+                "name": "Nguyen Phi Long",
+                "slug": "nguyen-phi-long1",
+                "logo": "https://pub-3f30f00028694b3193dc77ee73a0dbdd.r2.dev/brands/b4678961-d32b-4ee3-85b9-6cc1603c3ee9.png",
+                "description": "fádsda",
+                "active": true,
+                "createdAt": "2026-04-03T05:00:52.071517",
+                "updatedAt": "2026-04-03T05:00:52.071517"
+              },
+              {
+                "id": 4,
+                "name": "Phi Long Nguyễn",
+                "slug": "nguyen-phi-long",
+                "logo": "https://www.vecteezy.com/free-photos/image",
+                "description": "123",
+                "active": true,
+                "createdAt": "2026-04-02T20:33:20.212783",
+                "updatedAt": "2026-04-02T20:33:20.212783"
+              },
+              {
+                "id": 3,
+                "name": "apple",
+                "slug": "apple",
+                "logo": "https://www.youtube.com/watch?v=fkFXE_4XTuQ&list=RD_ti5UOIZGkQ&index=2",
+                "description": "asdasda",
+                "active": true,
+                "createdAt": "2026-04-02T19:34:12.752498",
+                "updatedAt": "2026-04-02T19:34:12.752498"
+              },
+              {
+                "id": 2,
+                "name": "Updated Brand",
+                "slug": "test-brand-1775132621",
+                "logo": "https://example.com/logo.png",
+                "description": "A test brand",
+                "active": false,
+                "createdAt": "2026-04-02T19:23:41.828657",
+                "updatedAt": "2026-04-02T19:23:42.021002"
+              },
+              {
+                "id": 1,
+                "name": "123",
+                "slug": "a",
+                "logo": "s",
+                "description": "a",
+                "active": true,
+                "createdAt": "2026-04-02T12:13:29.324747",
+                "updatedAt": "2026-04-02T12:13:29.324747"
+              }
+            ],
+            "empty": false,
+            "first": true,
+            "last": true,
+            "number": 0,
+            "numberOfElements": 13,
+            "pageable": {
+              "offset": 0,
+              "pageNumber": 0,
+              "pageSize": 20,
+              "paged": true,
+              "sort": {
+                "empty": false,
+                "sorted": true,
+                "unsorted": false
+              },
+              "unpaged": false
+            },
+            "size": 20,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "totalElements": 13,
+            "totalPages": 1
+          }
+        }
+      },
+      "200_filtered": {
+        "status": 200,
+        "body": {
+          "data": {
+            "content": [
+              {
+                "id": 12,
+                "name": "Nguyen Phi Long",
+                "slug": "nguyen-phi-long-2",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1775191512/brands/snawgavec6xtiarpgyda.png",
+                "description": "asdasd",
+                "active": true,
+                "createdAt": "2026-04-07T20:20:55.175551",
+                "updatedAt": "2026-04-07T20:20:55.175551"
+              },
+              {
+                "id": 13,
+                "name": "Nguyen Phi Long",
+                "slug": "nguyen-phi-long-3",
+                "logo": "https://res.cloudinary.com/dk3gud5kq/image/upload/v1766376450/avatars/user_v2_17.png",
+                "description": "12132",
+                "active": true,
+                "createdAt": "2026-04-07T20:21:37.559589",
+                "updatedAt": "2026-04-07T20:21:37.559589"
+              }
+            ],
+            "empty": false,
+            "first": true,
+            "last": true,
+            "number": 0,
+            "numberOfElements": 2,
+            "pageable": {
+              "offset": 0,
+              "pageNumber": 0,
+              "pageSize": 5,
+              "paged": true,
+              "sort": {
+                "empty": false,
+                "sorted": true,
+                "unsorted": false
+              },
+              "unpaged": false
+            },
+            "size": 5,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "totalElements": 2,
+            "totalPages": 1
+          }
+        }
+      }
+    }
+  },
+  "restore": {
+    "endpoint": "PATCH /api/brands/{id}/restore",
+    "description": "Restore brand đã soft delete. Trả 409 nếu slug đang bị dùng bởi brand khác.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Brand restored successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Deleted brand not found"
+        }
+      }
+    }
+  },
+  "update": {
+    "endpoint": "PUT /api/brands/{id}",
+    "description": "Cập nhật brand. Tất cả fields đều optional.",
+    "request": {
+      "path": {
+        "id": "number"
+      },
+      "body": {
+        "name": "string",
+        "slug": "string",
+        "logo": "string",
+        "description": "string",
+        "active": "boolean"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 15,
+            "name": "Updated Brand",
+            "slug": "test-brand-1775710498",
+            "logo": "https://example.com/logo.png",
+            "description": "A test brand",
+            "active": false,
+            "createdAt": "2026-04-09T11:54:58.506284",
+            "updatedAt": "2026-04-09T11:54:58.593302"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "BRAND_NOT_FOUND",
+          "message": "Brand not found"
+        }
+      }
+    }
+  }
+}

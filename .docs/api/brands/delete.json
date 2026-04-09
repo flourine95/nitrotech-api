@@ -1,0 +1,25 @@
+{
+  "endpoint": "DELETE /api/brands/{id}",
+  "description": "Soft delete brand. Brand vẫn còn trong DB, có thể restore.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Brand deleted successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "BRAND_NOT_FOUND",
+        "message": "Brand not found"
+      }
+    }
+  }
+}

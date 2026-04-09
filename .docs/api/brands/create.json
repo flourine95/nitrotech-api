@@ -1,0 +1,51 @@
+{
+  "endpoint": "POST /api/brands",
+  "description": "Tạo brand mới. Slug phải unique trong active records.",
+  "request": {
+    "body": {
+      "name": "string (required)",
+      "slug": "string (required, unique)",
+      "logo": "string (optional, url)",
+      "description": "string (optional)",
+      "active": "boolean (required)"
+    }
+  },
+  "responses": {
+    "201_created": {
+      "status": 201,
+      "body": {
+        "data": {
+          "id": 15,
+          "name": "Test Brand",
+          "slug": "test-brand-1775710498",
+          "logo": "https://example.com/logo.png",
+          "description": "A test brand",
+          "active": true,
+          "createdAt": "2026-04-09T11:54:58.506284",
+          "updatedAt": "2026-04-09T11:54:58.506284"
+        },
+        "message": "Created successfully"
+      }
+    },
+    "409_slug_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "BRAND_SLUG_EXISTS",
+        "message": "Slug already exists"
+      }
+    },
+    "422_validation": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "name": "Name is required",
+          "slug": "Slug is required"
+        }
+      }
+    }
+  }
+}

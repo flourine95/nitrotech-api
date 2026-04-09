@@ -1,0 +1,45 @@
+{
+  "endpoint": "PUT /api/categories/{id}",
+  "description": "Cập nhật category. Validate circular reference khi đổi parentId.",
+  "request": {
+    "path": {
+      "id": "number"
+    },
+    "body": {
+      "name": "string",
+      "slug": "string",
+      "description": "string",
+      "image": "string",
+      "parentId": "number",
+      "active": "boolean"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 8,
+          "name": "Updated Category",
+          "slug": "test-cat-1775710498",
+          "description": "Test",
+          "image": null,
+          "parentId": null,
+          "parentName": null,
+          "active": true,
+          "children": [],
+          "createdAt": "2026-04-09T11:54:58.872719",
+          "updatedAt": "2026-04-09T11:54:59.0413601"
+        }
+      }
+    },
+    "409_circular_ref": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "CATEGORY_CIRCULAR_REF",
+        "message": "Circular reference detected"
+      }
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "endpoint": "DELETE /api/categories/{id}",
+  "description": "Soft delete category. Block nếu còn active children.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "409_has_children": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "CATEGORY_HAS_CHILDREN",
+        "message": "Cannot delete category with active subcategories. Delete or move them first."
+      }
+    },
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Category deleted successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Category not found"
+      }
+    }
+  },
+  "notes": [
+    "Phải xóa hoặc move children trước khi xóa parent"
+  ]
+}

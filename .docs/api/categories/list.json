@@ -1,0 +1,125 @@
+{
+  "endpoint": "GET /api/categories",
+  "description": "Danh sách categories. Dùng tree=true để lấy dạng cây.",
+  "request": {
+    "params": {
+      "search": "string (optional)",
+      "active": "boolean (optional)",
+      "deleted": "boolean (optional)",
+      "parentId": "number (optional)",
+      "tree": "boolean (default: false) — trả dạng cây, bỏ qua pagination",
+      "page": "number (default: 0)",
+      "size": "number (default: 20)",
+      "sort": "field,direction"
+    }
+  },
+  "responses": {
+    "200_flat": {
+      "status": 200,
+      "body": {
+        "data": {
+          "content": [
+            {
+              "id": 5,
+              "name": "Phones",
+              "slug": "phones",
+              "description": null,
+              "image": null,
+              "parentId": 4,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-08T16:06:45.673728",
+              "updatedAt": "2026-04-08T16:06:45.673728"
+            },
+            {
+              "id": 4,
+              "name": "Electronics",
+              "slug": "electronics",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-08T16:05:44.129302",
+              "updatedAt": "2026-04-08T16:05:44.129302"
+            },
+            {
+              "id": 3,
+              "name": "Circular",
+              "slug": "circular-1775132622",
+              "description": null,
+              "image": null,
+              "parentId": 2,
+              "parentName": null,
+              "active": true,
+              "children": [],
+              "createdAt": "2026-04-02T19:23:42.189178",
+              "updatedAt": "2026-04-02T19:23:42.189178"
+            }
+          ],
+          "empty": false,
+          "first": true,
+          "last": true,
+          "number": 0,
+          "numberOfElements": 3,
+          "pageable": {
+            "offset": 0,
+            "pageNumber": 0,
+            "pageSize": 20,
+            "paged": true,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "unpaged": false
+          },
+          "size": 20,
+          "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+          },
+          "totalElements": 3,
+          "totalPages": 1
+        }
+      }
+    },
+    "200_tree": {
+      "status": 200,
+      "body": {
+        "data": [
+          {
+            "id": 4,
+            "name": "Electronics",
+            "slug": "electronics",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "children": [
+              {
+                "id": 5,
+                "name": "Phones",
+                "slug": "phones",
+                "description": null,
+                "image": null,
+                "parentId": 4,
+                "parentName": null,
+                "active": true,
+                "children": [],
+                "createdAt": "2026-04-08T16:06:45.673728",
+                "updatedAt": "2026-04-08T16:06:45.673728"
+              }
+            ],
+            "createdAt": "2026-04-08T16:05:44.129302",
+            "updatedAt": "2026-04-08T16:05:44.129302"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "endpoint": "PATCH /api/categories/{id}/restore",
+  "description": "Restore category đã soft delete. Trả 409 nếu slug conflict.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Category restored successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Deleted category not found"
+      }
+    }
+  }
+}
