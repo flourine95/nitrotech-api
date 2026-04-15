@@ -1,0 +1,15 @@
+{
+  "endpoint": "POST /api/auth/logout",
+  "description": "Đăng xuất. Xóa session khỏi Redis, clear cookie.",
+  "request": {
+    "cookie": "SESSION=<session-id> (tự động)"
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Logged out successfully"
+      }
+    }
+  }
+}

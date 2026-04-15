@@ -1,30 +1,30 @@
 package com.nitrotech.api.domain.auth.usecase;
 
-import com.nitrotech.api.domain.auth.repository.RefreshTokenRepository;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 
 @Service
 public class LogoutUseCase {
 
-    private final RefreshTokenRepository refreshTokenRepository;
-    private final AccessTokenRevoker accessTokenRevoker;
+    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
 
-    public LogoutUseCase(RefreshTokenRepository refreshTokenRepository, AccessTokenRevoker accessTokenRevoker) {
-        this.refreshTokenRepository = refreshTokenRepository;
-        this.accessTokenRevoker = accessTokenRevoker;
+    public LogoutUseCase(FindByIndexNameSessionRepository<? extends Session> sessionRepository) {
+        this.sessionRepository = sessionRepository;
     }
 
-    public void execute(String refreshToken, String accessToken) {
-        refreshTokenRepository.revoke(refreshToken);
-        if (accessToken != null) {
-            accessTokenRevoker.revoke(accessToken);
-        }
+    public void execute(HttpServletRequest request) {
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
     }
 
-    public void executeAll(Long userId, String accessToken) {
-        refreshTokenRepository.revokeAllByUserId(userId);
-        if (accessToken != null) {
-            accessTokenRevoker.revoke(accessToken);
-        }
+    public void executeAll(String email, HttpServletRequest request) {
+        sessionRepository.findByPrincipalName(email)
+                .values()
+                .forEach(s -> sessionRepository.deleteById(s.getId()));
+        HttpSession session = request.getSession(false);
+        if (session != null) session.invalidate();
     }
 }

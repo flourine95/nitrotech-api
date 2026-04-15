@@ -1,0 +1,32 @@
+{
+  "endpoint": "DELETE /api/categories/{id}/permanent",
+  "description": "Xóa vĩnh viễn. Chỉ cho phép với category đã soft deleted. Block nếu có products hoặc children.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "CATEGORY_HAS_CHILDREN",
+        "message": "Cannot permanently delete category with subcategories."
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Deleted category not found. Soft delete first before permanent delete."
+      }
+    }
+  },
+  "notes": [
+    "Phải soft delete trước",
+    "Block nếu còn children (kể cả deleted)",
+    "Block nếu có products liên kết"
+  ]
+}

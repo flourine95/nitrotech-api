@@ -1,0 +1,48 @@
+{
+  "endpoint": "POST /api/auth/login",
+  "description": "Đăng nhập. Server set SESSION cookie HttpOnly.",
+  "request": {
+    "body": {
+      "email": "string",
+      "password": "string"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "user": {
+            "id": 3,
+            "name": "clmm",
+            "email": "hackerisdead1032002@gmail.com"
+          }
+        }
+      }
+    },
+    "401_wrong_credentials": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "INVALID_CREDENTIALS",
+        "message": "Email or password is incorrect"
+      }
+    },
+    "422_validation": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "password": "Password is required",
+          "email": "Email must be valid"
+        }
+      }
+    }
+  },
+  "notes": [
+    "SESSION cookie tự động set — client không cần xử lý thêm",
+    "Tài khoản phải active (đã verify email)"
+  ]
+}

@@ -48,24 +48,24 @@ cp src/main/resources/application-dev.example.yaml src/main/resources/applicatio
 Chỉnh các giá trị cần thiết trong `application-dev.yaml`:
 
 ```yaml
-resend:
-  api-key: re_your_api_key    # Lấy tại resend.com
-  from: onboarding@resend.dev # Hoặc email@yourdomain.com sau khi verify domain
+spring:
+  mail:
+    username: your-mailtrap-username   # Lấy tại mailtrap.io → Sandboxes → SMTP Settings
+    password: your-mailtrap-password
 
-app:
-  frontend-url: http://localhost:3000  # URL frontend để gửi link email
-
-cors:
-  allowed-origins: http://localhost:3000  # Domain frontend được phép gọi API
+cloudinary:
+  cloud-name: your-cloud-name          # Lấy tại cloudinary.com/console
+  api-key: your-api-key
+  api-secret: your-api-secret
 ```
 
 | File | Commit | Mục đích |
 |------|--------|----------|
-| `application.yaml` | ✅ | Default chung, dùng biến môi trường |
+| `application.yaml` | ✅ | Config chung, dùng biến môi trường |
 | `application-dev.yaml` | ❌ | Local dev, chứa credentials |
-| `application-prod.yaml` | ❌ | Production, chứa credentials |
-| `application-test.yaml` | ✅ | CI/CD |
 | `application-dev.example.yaml` | ✅ | Template cho team |
+| `application-prod.yaml` | ❌ | Production, chứa credentials |
+| `application-test.yaml` | ✅ | CI/CD, dùng H2 in-memory |
 
 ### 4. Chạy ứng dụng
 
@@ -85,52 +85,17 @@ cors:
 | `DB_USERNAME` | ✅ | Database username |
 | `DB_PASSWORD` | ✅ | Database password |
 | `REDIS_URL` | ✅ | Redis URL (redis://host:6379) |
-| `JWT_SECRET` | ✅ | Secret key, tối thiểu 32 ký tự |
-| `RESEND_API_KEY` | ✅ | API key từ resend.com |
-| `RESEND_FROM` | ✅ | Email gửi đi (đã verify domain) |
+| `MAIL_HOST` | ✅ | SMTP host |
+| `MAIL_USERNAME` | ✅ | SMTP username |
+| `MAIL_PASSWORD` | ✅ | SMTP password |
+| `MAIL_FROM` | ✅ | Email gửi đi |
 | `FRONTEND_URL` | ✅ | URL frontend (dùng trong email link) |
 | `CORS_ALLOWED_ORIGINS` | ✅ | Domain frontend, phân cách bằng dấu phẩy |
-| `COOKIE_DOMAIN` | ❌ | Domain cho cookie (để trống nếu same-domain) |
-| `COOKIE_SAME_SITE` | ❌ | Lax (default) / Strict / None |
-| `JWT_ACCESS_EXPIRATION_MS` | ❌ | Access token TTL ms (default: 900000 = 15 phút) |
-
----
-
-## Authentication Flow
-
-API hỗ trợ 2 client type qua header `X-Client-Type`:
-
-**Web (default):**
-- Refresh token → httpOnly cookie (browser tự gửi, JS không đọc được)
-- Access token → response body, lưu trong memory (Zustand, không persist)
-- Fetch phải có `credentials: "include"`
-
-**Mobile:**
-- Refresh token → response body, lưu trong Keychain (iOS) / EncryptedSharedPreferences (Android)
-- Access token → response body
-
-```
-# Web
-POST /api/auth/login
-X-Client-Type: web
-→ Set-Cookie: refreshToken=...; HttpOnly
-→ body: { accessToken, tokenType, user }
-
-# Mobile
-POST /api/auth/login
-X-Client-Type: mobile
-→ body: { accessToken, refreshToken, tokenType, user }
-```
-
----
-
-## Build
-
-```bash
-./gradlew build -x test
-```
-
-JAR output: `build/libs/nitrotech-api-0.0.1-SNAPSHOT.jar`
+| `CLOUDINARY_CLOUD_NAME` | ✅ | Cloudinary cloud name |
+| `CLOUDINARY_API_KEY` | ✅ | Cloudinary API key |
+| `CLOUDINARY_API_SECRET` | ✅ | Cloudinary API secret |
+| `MAIL_PORT` | ❌ | SMTP port (default: 587) |
+| `SERVER_PORT` | ❌ | Port ứng dụng (default: 8080) |
 
 ---
 
@@ -138,25 +103,25 @@ JAR output: `build/libs/nitrotech-api-0.0.1-SNAPSHOT.jar`
 
 ```
 src/main/java/com/nitrotech/api/
-├── domain/           # Business logic
+├── domain/           # Business logic (Java thuần, không có Spring annotation)
 │   └── {module}/
 │       ├── dto/          # Records — Commands, Results
-│       ├── usecase/      # Business logic (@Service)
+│       ├── usecase/      # Business logic
 │       ├── repository/   # Interfaces
 │       └── exception/    # Domain exceptions
 ├── infrastructure/   # Framework/Database layer
-│   ├── persistence/  # JPA Entities, Repositories
-│   ├── security/     # JWT, Redis token blacklist
-│   └── mail/         # Resend email sender
+│   ├── persistence/  # JPA Entities, Repositories, Mappers
+│   ├── mail/         # SMTP email sender
+│   └── storage/      # Cloudinary integration
 ├── application/      # HTTP layer
 │   └── {module}/
 │       ├── controller/   # REST Controllers
 │       └── request/      # Request DTOs
 └── shared/           # Shared kernel
-    ├── config/       # Spring configs (Security, Redis, CORS)
+    ├── config/       # Spring configs (Security, Redis, CORS, Async)
     ├── exception/    # Global exception handler
     ├── response/     # ApiResponse wrapper
-    └── util/         # CookieUtil, ...
+    └── util/         # Utilities
 ```
 
 Xem chi tiết kiến trúc: [.docs/ARCHITECTURE.md](.docs/ARCHITECTURE.md)
@@ -175,13 +140,10 @@ Swagger UI: `http://localhost:8080/swagger-ui.html`
 
 OpenAPI spec: `http://localhost:8080/v3/api-docs`
 
-File docs theo module (request/response thực tế):
-```bash
-# Capture docs từ server đang chạy
-python scripts/capture_api_docs.py
+Capture API docs từ server đang chạy:
 
-# Gộp module auth thành 1 file để dùng với AI
-python scripts/merge_api_docs.py auth
+```bash
+python scripts/run.py
 ```
 
 ---
@@ -193,6 +155,7 @@ Dùng **Flyway**, migration files tại `src/main/resources/db/migration/`.
 Naming: `V{version}__{description}.sql` — Flyway tự chạy khi app khởi động.
 
 Reset DB (dev only):
+
 ```bash
 docker compose down -v && docker compose up -d
 ```
@@ -226,27 +189,15 @@ spring:
 
 **Lỗi Flyway migration checksum mismatch**
 ```sql
--- Chạy trong DB
 DELETE FROM flyway_schema_history WHERE version = '<version>';
 ```
 Sau đó restart app.
 
-**Lỗi Redis**
-```bash
-docker compose logs redis
-```
+**Email không gửi được**
+- Kiểm tra `spring.mail.username` và `password` trong `application-dev.yaml`
+- Dùng Mailtrap sandbox để test local — không gửi email thật ra ngoài
 
 **Java version không đúng**
 ```bash
 java -version  # phải là 21+
 ```
-
-**Email không gửi được**
-- Kiểm tra `resend.api-key` trong `application-dev.yaml`
-- Với `onboarding@resend.dev` chỉ gửi được đến email đã đăng ký Resend
-- Verify domain tại resend.com/domains để gửi đến bất kỳ email nào
-
-**Cookie không được set (web)**
-- Đảm bảo fetch có `credentials: "include"`
-- CORS `allowed-origins` phải khớp chính xác domain frontend (không dùng `*`)
-- Local dev: `app.cookie.secure=false` (vì không có HTTPS)

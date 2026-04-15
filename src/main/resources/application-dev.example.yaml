@@ -1,40 +1,47 @@
 # Template cho local dev
-# Copy file này: cp application-dev.example.yaml application-dev.yaml
-# Sau đó chỉnh lại các giá trị phù hợp
+# Cách dùng: copy file này thành application-dev.yaml rồi điền giá trị thực
+#   cp application-dev.example.yaml application-dev.yaml
+# File application-dev.yaml đã được .gitignore — KHÔNG commit credentials thật
 
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/nitrotech
     username: nitrotech
     password: nitrotech
+
   jpa:
-    hibernate:
-      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
         format_sql: true
+
   data:
     redis:
       url: redis://localhost:6379
 
-resend:
-  api-key: re_your_api_key       # Lấy tại resend.com
-  from: onboarding@resend.dev    # Dùng email@yourdomain.com sau khi verify domain
+  docker:
+    compose:
+      enabled: false
 
-jwt:
-  secret: dev-secret-key-must-be-at-least-32-characters-long
-  access-expiration-ms: 900000   # 15 phút
+  mail:
+    host: sandbox.smtp.mailtrap.io
+    port: 587
+    username: your-mailtrap-username   # Lấy tại mailtrap.io → Sandboxes → SMTP Settings
+    password: your-mailtrap-password
+
+mail:
+  from: noreply@yourdomain.com
 
 app:
   frontend-url: http://localhost:3000
-  cookie:
-    secure: false                # true khi dùng HTTPS (production)
-    same-site: Lax
-    domain:                      # để trống cho localhost
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001
+
+cloudinary:
+  cloud-name: your-cloud-name    # Lấy tại cloudinary.com/console
+  api-key: your-api-key
+  api-secret: your-api-secret
 
 logging:
   level:

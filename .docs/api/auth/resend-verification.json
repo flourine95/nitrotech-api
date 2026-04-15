@@ -1,0 +1,25 @@
+{
+  "endpoint": "POST /api/auth/resend-verification",
+  "description": "Gửi lại email xác thực. Xóa token cũ, tạo token mới.",
+  "request": {
+    "body": {
+      "email": "string"
+    }
+  },
+  "responses": {
+    "200": {
+      "status": 200,
+      "body": {
+        "message": "Verification email sent"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "USER_NOT_FOUND",
+        "message": "User not found"
+      }
+    }
+  }
+}

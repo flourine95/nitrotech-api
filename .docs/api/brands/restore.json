@@ -1,0 +1,25 @@
+{
+  "endpoint": "PATCH /api/brands/{id}/restore",
+  "description": "Restore brand đã soft delete. Trả 409 nếu slug đang bị dùng bởi brand khác.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Brand restored successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "BRAND_NOT_FOUND",
+        "message": "Deleted brand not found"
+      }
+    }
+  }
+}

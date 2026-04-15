@@ -1,0 +1,52 @@
+{
+  "endpoint": "POST /api/categories",
+  "description": "Tạo category. Slug unique trong active records. parentId optional.",
+  "request": {
+    "body": {
+      "name": "string (required)",
+      "slug": "string (required)",
+      "description": "string (optional)",
+      "image": "string (optional)",
+      "parentId": "number (optional)",
+      "active": "boolean (required)"
+    }
+  },
+  "responses": {
+    "201_created": {
+      "status": 201,
+      "body": {
+        "data": {
+          "id": 21,
+          "name": "Test Category",
+          "slug": "test-cat-1775737114",
+          "description": "Test",
+          "image": null,
+          "parentId": null,
+          "parentName": null,
+          "active": true,
+          "sortOrder": 0,
+          "children": [],
+          "createdAt": "2026-04-09T19:18:34.8230283",
+          "updatedAt": "2026-04-09T19:18:34.8230283"
+        },
+        "message": "Created successfully"
+      }
+    },
+    "409_slug_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "CATEGORY_SLUG_EXISTS",
+        "message": "Slug already exists"
+      }
+    },
+    "404_parent_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Parent category not found"
+      }
+    }
+  }
+}

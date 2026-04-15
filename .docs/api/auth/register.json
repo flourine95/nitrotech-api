@@ -1,0 +1,50 @@
+{
+  "endpoint": "POST /api/auth/register",
+  "description": "Đăng ký tài khoản mới. Tài khoản inactive cho đến khi xác thực email.",
+  "request": {
+    "body": {
+      "name": "string",
+      "email": "string",
+      "password": "string (min 6)"
+    }
+  },
+  "responses": {
+    "201_created": {
+      "status": 201,
+      "body": {
+        "data": {
+          "user": {
+            "id": 8,
+            "name": "Test User",
+            "email": "test_1775710497@example.com"
+          }
+        },
+        "message": "Created successfully"
+      }
+    },
+    "409_email_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "EMAIL_ALREADY_EXISTS",
+        "message": "Email hackerisdead1032002@gmail.com is already registered"
+      }
+    },
+    "422_validation": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "password": "Password must be at least 6 characters",
+          "name": "Name is required",
+          "email": "Email must be valid"
+        }
+      }
+    }
+  },
+  "notes": [
+    "Không trả token — user phải verify email trước khi login"
+  ]
+}

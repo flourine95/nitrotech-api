@@ -1,0 +1,41 @@
+{
+  "endpoint": "PUT /api/brands/{id}",
+  "description": "Cập nhật brand. Tất cả fields đều optional.",
+  "request": {
+    "path": {
+      "id": "number"
+    },
+    "body": {
+      "name": "string",
+      "slug": "string",
+      "logo": "string",
+      "description": "string",
+      "active": "boolean"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 15,
+          "name": "Updated Brand",
+          "slug": "test-brand-1775710498",
+          "logo": "https://example.com/logo.png",
+          "description": "A test brand",
+          "active": false,
+          "createdAt": "2026-04-09T11:54:58.506284",
+          "updatedAt": "2026-04-09T11:54:58.593302"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "BRAND_NOT_FOUND",
+        "message": "Brand not found"
+      }
+    }
+  }
+}

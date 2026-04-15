@@ -1,0 +1,26 @@
+{
+  "endpoint": "POST /api/auth/verify-email",
+  "description": "Xác thực email bằng token từ email đăng ký.",
+  "request": {
+    "body": {
+      "token": "string (uuid from email)"
+    }
+  },
+  "responses": {
+    "200_success": {
+      "status": 200,
+      "body": {
+        "data": null,
+        "message": "Email verified successfully"
+      }
+    },
+    "422_invalid_token": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "INVALID_VERIFICATION_TOKEN",
+        "message": "Verification token is invalid or has expired"
+      }
+    }
+  }
+}

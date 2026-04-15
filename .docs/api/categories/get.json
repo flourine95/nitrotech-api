@@ -1,0 +1,38 @@
+{
+  "endpoint": "GET /api/categories/{id}",
+  "description": "Lấy chi tiết category theo id.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 21,
+          "name": "Test Category",
+          "slug": "test-cat-1775737114",
+          "description": "Test",
+          "image": null,
+          "parentId": null,
+          "parentName": null,
+          "active": true,
+          "sortOrder": 0,
+          "children": [],
+          "createdAt": "2026-04-09T19:18:34.823028",
+          "updatedAt": "2026-04-09T19:18:34.823028"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "CATEGORY_NOT_FOUND",
+        "message": "Category not found"
+      }
+    }
+  }
+}
