@@ -136,6 +136,24 @@ public class ProductRepositoryImpl implements ProductRepository {
     public boolean existsBySkuAndIdNot(String sku, Long id) { return variantJpa.existsBySkuAndIdNot(sku, id); }
 
     @Override
+    public Optional<ProductData> findDeletedById(Long id) {
+        return productJpa.findDeletedById(id).map(this::toData);
+    }
+
+    @Override
+    public void restore(Long id) {
+        productJpa.findDeletedById(id).ifPresent(e -> {
+            e.setDeletedAt(null);
+            productJpa.save(e);
+        });
+    }
+
+    @Override
+    public void hardDelete(Long id) {
+        productJpa.deleteById(id);
+    }
+
+    @Override
     public void softDeleteVariant(Long id) {
         variantJpa.findActiveById(id).ifPresent(e -> {
             e.setDeletedAt(LocalDateTime.now());

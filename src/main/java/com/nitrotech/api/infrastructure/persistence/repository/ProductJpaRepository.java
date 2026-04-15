@@ -18,6 +18,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NULL AND p.id = :id")
     Optional<ProductEntity> findActiveById(@Param("id") Long id);
 
+    @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NOT NULL AND p.id = :id")
+    Optional<ProductEntity> findDeletedById(@Param("id") Long id);
+
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.id = :id AND p.deletedAt IS NULL")
     boolean existsActiveById(@Param("id") Long id);
 
