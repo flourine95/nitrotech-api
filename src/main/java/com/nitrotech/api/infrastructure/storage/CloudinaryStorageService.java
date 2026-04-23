@@ -35,15 +35,20 @@ public class CloudinaryStorageService {
     }
 
     @SuppressWarnings("unchecked")
-    public AssetsResult listAssets(String folder, int maxResults, String nextCursor) {
+    public AssetsResult listAssets(String folder, int maxResults, String nextCursor, String startAt) {
         try {
             Map<String, Object> options = new HashMap<>();
             options.put("type", "upload");
-            options.put("prefix", folder);
             options.put("max_results", Math.min(maxResults, 100));
             options.put("resource_type", "image");
+            if (folder != null && !folder.isBlank()) {
+                options.put("prefix", folder);
+            }
             if (nextCursor != null && !nextCursor.isBlank()) {
                 options.put("next_cursor", nextCursor);
+            }
+            if (startAt != null && !startAt.isBlank()) {
+                options.put("start_at", startAt);
             }
             ApiResponse response = cloudinary.api().resources(options);
             List<Map<String, Object>> resources = (List<Map<String, Object>>) response.get("resources");

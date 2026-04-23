@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.util.Optional;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>,
@@ -29,4 +30,13 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.brandId = :brandId")
     boolean existsAnyByBrandId(@Param("brandId") Long brandId);
+
+    @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
+    int countActiveVariants(@Param("productId") Long productId);
+
+    @Query("SELECT MIN(v.price) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
+    BigDecimal findMinPrice(@Param("productId") Long productId);
+
+    @Query("SELECT MAX(v.price) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
+    BigDecimal findMaxPrice(@Param("productId") Long productId);
 }

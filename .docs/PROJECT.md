@@ -229,7 +229,7 @@ PostgreSQL + Redis
 |---|---|
 | POST /api/upload/sign | Tạo signature upload lên Cloudinary |
 | GET /api/upload/folders | Danh sách folder trên Cloudinary |
-| GET /api/upload/assets | Danh sách ảnh trong folder |
+| GET /api/upload/assets | Danh sách ảnh, `folder` optional (không truyền = tất cả), hỗ trợ `startAt` (ISO 8601), `cursor`, `maxResults` |
 
 ---
 

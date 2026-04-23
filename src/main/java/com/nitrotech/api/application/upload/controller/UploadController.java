@@ -36,10 +36,11 @@ public class UploadController {
 
     @GetMapping("/assets")
     public ResponseEntity<ApiResponse<CloudinaryStorageService.AssetsResult>> assets(
-            @RequestParam(defaultValue = "uploads") String folder,
+            @RequestParam(required = false) String folder,
             @RequestParam(defaultValue = "50") int maxResults,
-            @RequestParam(required = false) String cursor
+            @RequestParam(required = false) String cursor,
+            @RequestParam(required = false) String startAt
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(storageService.listAssets(folder, maxResults, cursor)));
+        return ResponseEntity.ok(ApiResponse.ok(storageService.listAssets(folder, maxResults, cursor, startAt)));
     }
 }
