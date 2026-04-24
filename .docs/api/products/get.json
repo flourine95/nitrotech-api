@@ -1,0 +1,76 @@
+{
+  "endpoint": "GET /api/products/{id}",
+  "description": "Lấy chi tiết sản phẩm kèm full variants[] và images. priceMin/priceMax/variantCount cũng có.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 2,
+          "categoryId": 8,
+          "categoryName": null,
+          "brandId": 3,
+          "brandName": null,
+          "name": "Test Product",
+          "slug": "test-product-1776254954",
+          "description": "A test product",
+          "thumbnail": "https://example.com/thumb.jpg",
+          "specs": {
+            "color": "black",
+            "weight": "1kg"
+          },
+          "active": true,
+          "images": [
+            "https://example.com/img1.jpg"
+          ],
+          "variants": [
+            {
+              "id": 4,
+              "productId": 2,
+              "sku": "SKU-1776254954-A",
+              "name": "Size S",
+              "price": 100000.0,
+              "attributes": {
+                "size": "S"
+              },
+              "active": true,
+              "createdAt": "2026-04-15T19:09:14.486753",
+              "updatedAt": "2026-04-15T19:09:14.486753"
+            },
+            {
+              "id": 5,
+              "productId": 2,
+              "sku": "SKU-1776254954-B",
+              "name": "Size M",
+              "price": 120000.0,
+              "attributes": {
+                "size": "M"
+              },
+              "active": true,
+              "createdAt": "2026-04-15T19:09:14.488751",
+              "updatedAt": "2026-04-15T19:09:14.488751"
+            }
+          ],
+          "variantCount": 2,
+          "priceMin": 100000.0,
+          "priceMax": 120000.0,
+          "createdAt": "2026-04-15T19:09:14.480751",
+          "updatedAt": "2026-04-15T19:09:14.480751"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "PRODUCT_NOT_FOUND",
+        "message": "Product not found"
+      }
+    }
+  }
+}

@@ -24,19 +24,26 @@ public class ProductController {
     private final CreateProductUseCase createProductUseCase;
     private final UpdateProductUseCase updateProductUseCase;
     private final DeleteProductUseCase deleteProductUseCase;
+    private final RestoreProductUseCase restoreProductUseCase;
+    private final HardDeleteProductUseCase hardDeleteProductUseCase;
     private final CreateVariantUseCase createVariantUseCase;
     private final UpdateVariantUseCase updateVariantUseCase;
     private final DeleteVariantUseCase deleteVariantUseCase;
 
     public ProductController(GetProductsUseCase getProductsUseCase, GetProductUseCase getProductUseCase,
                               CreateProductUseCase createProductUseCase, UpdateProductUseCase updateProductUseCase,
-                              DeleteProductUseCase deleteProductUseCase, CreateVariantUseCase createVariantUseCase,
+                              DeleteProductUseCase deleteProductUseCase,
+                              RestoreProductUseCase restoreProductUseCase,
+                              HardDeleteProductUseCase hardDeleteProductUseCase,
+                              CreateVariantUseCase createVariantUseCase,
                               UpdateVariantUseCase updateVariantUseCase, DeleteVariantUseCase deleteVariantUseCase) {
         this.getProductsUseCase = getProductsUseCase;
         this.getProductUseCase = getProductUseCase;
         this.createProductUseCase = createProductUseCase;
         this.updateProductUseCase = updateProductUseCase;
         this.deleteProductUseCase = deleteProductUseCase;
+        this.restoreProductUseCase = restoreProductUseCase;
+        this.hardDeleteProductUseCase = hardDeleteProductUseCase;
         this.createVariantUseCase = createVariantUseCase;
         this.updateVariantUseCase = updateVariantUseCase;
         this.deleteVariantUseCase = deleteVariantUseCase;
@@ -85,6 +92,18 @@ public class ProductController {
     public ResponseEntity<ApiResponse<Void>> delete(@PathVariable Long id) {
         deleteProductUseCase.execute(id);
         return ResponseEntity.ok(ApiResponse.ok(null, "Product deleted successfully"));
+    }
+
+    @PatchMapping("/{id}/restore")
+    public ResponseEntity<ApiResponse<Void>> restore(@PathVariable Long id) {
+        restoreProductUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Product restored successfully"));
+    }
+
+    @DeleteMapping("/{id}/permanent")
+    public ResponseEntity<ApiResponse<Void>> hardDelete(@PathVariable Long id) {
+        hardDeleteProductUseCase.execute(id);
+        return ResponseEntity.ok(ApiResponse.ok(null, "Product permanently deleted"));
     }
 
     // ── variants ──────────────────────────────────────────────────────────────

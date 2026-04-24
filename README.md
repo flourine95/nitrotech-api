@@ -104,22 +104,27 @@ cloudinary:
 ```
 src/main/java/com/nitrotech/api/
 ├── domain/           # Business logic (Java thuần, không có Spring annotation)
-│   └── {module}/
+│   └── {module}/     # address, auth, banner, brand, cart, category,
+│       │             # inventory, order, product, promotion, review, wishlist
 │       ├── dto/          # Records — Commands, Results
 │       ├── usecase/      # Business logic
 │       ├── repository/   # Interfaces
-│       └── exception/    # Domain exceptions
+│       └── exception/    # Domain exceptions (nếu có)
 ├── infrastructure/   # Framework/Database layer
-│   ├── persistence/  # JPA Entities, Repositories, Mappers
+│   ├── persistence/
+│   │   ├── entity/       # JPA Entities
+│   │   ├── repository/   # Spring Data JPA repos + Repository implementations
+│   │   └── spec/         # JPA Specifications (dynamic queries)
 │   ├── mail/         # SMTP email sender
-│   └── storage/      # Cloudinary integration
+│   ├── storage/      # Cloudinary integration
+│   └── security/     # Security implementations
 ├── application/      # HTTP layer
 │   └── {module}/
 │       ├── controller/   # REST Controllers
 │       └── request/      # Request DTOs
 └── shared/           # Shared kernel
     ├── config/       # Spring configs (Security, Redis, CORS, Async)
-    ├── exception/    # Global exception handler
+    ├── exception/    # Global exception handler + Domain exceptions
     ├── response/     # ApiResponse wrapper
     └── util/         # Utilities
 ```
@@ -143,7 +148,24 @@ OpenAPI spec: `http://localhost:8080/v3/api-docs`
 Capture API docs từ server đang chạy:
 
 ```bash
+# Capture tất cả modules
 python scripts/run.py
+
+# Chỉ capture một số module
+python scripts/run.py auth products
+```
+
+Seed data để test:
+
+```bash
+# Tạo 10 brands + 10 categories + 30 sản phẩm (mặc định)
+python scripts/seed.py
+
+# Tùy chỉnh số lượng
+python scripts/seed.py --brands 5 --categories 8 --products 100
+
+# Chỉ tạo thêm sản phẩm, dùng brands/categories có sẵn
+python scripts/seed.py --skip-brands --skip-categories --products 50
 ```
 
 ---

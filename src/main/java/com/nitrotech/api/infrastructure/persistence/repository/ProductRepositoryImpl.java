@@ -20,13 +20,19 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final ProductJpaRepository productJpa;
     private final ProductImageJpaRepository imageJpa;
     private final ProductVariantJpaRepository variantJpa;
+    private final CategoryJpaRepository categoryJpa;
+    private final BrandJpaRepository brandJpa;
 
     public ProductRepositoryImpl(ProductJpaRepository productJpa,
                                   ProductImageJpaRepository imageJpa,
-                                  ProductVariantJpaRepository variantJpa) {
+                                  ProductVariantJpaRepository variantJpa,
+                                  CategoryJpaRepository categoryJpa,
+                                  BrandJpaRepository brandJpa) {
         this.productJpa = productJpa;
         this.imageJpa = imageJpa;
         this.variantJpa = variantJpa;
+        this.categoryJpa = categoryJpa;
+        this.brandJpa = brandJpa;
     }
 
     @Override
@@ -49,7 +55,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             command.variants().forEach(v -> saveVariant(saved.getId(), v));
         }
 
-        return toData(saved);
+        return toDetailData(saved);
     }
 
     @Override
@@ -73,17 +79,17 @@ public class ProductRepositoryImpl implements ProductRepository {
             saveImages(saved.getId(), command.images());
         }
 
-        return toData(saved);
+        return toDetailData(saved);
     }
 
     @Override
     public Optional<ProductData> findById(Long id) {
-        return productJpa.findActiveById(id).map(this::toData);
+        return productJpa.findActiveById(id).map(this::toDetailData);
     }
 
     @Override
     public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
-        return productJpa.findAll(ProductSpecification.from(filter), pageable).map(this::toData);
+        return productJpa.findAll(ProductSpecification.from(filter), pageable).map(this::toListData);
     }
 
     @Override
@@ -136,6 +142,24 @@ public class ProductRepositoryImpl implements ProductRepository {
     public boolean existsBySkuAndIdNot(String sku, Long id) { return variantJpa.existsBySkuAndIdNot(sku, id); }
 
     @Override
+    public Optional<ProductData> findDeletedById(Long id) {
+        return productJpa.findDeletedById(id).map(this::toDetailData);
+    }
+
+    @Override
+    public void restore(Long id) {
+        productJpa.findDeletedById(id).ifPresent(e -> {
+            e.setDeletedAt(null);
+            productJpa.save(e);
+        });
+    }
+
+    @Override
+    public void hardDelete(Long id) {
+        productJpa.deleteById(id);
+    }
+
+    @Override
     public void softDeleteVariant(Long id) {
         variantJpa.findActiveById(id).ifPresent(e -> {
             e.setDeletedAt(LocalDateTime.now());
@@ -167,17 +191,55 @@ public class ProductRepositoryImpl implements ProductRepository {
         return variantJpa.save(entity);
     }
 
-    private ProductData toData(ProductEntity e) {
+    /** Dùng cho list endpoint — không load variants, dùng aggregate query */
+    private ProductData toListData(ProductEntity e) {
+        List<String> images = imageJpa.findByProductIdOrderBySortOrderAsc(e.getId())
+                .stream().map(ProductImageEntity::getUrl).toList();
+        int variantCount = productJpa.countActiveVariants(e.getId());
+        return new ProductData(
+                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
+                e.getBrandId(), resolveBrandName(e.getBrandId()),
+                e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
+                e.getSpecs(), e.isActive(), images,
+                null,                                        // variants — không load trong list
+                variantCount,
+                productJpa.findMinPrice(e.getId()),
+                productJpa.findMaxPrice(e.getId()),
+                e.getCreatedAt(), e.getUpdatedAt()
+        );
+    }
+
+    /** Dùng cho detail endpoint — load full variants */
+    private ProductData toDetailData(ProductEntity e) {
         List<String> images = imageJpa.findByProductIdOrderBySortOrderAsc(e.getId())
                 .stream().map(ProductImageEntity::getUrl).toList();
         List<ProductVariantData> variants = variantJpa.findActiveByProductId(e.getId())
                 .stream().map(this::toVariantData).toList();
         return new ProductData(
-                e.getId(), e.getCategoryId(), null, e.getBrandId(), null,
+                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
+                e.getBrandId(), resolveBrandName(e.getBrandId()),
                 e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
-                e.getSpecs(), e.isActive(), images, variants,
+                e.getSpecs(), e.isActive(), images,
+                variants,
+                variants.size(),
+                variants.stream().map(ProductVariantData::price)
+                        .filter(p -> p != null)
+                        .min(java.math.BigDecimal::compareTo).orElse(null),
+                variants.stream().map(ProductVariantData::price)
+                        .filter(p -> p != null)
+                        .max(java.math.BigDecimal::compareTo).orElse(null),
                 e.getCreatedAt(), e.getUpdatedAt()
         );
+    }
+
+    private String resolveCategoryName(Long categoryId) {
+        if (categoryId == null) return null;
+        return categoryJpa.findById(categoryId).map(c -> c.getName()).orElse(null);
+    }
+
+    private String resolveBrandName(Long brandId) {
+        if (brandId == null) return null;
+        return brandJpa.findById(brandId).map(b -> b.getName()).orElse(null);
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {

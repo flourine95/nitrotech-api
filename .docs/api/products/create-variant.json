@@ -1,0 +1,53 @@
+{
+  "endpoint": "POST /api/products/{productId}/variants",
+  "description": "Thêm variant mới vào sản phẩm. SKU phải unique toàn hệ thống.",
+  "request": {
+    "path": {
+      "productId": "number"
+    },
+    "body": {
+      "sku": "string (required, unique)",
+      "name": "string (required)",
+      "price": "number (required)",
+      "attributes": "object (optional)",
+      "active": "boolean (required)"
+    }
+  },
+  "responses": {
+    "201_created": {
+      "status": 201,
+      "body": {
+        "data": {
+          "id": 7,
+          "productId": 3,
+          "sku": "SKU-1776254954-V2-B",
+          "name": "Size M",
+          "price": 120000,
+          "attributes": {
+            "size": "M"
+          },
+          "active": true,
+          "createdAt": "2026-04-15T19:09:14.8928619",
+          "updatedAt": "2026-04-15T19:09:14.8928619"
+        },
+        "message": "Created successfully"
+      }
+    },
+    "409_sku_exists": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "VARIANT_SKU_EXISTS",
+        "message": "SKU already exists"
+      }
+    },
+    "404_product_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "PRODUCT_NOT_FOUND",
+        "message": "Product not found"
+      }
+    }
+  }
+}

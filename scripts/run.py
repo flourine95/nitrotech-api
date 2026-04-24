@@ -14,17 +14,18 @@ import os
 sys.path.insert(0, os.path.dirname(__file__))
 
 from capture.base import login, BASE_URL
-from capture import auth, brands, categories
+from capture import auth, brands, categories, products
 
 # ── Config ────────────────────────────────────────────────────────────────────
-ADMIN_EMAIL = "hackerisdead1032002@gmail.com"
-ADMIN_PASSWORD = "hackerisdead1032002@gmail.com"
+ADMIN_EMAIL = "flourinee@gmail.com"
+ADMIN_PASSWORD = "flourinee@gmail.com"
 
 # ── Module registry ───────────────────────────────────────────────────────────
 MODULES = {
     "auth":       lambda s: auth.capture(s, ADMIN_EMAIL, ADMIN_PASSWORD),
     "brands":     lambda s: brands.capture(s),
     "categories": lambda s: categories.capture(s),
+    "products":   lambda s: products.capture(s),
 }
 
 # ── Main ──────────────────────────────────────────────────────────────────────

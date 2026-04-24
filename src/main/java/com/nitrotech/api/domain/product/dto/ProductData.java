@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.product.dto;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -17,7 +18,10 @@ public record ProductData(
         Map<String, Object> specs,
         boolean active,
         List<String> images,
-        List<ProductVariantData> variants,
+        List<ProductVariantData> variants,  // null trong list endpoint, đầy đủ trong detail
+        Integer variantCount,               // số variant active
+        BigDecimal priceMin,                // giá thấp nhất từ variants active
+        BigDecimal priceMax,                // giá cao nhất từ variants active
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

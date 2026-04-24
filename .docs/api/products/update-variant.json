@@ -1,0 +1,45 @@
+{
+  "endpoint": "PUT /api/products/{productId}/variants/{variantId}",
+  "description": "Cập nhật variant. SKU phải unique nếu thay đổi.",
+  "request": {
+    "path": {
+      "productId": "number",
+      "variantId": "number"
+    },
+    "body": {
+      "sku": "string",
+      "name": "string",
+      "price": "number",
+      "attributes": "object",
+      "active": "boolean"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 6,
+          "productId": 3,
+          "sku": "SKU-1776254954-V2-A",
+          "name": "Size S",
+          "price": 110000,
+          "attributes": {
+            "size": "S"
+          },
+          "active": false,
+          "createdAt": "2026-04-15T19:09:14.867107",
+          "updatedAt": "2026-04-15T19:09:14.9532796"
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "VARIANT_NOT_FOUND",
+        "message": "Variant not found"
+      }
+    }
+  }
+}

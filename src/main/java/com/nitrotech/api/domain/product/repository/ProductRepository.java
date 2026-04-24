@@ -14,7 +14,10 @@ public interface ProductRepository {
     boolean existsById(Long id);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
+    Optional<ProductData> findDeletedById(Long id);
     void softDelete(Long id);
+    void restore(Long id);
+    void hardDelete(Long id);
 
     // variants
     ProductVariantData createVariant(Long productId, CreateVariantCommand command);
