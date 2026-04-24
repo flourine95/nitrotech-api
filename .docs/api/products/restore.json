@@ -1,0 +1,25 @@
+{
+  "endpoint": "PATCH /api/products/{id}/restore",
+  "description": "Restore sản phẩm đã soft delete. Trả 409 nếu slug conflict.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Product restored successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "PRODUCT_NOT_FOUND",
+        "message": "Deleted product not found"
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "endpoint": "DELETE /api/products/{id}",
+  "description": "Soft delete sản phẩm. Có thể restore sau.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Product deleted successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "PRODUCT_NOT_FOUND",
+        "message": "Product not found"
+      }
+    }
+  }
+}

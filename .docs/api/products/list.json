@@ -1,0 +1,115 @@
+{
+  "endpoint": "GET /api/products",
+  "description": "Danh sách sản phẩm với filter, search, pagination. Trả priceMin/priceMax/variantCount thay vì full variants[].",
+  "request": {
+    "params": {
+      "search": "string (optional)",
+      "active": "boolean (optional)",
+      "deleted": "boolean (optional)",
+      "categoryId": "number (optional)",
+      "brandId": "number (optional)",
+      "page": "number (default: 0)",
+      "size": "number (default: 20)",
+      "sort": "field,direction — vd: createdAt,desc"
+    }
+  },
+  "responses": {
+    "200_default": {
+      "status": 200,
+      "body": {
+        "data": {
+          "content": [
+            {
+              "id": 1,
+              "categoryId": 7,
+              "categoryName": null,
+              "brandId": 2,
+              "brandName": null,
+              "name": "Updated Product",
+              "slug": "test-product-1776250988",
+              "description": "A test product",
+              "thumbnail": "https://example.com/thumb.jpg",
+              "specs": {
+                "color": "black",
+                "weight": "1kg"
+              },
+              "active": false,
+              "images": [
+                "https://example.com/img1.jpg"
+              ],
+              "variants": null,
+              "variantCount": 2,
+              "priceMin": 120000.0,
+              "priceMax": 150000.0,
+              "createdAt": "2026-04-15T18:03:09.195813",
+              "updatedAt": "2026-04-15T18:03:09.339815"
+            }
+          ],
+          "empty": false,
+          "first": true,
+          "last": true,
+          "number": 0,
+          "numberOfElements": 1,
+          "pageable": {
+            "offset": 0,
+            "pageNumber": 0,
+            "pageSize": 20,
+            "paged": true,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "unpaged": false
+          },
+          "size": 20,
+          "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+          },
+          "totalElements": 1,
+          "totalPages": 1
+        }
+      }
+    },
+    "200_filtered": {
+      "status": 200,
+      "body": {
+        "data": {
+          "content": [],
+          "empty": true,
+          "first": true,
+          "last": true,
+          "number": 0,
+          "numberOfElements": 0,
+          "pageable": {
+            "offset": 0,
+            "pageNumber": 0,
+            "pageSize": 5,
+            "paged": true,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "unpaged": false
+          },
+          "size": 5,
+          "sort": {
+            "empty": false,
+            "sorted": true,
+            "unsorted": false
+          },
+          "totalElements": 0,
+          "totalPages": 0
+        }
+      }
+    }
+  },
+  "notes": [
+    "variants luôn là null trong list — dùng GET /api/products/{id} để lấy full variants",
+    "priceMin/priceMax tính từ active variants, null nếu chưa có variant nào",
+    "variantCount chỉ đếm active variants"
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "endpoint": "DELETE /api/products/{productId}/variants/{variantId}",
+  "description": "Xóa variant khỏi sản phẩm.",
+  "request": {
+    "path": {
+      "productId": "number",
+      "variantId": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Variant deleted successfully"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "VARIANT_NOT_FOUND",
+        "message": "Variant not found"
+      }
+    }
+  }
+}

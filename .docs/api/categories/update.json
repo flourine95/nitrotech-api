@@ -19,9 +19,9 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 21,
+          "id": 26,
           "name": "Updated Category",
-          "slug": "test-cat-1775737114",
+          "slug": "test-cat-1775738009",
           "description": "Test",
           "image": null,
           "parentId": null,
@@ -29,8 +29,8 @@
           "active": true,
           "sortOrder": 0,
           "children": [],
-          "createdAt": "2026-04-09T19:18:34.823028",
-          "updatedAt": "2026-04-09T19:18:34.956053"
+          "createdAt": "2026-04-09T19:33:29.572625",
+          "updatedAt": "2026-04-09T19:33:29.7190523"
         }
       }
     },

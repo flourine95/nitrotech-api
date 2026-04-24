@@ -1,0 +1,28 @@
+{
+  "endpoint": "DELETE /api/products/{id}/permanent",
+  "description": "Xóa vĩnh viễn sản phẩm. Chỉ cho phép với sản phẩm đã soft deleted.",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "message": "Product permanently deleted"
+      }
+    },
+    "404_not_found": {
+      "status": 404,
+      "body": {
+        "status": 404,
+        "code": "PRODUCT_NOT_FOUND",
+        "message": "Deleted product not found. Soft delete first before permanent delete."
+      }
+    }
+  },
+  "notes": [
+    "Phải soft delete trước"
+  ]
+}

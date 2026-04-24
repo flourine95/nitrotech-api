@@ -1,0 +1,589 @@
+{
+  "create-variant": {
+    "endpoint": "POST /api/products/{productId}/variants",
+    "description": "Thêm variant mới vào sản phẩm. SKU phải unique toàn hệ thống.",
+    "request": {
+      "path": {
+        "productId": "number"
+      },
+      "body": {
+        "sku": "string (required, unique)",
+        "name": "string (required)",
+        "price": "number (required)",
+        "attributes": "object (optional)",
+        "active": "boolean (required)"
+      }
+    },
+    "responses": {
+      "201_created": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 7,
+            "productId": 3,
+            "sku": "SKU-1776254954-V2-B",
+            "name": "Size M",
+            "price": 120000,
+            "attributes": {
+              "size": "M"
+            },
+            "active": true,
+            "createdAt": "2026-04-15T19:09:14.8928619",
+            "updatedAt": "2026-04-15T19:09:14.8928619"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_sku_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "VARIANT_SKU_EXISTS",
+          "message": "SKU already exists"
+        }
+      },
+      "404_product_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Product not found"
+        }
+      }
+    }
+  },
+  "create": {
+    "endpoint": "POST /api/products",
+    "description": "Tạo sản phẩm kèm variants và images. Response trả full variants[]. Slug phải unique trong active records.",
+    "request": {
+      "body": {
+        "categoryId": "number (required)",
+        "brandId": "number (optional)",
+        "name": "string (required)",
+        "slug": "string (required, unique)",
+        "description": "string (optional)",
+        "thumbnail": "string (optional, url)",
+        "specs": "object (optional) — JSON tự do cho thông số kỹ thuật",
+        "active": "boolean (required)",
+        "images": "string[] (optional)",
+        "variants": [
+          {
+            "sku": "string (required, unique)",
+            "name": "string (required)",
+            "price": "number (required)",
+            "attributes": "object (optional) — vd: {size: S, color: red}",
+            "active": "boolean (required)"
+          }
+        ]
+      }
+    },
+    "responses": {
+      "201_created": {
+        "status": 201,
+        "body": {
+          "data": {
+            "id": 2,
+            "categoryId": 8,
+            "categoryName": null,
+            "brandId": 3,
+            "brandName": null,
+            "name": "Test Product",
+            "slug": "test-product-1776254954",
+            "description": "A test product",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "specs": {
+              "weight": "1kg",
+              "color": "black"
+            },
+            "active": true,
+            "images": [
+              "https://example.com/img1.jpg"
+            ],
+            "variants": [
+              {
+                "id": 4,
+                "productId": 2,
+                "sku": "SKU-1776254954-A",
+                "name": "Size S",
+                "price": 100000,
+                "attributes": {
+                  "size": "S"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.4867529",
+                "updatedAt": "2026-04-15T19:09:14.4867529"
+              },
+              {
+                "id": 5,
+                "productId": 2,
+                "sku": "SKU-1776254954-B",
+                "name": "Size M",
+                "price": 120000,
+                "attributes": {
+                  "size": "M"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.4887511",
+                "updatedAt": "2026-04-15T19:09:14.4887511"
+              }
+            ],
+            "variantCount": 2,
+            "priceMin": 100000,
+            "priceMax": 120000,
+            "createdAt": "2026-04-15T19:09:14.4807505",
+            "updatedAt": "2026-04-15T19:09:14.4807505"
+          },
+          "message": "Created successfully"
+        }
+      },
+      "409_slug_exists": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "PRODUCT_SLUG_EXISTS",
+          "message": "Slug already exists"
+        }
+      },
+      "422_validation": {
+        "status": 422,
+        "body": {
+          "status": 422,
+          "code": "VALIDATION_ERROR",
+          "message": "Validation failed",
+          "errors": {
+            "name": "Name is required",
+            "categoryId": "Category is required",
+            "slug": "Slug is required"
+          }
+        }
+      }
+    }
+  },
+  "delete-variant": {
+    "endpoint": "DELETE /api/products/{productId}/variants/{variantId}",
+    "description": "Xóa variant khỏi sản phẩm.",
+    "request": {
+      "path": {
+        "productId": "number",
+        "variantId": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Variant deleted successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "VARIANT_NOT_FOUND",
+          "message": "Variant not found"
+        }
+      }
+    }
+  },
+  "delete": {
+    "endpoint": "DELETE /api/products/{id}",
+    "description": "Soft delete sản phẩm. Có thể restore sau.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Product deleted successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Product not found"
+        }
+      }
+    }
+  },
+  "get": {
+    "endpoint": "GET /api/products/{id}",
+    "description": "Lấy chi tiết sản phẩm kèm full variants[] và images. priceMin/priceMax/variantCount cũng có.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 2,
+            "categoryId": 8,
+            "categoryName": null,
+            "brandId": 3,
+            "brandName": null,
+            "name": "Test Product",
+            "slug": "test-product-1776254954",
+            "description": "A test product",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "specs": {
+              "color": "black",
+              "weight": "1kg"
+            },
+            "active": true,
+            "images": [
+              "https://example.com/img1.jpg"
+            ],
+            "variants": [
+              {
+                "id": 4,
+                "productId": 2,
+                "sku": "SKU-1776254954-A",
+                "name": "Size S",
+                "price": 100000.0,
+                "attributes": {
+                  "size": "S"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.486753",
+                "updatedAt": "2026-04-15T19:09:14.486753"
+              },
+              {
+                "id": 5,
+                "productId": 2,
+                "sku": "SKU-1776254954-B",
+                "name": "Size M",
+                "price": 120000.0,
+                "attributes": {
+                  "size": "M"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.488751",
+                "updatedAt": "2026-04-15T19:09:14.488751"
+              }
+            ],
+            "variantCount": 2,
+            "priceMin": 100000.0,
+            "priceMax": 120000.0,
+            "createdAt": "2026-04-15T19:09:14.480751",
+            "updatedAt": "2026-04-15T19:09:14.480751"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Product not found"
+        }
+      }
+    }
+  },
+  "hard-delete": {
+    "endpoint": "DELETE /api/products/{id}/permanent",
+    "description": "Xóa vĩnh viễn sản phẩm. Chỉ cho phép với sản phẩm đã soft deleted.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Product permanently deleted"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Deleted product not found. Soft delete first before permanent delete."
+        }
+      }
+    },
+    "notes": [
+      "Phải soft delete trước"
+    ]
+  },
+  "list": {
+    "endpoint": "GET /api/products",
+    "description": "Danh sách sản phẩm với filter, search, pagination. Trả priceMin/priceMax/variantCount thay vì full variants[].",
+    "request": {
+      "params": {
+        "search": "string (optional)",
+        "active": "boolean (optional)",
+        "deleted": "boolean (optional)",
+        "categoryId": "number (optional)",
+        "brandId": "number (optional)",
+        "page": "number (default: 0)",
+        "size": "number (default: 20)",
+        "sort": "field,direction — vd: createdAt,desc"
+      }
+    },
+    "responses": {
+      "200_default": {
+        "status": 200,
+        "body": {
+          "data": {
+            "content": [
+              {
+                "id": 1,
+                "categoryId": 7,
+                "categoryName": null,
+                "brandId": 2,
+                "brandName": null,
+                "name": "Updated Product",
+                "slug": "test-product-1776250988",
+                "description": "A test product",
+                "thumbnail": "https://example.com/thumb.jpg",
+                "specs": {
+                  "color": "black",
+                  "weight": "1kg"
+                },
+                "active": false,
+                "images": [
+                  "https://example.com/img1.jpg"
+                ],
+                "variants": null,
+                "variantCount": 2,
+                "priceMin": 120000.0,
+                "priceMax": 150000.0,
+                "createdAt": "2026-04-15T18:03:09.195813",
+                "updatedAt": "2026-04-15T18:03:09.339815"
+              }
+            ],
+            "empty": false,
+            "first": true,
+            "last": true,
+            "number": 0,
+            "numberOfElements": 1,
+            "pageable": {
+              "offset": 0,
+              "pageNumber": 0,
+              "pageSize": 20,
+              "paged": true,
+              "sort": {
+                "empty": false,
+                "sorted": true,
+                "unsorted": false
+              },
+              "unpaged": false
+            },
+            "size": 20,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "totalElements": 1,
+            "totalPages": 1
+          }
+        }
+      },
+      "200_filtered": {
+        "status": 200,
+        "body": {
+          "data": {
+            "content": [],
+            "empty": true,
+            "first": true,
+            "last": true,
+            "number": 0,
+            "numberOfElements": 0,
+            "pageable": {
+              "offset": 0,
+              "pageNumber": 0,
+              "pageSize": 5,
+              "paged": true,
+              "sort": {
+                "empty": false,
+                "sorted": true,
+                "unsorted": false
+              },
+              "unpaged": false
+            },
+            "size": 5,
+            "sort": {
+              "empty": false,
+              "sorted": true,
+              "unsorted": false
+            },
+            "totalElements": 0,
+            "totalPages": 0
+          }
+        }
+      }
+    },
+    "notes": [
+      "variants luôn là null trong list — dùng GET /api/products/{id} để lấy full variants",
+      "priceMin/priceMax tính từ active variants, null nếu chưa có variant nào",
+      "variantCount chỉ đếm active variants"
+    ]
+  },
+  "restore": {
+    "endpoint": "PATCH /api/products/{id}/restore",
+    "description": "Restore sản phẩm đã soft delete. Trả 409 nếu slug conflict.",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "message": "Product restored successfully"
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Deleted product not found"
+        }
+      }
+    }
+  },
+  "update-variant": {
+    "endpoint": "PUT /api/products/{productId}/variants/{variantId}",
+    "description": "Cập nhật variant. SKU phải unique nếu thay đổi.",
+    "request": {
+      "path": {
+        "productId": "number",
+        "variantId": "number"
+      },
+      "body": {
+        "sku": "string",
+        "name": "string",
+        "price": "number",
+        "attributes": "object",
+        "active": "boolean"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 6,
+            "productId": 3,
+            "sku": "SKU-1776254954-V2-A",
+            "name": "Size S",
+            "price": 110000,
+            "attributes": {
+              "size": "S"
+            },
+            "active": false,
+            "createdAt": "2026-04-15T19:09:14.867107",
+            "updatedAt": "2026-04-15T19:09:14.9532796"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "VARIANT_NOT_FOUND",
+          "message": "Variant not found"
+        }
+      }
+    }
+  },
+  "update": {
+    "endpoint": "PUT /api/products/{id}",
+    "description": "Cập nhật thông tin sản phẩm. Không cập nhật variants qua endpoint này — dùng /variants.",
+    "request": {
+      "path": {
+        "id": "number"
+      },
+      "body": {
+        "categoryId": "number",
+        "brandId": "number",
+        "name": "string",
+        "slug": "string",
+        "description": "string",
+        "thumbnail": "string",
+        "specs": "object",
+        "active": "boolean",
+        "images": "string[] — thay thế toàn bộ gallery, null = giữ nguyên"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 2,
+            "categoryId": 8,
+            "categoryName": null,
+            "brandId": 3,
+            "brandName": null,
+            "name": "Updated Product",
+            "slug": "test-product-1776254954",
+            "description": "A test product",
+            "thumbnail": "https://example.com/thumb.jpg",
+            "specs": {
+              "color": "black",
+              "weight": "1kg"
+            },
+            "active": false,
+            "images": [
+              "https://example.com/img1.jpg"
+            ],
+            "variants": [
+              {
+                "id": 4,
+                "productId": 2,
+                "sku": "SKU-1776254954-A",
+                "name": "Size S",
+                "price": 100000.0,
+                "attributes": {
+                  "size": "S"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.486753",
+                "updatedAt": "2026-04-15T19:09:14.486753"
+              },
+              {
+                "id": 5,
+                "productId": 2,
+                "sku": "SKU-1776254954-B",
+                "name": "Size M",
+                "price": 120000.0,
+                "attributes": {
+                  "size": "M"
+                },
+                "active": true,
+                "createdAt": "2026-04-15T19:09:14.488751",
+                "updatedAt": "2026-04-15T19:09:14.488751"
+              }
+            ],
+            "variantCount": 2,
+            "priceMin": 100000.0,
+            "priceMax": 120000.0,
+            "createdAt": "2026-04-15T19:09:14.480751",
+            "updatedAt": "2026-04-15T19:09:14.6209708"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "PRODUCT_NOT_FOUND",
+          "message": "Product not found"
+        }
+      }
+    }
+  }
+}
