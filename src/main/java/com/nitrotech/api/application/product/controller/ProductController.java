@@ -4,20 +4,22 @@ import com.nitrotech.api.application.product.request.*;
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
+import com.nitrotech.api.shared.util.SortUtils;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
 public class ProductController {
+
+    private static final Set<String> SORTABLE_FIELDS =
+            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetProductsUseCase getProductsUseCase;
     private final GetProductUseCase getProductUseCase;
@@ -50,15 +52,18 @@ public class ProductController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Page<ProductData>>> list(
+    public ResponseEntity<ApiResponse<List<ProductData>>> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Boolean deleted,
             @RequestParam(required = false) Long categoryId,
             @RequestParam(required = false) Long brandId,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) List<String> sort
     ) {
-        return ResponseEntity.ok(ApiResponse.ok(
+        Pageable pageable = SortUtils.toPageable(page, size, sort, SORTABLE_FIELDS, "createdAt");
+        return ResponseEntity.ok(ApiResponse.paged(
                 getProductsUseCase.execute(new ProductFilter(search, active, deleted, categoryId, brandId), pageable)));
     }
 

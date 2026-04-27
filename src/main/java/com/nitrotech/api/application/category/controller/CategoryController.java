@@ -11,20 +11,22 @@ import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
+import com.nitrotech.api.shared.util.SortUtils;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
+
+    private static final Set<String> SORTABLE_FIELDS =
+            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetCategoriesUseCase getCategoriesUseCase;
     private final GetCategoryUseCase getCategoryUseCase;
@@ -54,21 +56,23 @@ public class CategoryController {
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<Object>> list(
+    @SuppressWarnings("unchecked")
+    public ResponseEntity<?> list(
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Boolean deleted,
             @RequestParam(required = false) Long parentId,
             @RequestParam(defaultValue = "false") boolean tree,
-            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) List<String> sort
     ) {
         if (tree) {
-            List<CategoryData> data = getCategoriesUseCase.executeTree(active);
-            return ResponseEntity.ok(ApiResponse.ok(data));
+            return ResponseEntity.ok(ApiResponse.ok(getCategoriesUseCase.executeTree(active)));
         }
-        Page<CategoryData> data = getCategoriesUseCase.execute(
-                new CategoryFilter(search, active, deleted, parentId), pageable);
-        return ResponseEntity.ok(ApiResponse.ok(data));
+        Pageable pageable = SortUtils.toPageable(page, size, sort, SORTABLE_FIELDS, "createdAt");
+        return ResponseEntity.ok(ApiResponse.paged(
+                getCategoriesUseCase.execute(new CategoryFilter(search, active, deleted, parentId), pageable)));
     }
 
     @GetMapping("/{id}")

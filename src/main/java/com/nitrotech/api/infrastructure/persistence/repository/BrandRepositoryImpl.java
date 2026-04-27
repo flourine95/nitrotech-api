@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.brand.dto.BrandData;
+import com.nitrotech.api.domain.brand.dto.BrandFacets;
 import com.nitrotech.api.domain.brand.dto.BrandFilter;
 import com.nitrotech.api.domain.brand.dto.CreateBrandCommand;
 import com.nitrotech.api.domain.brand.dto.UpdateBrandCommand;
@@ -11,8 +12,10 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -44,7 +47,6 @@ public class BrandRepositoryImpl implements BrandRepository {
         if (command.logo() != null) entity.setLogo(command.logo());
         if (command.description() != null) entity.setDescription(command.description());
         if (command.active() != null) entity.setActive(command.active());
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -64,6 +66,22 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
+    public BrandFacets countFacets(String search) {
+        List<Object[]> rows = jpa.countFacets(search);
+        Object[] row = rows.isEmpty() ? new Object[]{0L, 0L, 0L} : rows.get(0);
+        return new BrandFacets(
+                toLong(row[0]),
+                toLong(row[1]),
+                toLong(row[2])
+        );
+    }
+
+    private long toLong(Object val) {
+        if (val == null) return 0L;
+        return ((Number) val).longValue();
+    }
+
+    @Override
     public boolean existsById(Long id) {
         return jpa.existsActiveById(id);
     }
@@ -80,23 +98,54 @@ public class BrandRepositoryImpl implements BrandRepository {
 
     @Override
     public void softDelete(Long id) {
-        jpa.findActiveById(id).ifPresent(e -> {
-            e.setDeletedAt(LocalDateTime.now());
-            jpa.save(e);
-        });
+        BrandEntity entity = jpa.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
+        entity.setDeletedAt(LocalDateTime.now());
+        jpa.save(entity);
     }
 
     @Override
     public void restore(Long id) {
-        jpa.findDeletedById(id).ifPresent(e -> {
-            e.setDeletedAt(null);
-            jpa.save(e);
-        });
+        BrandEntity entity = jpa.findDeletedById(id)
+                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Deleted brand not found"));
+        entity.setDeletedAt(null);
+        jpa.save(entity);
     }
 
     @Override
     public void hardDelete(Long id) {
         jpa.deleteById(id);
+    }
+
+    @Override
+    @Transactional
+    public List<Long> bulkSoftDelete(List<Long> ids) {
+        List<Long> activeIds = jpa.findAllActiveByIds(ids).stream()
+                .map(BrandEntity::getId).toList();
+        if (!activeIds.isEmpty()) {
+            jpa.bulkSoftDelete(activeIds, LocalDateTime.now());
+        }
+        return activeIds;
+    }
+
+    @Override
+    @Transactional
+    public List<Long> bulkRestore(List<Long> ids) {
+        List<Long> deletedIds = jpa.findDeletedIdsByIds(ids);
+        if (!deletedIds.isEmpty()) {
+            jpa.bulkRestore(deletedIds);
+        }
+        return deletedIds;
+    }
+
+    @Override
+    @Transactional
+    public List<Long> bulkHardDelete(List<Long> ids) {
+        List<Long> deletedIds = jpa.findDeletedIdsByIds(ids);
+        if (!deletedIds.isEmpty()) {
+            jpa.deleteAllByIdInBatch(deletedIds);
+        }
+        return deletedIds;
     }
 
     private BrandData toData(BrandEntity e) {
