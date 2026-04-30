@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -19,7 +20,15 @@ public class BulkDeleteBrandUseCase {
     public BulkResult execute(List<Long> ids) {
         List<Long> deleted = brandRepository.bulkSoftDelete(ids);
         Set<Long> deletedSet = Set.copyOf(deleted);
-        List<Long> failed = ids.stream().filter(id -> !deletedSet.contains(id)).toList();
-        return new BulkResult(deleted.size(), failed.size(), failed);
+
+        Map<Long, String> failedReasons = new java.util.LinkedHashMap<>();
+        for (Long id : ids) {
+            if (!deletedSet.contains(id)) {
+                failedReasons.put(id, "Brand not found or already deleted");
+            }
+        }
+
+        List<Long> failed = List.copyOf(failedReasons.keySet());
+        return new BulkResult(deleted.size(), failed.size(), failed, failedReasons);
     }
 }

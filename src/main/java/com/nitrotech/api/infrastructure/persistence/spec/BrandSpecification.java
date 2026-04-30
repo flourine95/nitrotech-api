@@ -15,7 +15,7 @@ public class BrandSpecification {
 
     private static Specification<BrandEntity> deleted(Boolean deleted) {
         return (root, query, cb) -> {
-            if (deleted == null) return cb.conjunction(); // tất cả
+            if (deleted == null) return cb.isNull(root.get("deletedAt")); // default: chưa xóa
             if (deleted) return cb.isNotNull(root.get("deletedAt")); // chỉ deleted
             return cb.isNull(root.get("deletedAt")); // chưa deleted
         };

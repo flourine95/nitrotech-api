@@ -68,7 +68,7 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     public BrandFacets countFacets(String search) {
         List<Object[]> rows = jpa.countFacets(search);
-        Object[] row = rows.isEmpty() ? new Object[]{0L, 0L, 0L} : rows.get(0);
+        Object[] row = rows.isEmpty() ? new Object[]{0L, 0L, 0L} : rows.getFirst();
         return new BrandFacets(
                 toLong(row[0]),
                 toLong(row[1]),

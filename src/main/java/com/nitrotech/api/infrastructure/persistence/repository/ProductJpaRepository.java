@@ -1,7 +1,6 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -29,10 +28,10 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.categoryId = :categoryId")
     boolean existsAnyByCategoryId(@Param("categoryId") Long categoryId);
 
-    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.brandId = :brandId")
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.brandId = :brandId AND p.deletedAt IS NULL")
     boolean existsAnyByBrandId(@Param("brandId") Long brandId);
 
-    @Query("SELECT DISTINCT p.brandId FROM ProductEntity p WHERE p.brandId IN :brandIds")
+    @Query("SELECT DISTINCT p.brandId FROM ProductEntity p WHERE p.brandId IN :brandIds AND p.deletedAt IS NULL")
     List<Long> findBrandIdsWithProducts(@Param("brandIds") List<Long> brandIds);
 
     @Query("SELECT COUNT(v) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
