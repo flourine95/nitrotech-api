@@ -89,7 +89,25 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
-        return productJpa.findAll(ProductSpecification.from(filter), pageable).map(this::toListData);
+        Page<ProductEntity> page = productJpa.findAll(ProductSpecification.from(filter), pageable);
+        
+        if (page.isEmpty()) {
+            return page.map(this::toListData); // fallback nếu rỗng
+        }
+        
+        // Batch query tất cả data cần thiết
+        List<Long> productIds = page.getContent().stream().map(ProductEntity::getId).toList();
+        var imagesMap = batchLoadImages(productIds);
+        var statsMap = batchLoadProductStats(productIds);
+        var categoryNames = batchLoadCategoryNames(
+                page.getContent().stream().map(ProductEntity::getCategoryId).filter(id -> id != null).distinct().toList()
+        );
+        var brandNames = batchLoadBrandNames(
+                page.getContent().stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
+        );
+        
+        // Map nhanh từ cache
+        return page.map(e -> toListDataBatched(e, imagesMap, statsMap, categoryNames, brandNames));
     }
 
     @Override
@@ -249,4 +267,74 @@ public class ProductRepositoryImpl implements ProductRepository {
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
+
+    // ── Batch loading helpers ─────────────────────────────────────────────────
+
+    private java.util.Map<Long, List<String>> batchLoadImages(List<Long> productIds) {
+        return imageJpa.findByProductIdInOrderBySortOrderAsc(productIds).stream()
+                .collect(java.util.stream.Collectors.groupingBy(
+                        ProductImageEntity::getProductId,
+                        java.util.stream.Collectors.mapping(ProductImageEntity::getUrl, java.util.stream.Collectors.toList())
+                ));
+    }
+
+    private java.util.Map<Long, ProductStats> batchLoadProductStats(List<Long> productIds) {
+        // Query 1 lần cho tất cả products
+        var variantCounts = productJpa.countActiveVariantsBatch(productIds);
+        var minPrices = productJpa.findMinPricesBatch(productIds);
+        var maxPrices = productJpa.findMaxPricesBatch(productIds);
+        
+        java.util.Map<Long, ProductStats> result = new java.util.HashMap<>();
+        for (Long id : productIds) {
+            result.put(id, new ProductStats(
+                    variantCounts.getOrDefault(id, 0),
+                    minPrices.get(id),
+                    maxPrices.get(id)
+            ));
+        }
+        return result;
+    }
+
+    private java.util.Map<Long, String> batchLoadCategoryNames(List<Long> categoryIds) {
+        if (categoryIds.isEmpty()) return java.util.Map.of();
+        return categoryJpa.findAllById(categoryIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        CategoryEntity::getId,
+                        CategoryEntity::getName
+                ));
+    }
+
+    private java.util.Map<Long, String> batchLoadBrandNames(List<Long> brandIds) {
+        if (brandIds.isEmpty()) return java.util.Map.of();
+        return brandJpa.findAllById(brandIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        BrandEntity::getId,
+                        BrandEntity::getName
+                ));
+    }
+
+    private ProductData toListDataBatched(
+            ProductEntity e,
+            java.util.Map<Long, List<String>> imagesMap,
+            java.util.Map<Long, ProductStats> statsMap,
+            java.util.Map<Long, String> categoryNames,
+            java.util.Map<Long, String> brandNames
+    ) {
+        List<String> images = imagesMap.getOrDefault(e.getId(), List.of());
+        ProductStats stats = statsMap.getOrDefault(e.getId(), new ProductStats(0, null, null));
+        
+        return new ProductData(
+                e.getId(), e.getCategoryId(), categoryNames.get(e.getCategoryId()),
+                e.getBrandId(), brandNames.get(e.getBrandId()),
+                e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
+                e.getSpecs(), e.isActive(), images,
+                null, // variants — không load trong list
+                stats.variantCount,
+                stats.minPrice,
+                stats.maxPrice,
+                e.getCreatedAt(), e.getUpdatedAt()
+        );
+    }
+
+    private record ProductStats(int variantCount, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {}
 }

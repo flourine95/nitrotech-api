@@ -42,4 +42,39 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 
     @Query("SELECT MAX(v.price) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
     BigDecimal findMaxPrice(@Param("productId") Long productId);
+
+    // ── Batch queries ─────────────────────────────────────────────────────────
+
+    @Query("SELECT v.productId, COUNT(v) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
+    List<Object[]> countActiveVariantsBatchRaw(@Param("productIds") List<Long> productIds);
+
+    default java.util.Map<Long, Integer> countActiveVariantsBatch(List<Long> productIds) {
+        return countActiveVariantsBatchRaw(productIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> ((Number) row[1]).intValue()
+                ));
+    }
+
+    @Query("SELECT v.productId, MIN(v.price) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
+    List<Object[]> findMinPricesBatchRaw(@Param("productIds") List<Long> productIds);
+
+    default java.util.Map<Long, BigDecimal> findMinPricesBatch(List<Long> productIds) {
+        return findMinPricesBatchRaw(productIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+    }
+
+    @Query("SELECT v.productId, MAX(v.price) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
+    List<Object[]> findMaxPricesBatchRaw(@Param("productIds") List<Long> productIds);
+
+    default java.util.Map<Long, BigDecimal> findMaxPricesBatch(List<Long> productIds) {
+        return findMaxPricesBatchRaw(productIds).stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (BigDecimal) row[1]
+                ));
+    }
 }

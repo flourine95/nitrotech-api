@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UpdateBrandUseCase {
@@ -16,6 +17,7 @@ public class UpdateBrandUseCase {
         this.brandRepository = brandRepository;
     }
 
+    @Transactional
     public BrandData execute(UpdateBrandCommand command) {
         if (!brandRepository.existsById(command.id())) {
             throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
