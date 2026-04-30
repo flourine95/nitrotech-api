@@ -15,14 +15,14 @@
       "status": 201,
       "body": {
         "data": {
-          "id": 15,
+          "id": 42,
           "name": "Test Brand",
-          "slug": "test-brand-1775710498",
+          "slug": "test-brand-1777583371",
           "logo": "https://example.com/logo.png",
           "description": "A test brand",
           "active": true,
-          "createdAt": "2026-04-09T11:54:58.506284",
-          "updatedAt": "2026-04-09T11:54:58.506284"
+          "createdAt": "2026-05-01T04:09:31.5183906",
+          "updatedAt": "2026-05-01T04:09:31.5183906"
         },
         "message": "Created successfully"
       }

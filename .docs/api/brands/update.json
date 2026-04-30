@@ -1,16 +1,16 @@
 {
   "endpoint": "PUT /api/brands/{id}",
-  "description": "Cập nhật brand. Tất cả fields đều optional.",
+  "description": "Cập nhật brand. Hỗ trợ partial update - chỉ update fields được truyền.",
   "request": {
     "path": {
       "id": "number"
     },
     "body": {
-      "name": "string",
-      "slug": "string",
-      "logo": "string",
-      "description": "string",
-      "active": "boolean"
+      "name": "string (optional)",
+      "slug": "string (optional)",
+      "logo": "string (optional)",
+      "description": "string (optional)",
+      "active": "boolean (optional)"
     }
   },
   "responses": {
@@ -18,14 +18,14 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 15,
+          "id": 42,
           "name": "Updated Brand",
-          "slug": "test-brand-1775710498",
+          "slug": "test-brand-1777583371",
           "logo": "https://example.com/logo.png",
           "description": "A test brand",
           "active": false,
-          "createdAt": "2026-04-09T11:54:58.506284",
-          "updatedAt": "2026-04-09T11:54:58.593302"
+          "createdAt": "2026-05-01T04:09:31.518391",
+          "updatedAt": "2026-05-01T04:09:31.518391"
         }
       }
     },
@@ -37,5 +37,11 @@
         "message": "Brand not found"
       }
     }
-  }
+  },
+  "notes": [
+    "Partial update: Fields không truyền → giữ nguyên giá trị cũ",
+    "Fields truyền giá trị → update thành giá trị mới",
+    "Fields truyền null → bị IGNORE (giữ nguyên giá trị cũ)",
+    "KHÔNG HỖ TRỢ clear fields về null. Workaround: dùng empty string \"\" cho text fields (logo, description)"
+  ]
 }

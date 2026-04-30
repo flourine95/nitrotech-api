@@ -15,5 +15,6 @@ public record UpdateBrandRequest(
         String logo,
 
         String description,
+        
         Boolean active
 ) {}

@@ -1,0 +1,54 @@
+{
+  "endpoint": "DELETE /api/brands/bulk",
+  "description": "Soft delete nhiều brands cùng lúc. Max 100 ids.",
+  "request": {
+    "body": {
+      "ids": "array<number> (required, max 100)"
+    }
+  },
+  "responses": {
+    "200_all_success": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 2,
+          "failed": 0,
+          "failedIds": [],
+          "failedReasons": {}
+        }
+      }
+    },
+    "200_partial_success": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 1,
+          "failed": 2,
+          "failedIds": [
+            999998,
+            999999
+          ],
+          "failedReasons": {
+            "999998": "Brand not found or already deleted",
+            "999999": "Brand not found or already deleted"
+          }
+        }
+      }
+    },
+    "422_validation": {
+      "status": 422,
+      "body": {
+        "status": 422,
+        "code": "VALIDATION_ERROR",
+        "message": "Validation failed",
+        "errors": {
+          "ids": "ids must not be empty"
+        }
+      }
+    }
+  },
+  "notes": [
+    "Response có failedReasons: Map<id, reason> cho từng id thất bại",
+    "Partial success: succeeded > 0 && failed > 0"
+  ]
+}
