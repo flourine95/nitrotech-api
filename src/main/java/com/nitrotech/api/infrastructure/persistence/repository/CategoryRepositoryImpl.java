@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
+import com.nitrotech.api.domain.category.dto.BreadcrumbItem;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
@@ -202,10 +203,191 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children) {
+        // Get breadcrumb path
+        List<BreadcrumbItem> path = jpa.findPath(e.getId()).stream()
+                .map(row -> new BreadcrumbItem(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        (String) row[2],
+                        (Boolean) row[3]
+                ))
+                .toList();
+        
         return new CategoryData(
                 e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
                 e.getParentId(), parentName, e.isActive(), e.getSortOrder(), children,
+                path, children != null ? children.size() : 0,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Long> bulkSoftDelete(List<Long> ids) {
+        // Only delete categories that have no children
+        List<Long> deletableIds = new ArrayList<>();
+        for (Long id : ids) {
+            if (jpa.existsActiveById(id) && !jpa.existsAnyChildrenByParentId(id)) {
+                deletableIds.add(id);
+            }
+        }
+        if (!deletableIds.isEmpty()) {
+            jpa.bulkSoftDelete(deletableIds, LocalDateTime.now());
+        }
+        return deletableIds;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Long> bulkRestore(List<Long> ids) {
+        List<Long> restorableIds = jpa.findAllDeletedByIds(ids).stream()
+                .map(CategoryEntity::getId).toList();
+        if (!restorableIds.isEmpty()) {
+            jpa.bulkRestore(restorableIds);
+        }
+        return restorableIds;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Long> bulkHardDelete(List<Long> ids) {
+        // Only hard delete categories that are already soft deleted and have no children
+        List<Long> deletableIds = new ArrayList<>();
+        for (Long id : ids) {
+            Optional<CategoryEntity> entity = jpa.findDeletedById(id);
+            if (entity.isPresent() && !jpa.existsAnyChildrenByParentId(id)) {
+                deletableIds.add(id);
+            }
+        }
+        if (!deletableIds.isEmpty()) {
+            jpa.deleteAllById(deletableIds);
+        }
+        return deletableIds;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Long> bulkActivate(List<Long> ids) {
+        List<Long> activatableIds = jpa.findAllActiveByIds(ids).stream()
+                .map(CategoryEntity::getId).toList();
+        if (!activatableIds.isEmpty()) {
+            jpa.bulkActivate(activatableIds);
+        }
+        return activatableIds;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public List<Long> bulkDeactivate(List<Long> ids) {
+        List<Long> deactivatableIds = jpa.findAllActiveByIds(ids).stream()
+                .map(CategoryEntity::getId).toList();
+        if (!deactivatableIds.isEmpty()) {
+            jpa.bulkDeactivate(deactivatableIds);
+        }
+        return deactivatableIds;
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public CategoryData moveUp(Long id) {
+        CategoryEntity entity = jpa.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+        
+        // Find sibling before (same parent, sortOrder < current)
+        List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+        CategoryEntity previousSibling = siblings.stream()
+                .filter(s -> s.getSortOrder() < entity.getSortOrder())
+                .max((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
+                .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
+                        "ALREADY_FIRST", "Category is already at the first position"));
+        
+        // Swap sortOrder
+        int tempOrder = entity.getSortOrder();
+        entity.setSortOrder(previousSibling.getSortOrder());
+        previousSibling.setSortOrder(tempOrder);
+        entity.setUpdatedAt(LocalDateTime.now());
+        previousSibling.setUpdatedAt(LocalDateTime.now());
+        
+        jpa.save(entity);
+        jpa.save(previousSibling);
+        
+        return toData(entity, null, List.of());
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public CategoryData moveDown(Long id) {
+        CategoryEntity entity = jpa.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+        
+        // Find sibling after (same parent, sortOrder > current)
+        List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+        CategoryEntity nextSibling = siblings.stream()
+                .filter(s -> s.getSortOrder() > entity.getSortOrder())
+                .min((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
+                .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
+                        "ALREADY_LAST", "Category is already at the last position"));
+        
+        // Swap sortOrder
+        int tempOrder = entity.getSortOrder();
+        entity.setSortOrder(nextSibling.getSortOrder());
+        nextSibling.setSortOrder(tempOrder);
+        entity.setUpdatedAt(LocalDateTime.now());
+        nextSibling.setUpdatedAt(LocalDateTime.now());
+        
+        jpa.save(entity);
+        jpa.save(nextSibling);
+        
+        return toData(entity, null, List.of());
+    }
+
+    @Override
+    @org.springframework.transaction.annotation.Transactional
+    public CategoryData move(Long id, Long newParentId, Long afterId) {
+        CategoryEntity entity = jpa.findActiveById(id)
+                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+        
+        LocalDateTime now = LocalDateTime.now();
+        
+        // Validate circular reference if changing parent
+        if (newParentId != null && !newParentId.equals(entity.getParentId())) {
+            if (isDescendantOf(newParentId, id)) {
+                throw new com.nitrotech.api.shared.exception.ConflictException(
+                        "CIRCULAR_REFERENCE", "Cannot move category into its own descendant");
+            }
+            entity.setParentId(newParentId);
+        }
+        
+        // Calculate sortOrder
+        if (afterId != null) {
+            // Place after specific category
+            CategoryEntity afterCategory = jpa.findActiveById(afterId)
+                    .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
+                            "INVALID_AFTER_ID", "afterId category not found"));
+            
+            entity.setSortOrder(afterCategory.getSortOrder() + 1);
+            
+            // Shift categories after
+            List<CategoryEntity> toShift = jpa.findAllActive(null, entity.getParentId()).stream()
+                    .filter(c -> !c.getId().equals(id) && c.getSortOrder() > afterCategory.getSortOrder())
+                    .toList();
+            for (CategoryEntity c : toShift) {
+                c.setSortOrder(c.getSortOrder() + 1);
+                c.setUpdatedAt(now);
+                jpa.save(c);
+            }
+        } else {
+            // Place at the end
+            List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+            int maxOrder = siblings.stream()
+                    .filter(c -> !c.getId().equals(id))
+                    .mapToInt(CategoryEntity::getSortOrder)
+                    .max()
+                    .orElse(-1);
+            entity.setSortOrder(maxOrder + 1);
+        }
+        
+        entity.setUpdatedAt(now);
+        return toData(jpa.save(entity), null, List.of());
     }
 }

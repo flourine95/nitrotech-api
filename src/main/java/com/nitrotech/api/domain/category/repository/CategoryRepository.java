@@ -30,4 +30,16 @@ public interface CategoryRepository {
     void restore(Long id);
     void hardDelete(Long id);
     MoveCategoryResult moveCategory(MoveCategoryCommand command);
+    
+    // Bulk operations
+    List<Long> bulkSoftDelete(List<Long> ids);
+    List<Long> bulkRestore(List<Long> ids);
+    List<Long> bulkHardDelete(List<Long> ids);
+    List<Long> bulkActivate(List<Long> ids);
+    List<Long> bulkDeactivate(List<Long> ids);
+    
+    // Move operations
+    CategoryData moveUp(Long id);
+    CategoryData moveDown(Long id);
+    CategoryData move(Long id, Long newParentId, Long afterId);
 }

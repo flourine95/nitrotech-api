@@ -3,12 +3,21 @@ package com.nitrotech.api.application.category.controller;
 import com.nitrotech.api.application.category.request.CreateCategoryRequest;
 import com.nitrotech.api.application.category.request.MoveCategoryRequest;
 import com.nitrotech.api.application.category.request.UpdateCategoryRequest;
+import com.nitrotech.api.application.category.request.BulkDeleteCategoryRequest;
+import com.nitrotech.api.application.category.request.BulkRestoreCategoryRequest;
+import com.nitrotech.api.application.category.request.BulkHardDeleteCategoryRequest;
+import com.nitrotech.api.application.category.request.BulkActivateCategoryRequest;
+import com.nitrotech.api.application.category.request.BulkDeactivateCategoryRequest;
+import com.nitrotech.api.application.category.request.ValidateDeleteCategoryRequest;
+import com.nitrotech.api.application.category.request.SimpleMoveRequest;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
+import com.nitrotech.api.domain.category.dto.BulkResult;
+import com.nitrotech.api.domain.category.dto.ValidateDeleteResult;
 import com.nitrotech.api.domain.category.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
 import com.nitrotech.api.shared.util.SortUtils;
@@ -36,6 +45,15 @@ public class CategoryController {
     private final RestoreCategoryUseCase restoreCategoryUseCase;
     private final HardDeleteCategoryUseCase hardDeleteCategoryUseCase;
     private final MoveCategoryUseCase moveCategoryUseCase;
+    private final BulkDeleteCategoryUseCase bulkDeleteCategoryUseCase;
+    private final BulkRestoreCategoryUseCase bulkRestoreCategoryUseCase;
+    private final BulkHardDeleteCategoryUseCase bulkHardDeleteCategoryUseCase;
+    private final BulkActivateCategoryUseCase bulkActivateCategoryUseCase;
+    private final BulkDeactivateCategoryUseCase bulkDeactivateCategoryUseCase;
+    private final ValidateBulkDeleteCategoryUseCase validateBulkDeleteCategoryUseCase;
+    private final MoveUpCategoryUseCase moveUpCategoryUseCase;
+    private final MoveDownCategoryUseCase moveDownCategoryUseCase;
+    private final SimpleMoveCategoryUseCase simpleMoveCategoryUseCase;
 
     public CategoryController(GetCategoriesUseCase getCategoriesUseCase,
                                GetCategoryUseCase getCategoryUseCase,
@@ -44,7 +62,16 @@ public class CategoryController {
                                DeleteCategoryUseCase deleteCategoryUseCase,
                                RestoreCategoryUseCase restoreCategoryUseCase,
                                HardDeleteCategoryUseCase hardDeleteCategoryUseCase,
-                               MoveCategoryUseCase moveCategoryUseCase) {
+                               MoveCategoryUseCase moveCategoryUseCase,
+                               BulkDeleteCategoryUseCase bulkDeleteCategoryUseCase,
+                               BulkRestoreCategoryUseCase bulkRestoreCategoryUseCase,
+                               BulkHardDeleteCategoryUseCase bulkHardDeleteCategoryUseCase,
+                               BulkActivateCategoryUseCase bulkActivateCategoryUseCase,
+                               BulkDeactivateCategoryUseCase bulkDeactivateCategoryUseCase,
+                               ValidateBulkDeleteCategoryUseCase validateBulkDeleteCategoryUseCase,
+                               MoveUpCategoryUseCase moveUpCategoryUseCase,
+                               MoveDownCategoryUseCase moveDownCategoryUseCase,
+                               SimpleMoveCategoryUseCase simpleMoveCategoryUseCase) {
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.getCategoryUseCase = getCategoryUseCase;
         this.createCategoryUseCase = createCategoryUseCase;
@@ -53,6 +80,15 @@ public class CategoryController {
         this.restoreCategoryUseCase = restoreCategoryUseCase;
         this.hardDeleteCategoryUseCase = hardDeleteCategoryUseCase;
         this.moveCategoryUseCase = moveCategoryUseCase;
+        this.bulkDeleteCategoryUseCase = bulkDeleteCategoryUseCase;
+        this.bulkRestoreCategoryUseCase = bulkRestoreCategoryUseCase;
+        this.bulkHardDeleteCategoryUseCase = bulkHardDeleteCategoryUseCase;
+        this.bulkActivateCategoryUseCase = bulkActivateCategoryUseCase;
+        this.bulkDeactivateCategoryUseCase = bulkDeactivateCategoryUseCase;
+        this.validateBulkDeleteCategoryUseCase = validateBulkDeleteCategoryUseCase;
+        this.moveUpCategoryUseCase = moveUpCategoryUseCase;
+        this.moveDownCategoryUseCase = moveDownCategoryUseCase;
+        this.simpleMoveCategoryUseCase = simpleMoveCategoryUseCase;
     }
 
     @GetMapping
@@ -125,5 +161,59 @@ public class CategoryController {
         return ResponseEntity.ok(ApiResponse.ok(moveCategoryUseCase.execute(
                 new MoveCategoryCommand(request.movedId(), request.fromParentId(),
                         request.toParentId(), request.sourceOrderedIds(), request.targetOrderedIds()))));
+    }
+
+    @DeleteMapping("/bulk")
+    public ResponseEntity<ApiResponse<BulkResult>> bulkDelete(
+            @Valid @RequestBody BulkDeleteCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(bulkDeleteCategoryUseCase.execute(request.ids())));
+    }
+
+    @DeleteMapping("/bulk/permanent")
+    public ResponseEntity<ApiResponse<BulkResult>> bulkHardDelete(
+            @Valid @RequestBody BulkHardDeleteCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(bulkHardDeleteCategoryUseCase.execute(request.ids())));
+    }
+
+    @PatchMapping("/bulk/restore")
+    public ResponseEntity<ApiResponse<BulkResult>> bulkRestore(
+            @Valid @RequestBody BulkRestoreCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(bulkRestoreCategoryUseCase.execute(request.ids())));
+    }
+
+    @PatchMapping("/bulk/activate")
+    public ResponseEntity<ApiResponse<BulkResult>> bulkActivate(
+            @Valid @RequestBody BulkActivateCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(bulkActivateCategoryUseCase.execute(request.ids())));
+    }
+
+    @PatchMapping("/bulk/deactivate")
+    public ResponseEntity<ApiResponse<BulkResult>> bulkDeactivate(
+            @Valid @RequestBody BulkDeactivateCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(bulkDeactivateCategoryUseCase.execute(request.ids())));
+    }
+
+    @PostMapping("/bulk/validate-delete")
+    public ResponseEntity<ApiResponse<ValidateDeleteResult>> validateBulkDelete(
+            @Valid @RequestBody ValidateDeleteCategoryRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(validateBulkDeleteCategoryUseCase.execute(request.ids())));
+    }
+
+    @PatchMapping("/{id}/move-up")
+    public ResponseEntity<ApiResponse<CategoryData>> moveUp(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(moveUpCategoryUseCase.execute(id)));
+    }
+
+    @PatchMapping("/{id}/move-down")
+    public ResponseEntity<ApiResponse<CategoryData>> moveDown(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(moveDownCategoryUseCase.execute(id)));
+    }
+
+    @PatchMapping("/{id}/move")
+    public ResponseEntity<ApiResponse<CategoryData>> simpleMove(
+            @PathVariable Long id,
+            @RequestBody SimpleMoveRequest request) {
+        return ResponseEntity.ok(ApiResponse.ok(
+                simpleMoveCategoryUseCase.execute(id, request.newParentId(), request.afterId())));
     }
 }
