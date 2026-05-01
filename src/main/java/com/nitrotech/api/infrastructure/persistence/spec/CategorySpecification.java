@@ -16,7 +16,8 @@ public class CategorySpecification {
 
     private static Specification<CategoryEntity> deleted(Boolean deleted) {
         return (root, query, cb) -> {
-            if (deleted == null) return cb.conjunction();
+            // Default (null): chỉ lấy categories chưa xóa
+            if (deleted == null) return cb.isNull(root.get("deletedAt"));
             if (deleted) return cb.isNotNull(root.get("deletedAt"));
             return cb.isNull(root.get("deletedAt"));
         };

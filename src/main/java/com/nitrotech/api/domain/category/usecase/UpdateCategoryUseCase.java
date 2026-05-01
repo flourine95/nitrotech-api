@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UpdateCategoryUseCase {
@@ -16,6 +17,7 @@ public class UpdateCategoryUseCase {
         this.categoryRepository = categoryRepository;
     }
 
+    @Transactional
     public CategoryData execute(UpdateCategoryCommand command) {
         if (!categoryRepository.existsById(command.id())) {
             throw new NotFoundException("CATEGORY_NOT_FOUND", "Category not found");
