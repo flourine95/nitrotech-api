@@ -1,0 +1,31 @@
+{
+  "endpoint": "PATCH /api/categories/{id}/move-up",
+  "description": "Move category lên 1 vị trí (swap với sibling trước đó).",
+  "request": {
+    "path": {
+      "id": "number"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "ALREADY_FIRST",
+        "message": "Category is already at the first position"
+      }
+    },
+    "409_already_first": {
+      "status": 409,
+      "body": {
+        "status": 409,
+        "code": "ALREADY_FIRST",
+        "message": "Category is already at the first position"
+      }
+    }
+  },
+  "notes": [
+    "Chỉ swap trong cùng parent",
+    "Throw ALREADY_FIRST nếu đã ở đầu tiên"
+  ]
+}

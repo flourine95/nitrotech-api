@@ -1,4 +1,133 @@
 {
+  "bulk-activate": {
+    "endpoint": "PATCH /api/categories/bulk/activate",
+    "description": "Bulk activate categories. Set active=true cho tất cả ids.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 2,
+            "failed": 0,
+            "failedIds": [],
+            "failedReasons": {}
+          }
+        }
+      }
+    }
+  },
+  "bulk-deactivate": {
+    "endpoint": "PATCH /api/categories/bulk/deactivate",
+    "description": "Bulk deactivate categories. Set active=false cho tất cả ids.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 2,
+            "failed": 0,
+            "failedIds": [],
+            "failedReasons": {}
+          }
+        }
+      }
+    }
+  },
+  "bulk-delete": {
+    "endpoint": "DELETE /api/categories/bulk",
+    "description": "Bulk soft delete categories. Chỉ delete categories không có children.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_partial_success": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 2,
+            "failed": 0,
+            "failedIds": [],
+            "failedReasons": {}
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 0,
+            "failed": 1,
+            "failedIds": [
+              999999
+            ],
+            "failedReasons": {
+              "999999": "Category not found, already deleted, or has children"
+            }
+          }
+        }
+      }
+    },
+    "notes": [
+      "Response: {succeeded, failed, failedIds, failedReasons}",
+      "failedReasons: {'3': 'Has children'}"
+    ]
+  },
+  "bulk-hard-delete": {
+    "endpoint": "DELETE /api/categories/bulk/permanent",
+    "description": "Bulk hard delete. Chỉ delete categories đã soft deleted và không có children.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 2,
+            "failed": 0,
+            "failedIds": [],
+            "failedReasons": {}
+          }
+        }
+      }
+    }
+  },
+  "bulk-restore": {
+    "endpoint": "PATCH /api/categories/bulk/restore",
+    "description": "Bulk restore deleted categories.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "succeeded": 2,
+            "failed": 0,
+            "failedIds": [],
+            "failedReasons": {}
+          }
+        }
+      }
+    }
+  },
   "create": {
     "endpoint": "POST /api/categories",
     "description": "Tạo category. Slug unique trong active records. parentId optional.",
@@ -17,9 +146,9 @@
         "status": 201,
         "body": {
           "data": {
-            "id": 26,
+            "id": 46,
             "name": "Test Category",
-            "slug": "test-cat-1775738009",
+            "slug": "test-cat-1777705150",
             "description": "Test",
             "image": null,
             "parentId": null,
@@ -27,8 +156,9 @@
             "active": true,
             "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T19:33:29.5726254",
-            "updatedAt": "2026-04-09T19:33:29.5726254"
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:11.1297016",
+            "updatedAt": "2026-05-02T13:59:11.1297016"
           },
           "message": "Created successfully"
         }
@@ -89,7 +219,7 @@
   },
   "get": {
     "endpoint": "GET /api/categories/{id}",
-    "description": "Lấy chi tiết category theo id.",
+    "description": "Lấy chi tiết category theo id. Response có breadcrumb path.",
     "request": {
       "path": {
         "id": "number"
@@ -100,9 +230,9 @@
         "status": 200,
         "body": {
           "data": {
-            "id": 26,
+            "id": 46,
             "name": "Test Category",
-            "slug": "test-cat-1775738009",
+            "slug": "test-cat-1777705150",
             "description": "Test",
             "image": null,
             "parentId": null,
@@ -110,8 +240,10 @@
             "active": true,
             "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T19:33:29.572625",
-            "updatedAt": "2026-04-09T19:33:29.572625"
+            "path": [],
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:11.129702",
+            "updatedAt": "2026-05-02T13:59:11.129702"
           }
         }
       },
@@ -123,7 +255,12 @@
           "message": "Category not found"
         }
       }
-    }
+    },
+    "notes": [
+      "Response có field path: [{id, name, slug, active}] - breadcrumb từ root đến parent",
+      "path = [] nếu category ở root (không có parent)",
+      "path field CHỈ có trong GET single category, KHÔNG có trong list/tree"
+    ]
   },
   "hard-delete": {
     "endpoint": "DELETE /api/categories/{id}/permanent",
@@ -159,303 +296,661 @@
   },
   "list": {
     "endpoint": "GET /api/categories",
-    "description": "Danh sách categories. Dùng tree=true để lấy dạng cây.",
+    "description": "Danh sách categories dạng tree + facets. Dùng deleted=true để lấy deleted list.",
     "request": {
       "params": {
-        "search": "string (optional)",
-        "active": "boolean (optional)",
-        "deleted": "boolean (optional)",
-        "parentId": "number (optional)",
-        "tree": "boolean (default: false) — trả dạng cây, bỏ qua pagination",
-        "page": "number (default: 0)",
-        "size": "number (default: 20)",
-        "sort": "field,direction"
+        "deleted": "boolean (optional) — true: trả deleted list, false/null: trả tree + facets"
       }
     },
     "responses": {
-      "200_flat": {
-        "status": 200,
-        "body": {
-          "data": {
-            "content": [
-              {
-                "id": 11,
-                "name": "sua hu",
-                "slug": "sua-hu",
-                "description": "day la sua hu, nam trong thu muc goc",
-                "image": null,
-                "parentId": 10,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T12:23:39.990272",
-                "updatedAt": "2026-04-09T12:23:39.990272"
-              },
-              {
-                "id": 10,
-                "name": "sữa tươi",
-                "slug": "sa-ti",
-                "description": "day la danh muc goc",
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 4,
-                "children": [],
-                "createdAt": "2026-04-09T12:23:08.912303",
-                "updatedAt": "2026-04-09T12:23:08.912303"
-              },
-              {
-                "id": 5,
-                "name": "Phones",
-                "slug": "phones",
-                "description": null,
-                "image": null,
-                "parentId": 4,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-08T16:06:45.673728",
-                "updatedAt": "2026-04-08T16:06:45.673728"
-              },
-              {
-                "id": 4,
-                "name": "Electronics",
-                "slug": "electronics",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 1,
-                "children": [],
-                "createdAt": "2026-04-08T16:05:44.129302",
-                "updatedAt": "2026-04-08T16:05:44.129302"
-              },
-              {
-                "id": 3,
-                "name": "Circular",
-                "slug": "circular-1775132622",
-                "description": null,
-                "image": null,
-                "parentId": 2,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-02T19:23:42.189178",
-                "updatedAt": "2026-04-02T19:23:42.189178"
-              }
-            ],
-            "empty": false,
-            "first": true,
-            "last": true,
-            "number": 0,
-            "numberOfElements": 5,
-            "pageable": {
-              "offset": 0,
-              "pageNumber": 0,
-              "pageSize": 20,
-              "paged": true,
-              "sort": {
-                "empty": false,
-                "sorted": true,
-                "unsorted": false
-              },
-              "unpaged": false
-            },
-            "size": 20,
-            "sort": {
-              "empty": false,
-              "sorted": true,
-              "unsorted": false
-            },
-            "totalElements": 5,
-            "totalPages": 1
-          }
-        }
-      },
-      "200_tree": {
+      "200_tree_with_facets": {
         "status": 200,
         "body": {
           "data": [
             {
-              "id": 4,
-              "name": "Electronics",
-              "slug": "electronics",
+              "id": 5,
+              "name": "Áo sơ mi",
+              "slug": "ao-so-mi-1777565859-4",
               "description": null,
               "image": null,
               "parentId": null,
               "parentName": null,
               "active": true,
-              "sortOrder": 1,
-              "children": [
-                {
-                  "id": 5,
-                  "name": "Phones",
-                  "slug": "phones",
-                  "description": null,
-                  "image": null,
-                  "parentId": 4,
-                  "parentName": null,
-                  "active": true,
-                  "sortOrder": 0,
-                  "children": [],
-                  "createdAt": "2026-04-08T16:06:45.673728",
-                  "updatedAt": "2026-04-08T16:06:45.673728"
-                }
-              ],
-              "createdAt": "2026-04-08T16:05:44.129302",
-              "updatedAt": "2026-04-08T16:05:44.129302"
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.218834",
+              "updatedAt": "2026-04-30T23:17:39.218834"
             },
             {
-              "id": 10,
-              "name": "sữa tươi",
-              "slug": "sa-ti",
-              "description": "day la danh muc goc",
+              "id": 7,
+              "name": "Áo sơ mi",
+              "slug": "ao-so-mi-1777565859-6",
+              "description": null,
               "image": null,
               "parentId": null,
               "parentName": null,
               "active": true,
-              "sortOrder": 4,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.260646",
+              "updatedAt": "2026-04-30T23:17:39.260646"
+            },
+            {
+              "id": 21,
+              "name": "Áo sơ mi (1777565859)",
+              "slug": "ao-so-mi-1777565859-20",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.586605",
+              "updatedAt": "2026-04-30T23:17:39.586605"
+            },
+            {
+              "id": 6,
+              "name": "Áo thun",
+              "slug": "ao-thun-1777565859-5",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.239168",
+              "updatedAt": "2026-04-30T23:17:39.239168"
+            },
+            {
+              "id": 22,
+              "name": "Đồng hồ (1777565859)",
+              "slug": "ong-ho-1777565859-21",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.607638",
+              "updatedAt": "2026-04-30T23:17:39.607638"
+            },
+            {
+              "id": 20,
+              "name": "Đồng hồ (1777565859)",
+              "slug": "ong-ho-1777565859-19",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.56298",
+              "updatedAt": "2026-04-30T23:17:39.56298"
+            },
+            {
+              "id": 26,
+              "name": "Electronics",
+              "slug": "electronics",
+              "description": "Electronic devices",
+              "image": "https://example.com/electronics.jpg",
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
               "children": [
                 {
-                  "id": 11,
-                  "name": "sua hu",
-                  "slug": "sua-hu",
-                  "description": "day la sua hu, nam trong thu muc goc",
+                  "id": 27,
+                  "name": "Smartphones",
+                  "slug": "smartphones",
+                  "description": "Mobile phones",
                   "image": null,
-                  "parentId": 10,
+                  "parentId": 26,
                   "parentName": null,
                   "active": true,
                   "sortOrder": 0,
                   "children": [],
-                  "createdAt": "2026-04-09T12:23:39.990272",
-                  "updatedAt": "2026-04-09T12:23:39.990272"
+                  "childrenCount": 0,
+                  "createdAt": "2026-05-01T18:05:51.446114",
+                  "updatedAt": "2026-05-01T18:05:51.446114"
                 }
               ],
-              "createdAt": "2026-04-09T12:23:08.912303",
-              "updatedAt": "2026-04-09T12:23:08.912303"
+              "childrenCount": 1,
+              "createdAt": "2026-05-01T18:05:35.39605",
+              "updatedAt": "2026-05-01T18:05:35.39605"
+            },
+            {
+              "id": 18,
+              "name": "Giày sandal (1777565859)",
+              "slug": "giay-sandal-1777565859-17",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.515016",
+              "updatedAt": "2026-04-30T23:17:39.515016"
+            },
+            {
+              "id": 16,
+              "name": "Giày sandal (1777565859)",
+              "slug": "giay-sandal-1777565859-15",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.469455",
+              "updatedAt": "2026-04-30T23:17:39.469455"
+            },
+            {
+              "id": 17,
+              "name": "Giày sandal (1777565859)",
+              "slug": "giay-sandal-1777565859-16",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.493493",
+              "updatedAt": "2026-04-30T23:17:39.493493"
+            },
+            {
+              "id": 8,
+              "name": "Giày thể thao",
+              "slug": "giay-the-thao-1777565859-7",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.282534",
+              "updatedAt": "2026-04-30T23:17:39.282534"
+            },
+            {
+              "id": 14,
+              "name": "Giày thể thao",
+              "slug": "giay-the-thao-1777565859-13",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.426799",
+              "updatedAt": "2026-04-30T23:17:39.426799"
+            },
+            {
+              "id": 10,
+              "name": "Mũ nón",
+              "slug": "mu-non-1777565859-9",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.328339",
+              "updatedAt": "2026-04-30T23:17:39.328339"
+            },
+            {
+              "id": 11,
+              "name": "Phụ kiện",
+              "slug": "phu-kien-1777565859-10",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.348251",
+              "updatedAt": "2026-04-30T23:17:39.348251"
+            },
+            {
+              "id": 3,
+              "name": "Quần jeans",
+              "slug": "quan-jeans-1777565859-2",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [
+                {
+                  "id": 2,
+                  "name": "Đồng hồ",
+                  "slug": "ong-ho-1777565859-1",
+                  "description": null,
+                  "image": null,
+                  "parentId": 3,
+                  "parentName": null,
+                  "active": true,
+                  "sortOrder": 0,
+                  "children": [],
+                  "childrenCount": 0,
+                  "createdAt": "2026-04-30T23:17:39.136851",
+                  "updatedAt": "2026-05-01T18:07:08.694084"
+                }
+              ],
+              "childrenCount": 1,
+              "createdAt": "2026-04-30T23:17:39.172259",
+              "updatedAt": "2026-04-30T23:17:39.172259"
+            },
+            {
+              "id": 4,
+              "name": "Quần jeans",
+              "slug": "quan-jeans-1777565859-3",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.198992",
+              "updatedAt": "2026-04-30T23:17:39.198992"
+            },
+            {
+              "id": 13,
+              "name": "Quần short",
+              "slug": "quan-short-1777565859-12",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.397712",
+              "updatedAt": "2026-04-30T23:17:39.397712"
+            },
+            {
+              "id": 24,
+              "name": "Quần short (1777565859)",
+              "slug": "quan-short-1777565859-23",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.6482",
+              "updatedAt": "2026-04-30T23:17:39.6482"
+            },
+            {
+              "id": 19,
+              "name": "Tất vớ (1777565859)",
+              "slug": "tat-vo-1777565859-18",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.537505",
+              "updatedAt": "2026-04-30T23:17:39.537505"
+            },
+            {
+              "id": 23,
+              "name": "Tất vớ (1777565859)",
+              "slug": "tat-vo-1777565859-22",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.628203",
+              "updatedAt": "2026-04-30T23:17:39.628203"
+            },
+            {
+              "id": 25,
+              "name": "Tất vớ (1777565859)",
+              "slug": "tat-vo-1777565859-24",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.672366",
+              "updatedAt": "2026-04-30T23:17:39.672366"
+            },
+            {
+              "id": 33,
+              "name": "Test A",
+              "slug": "test-cat-1777700861-t1",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T12:47:42.500087",
+              "updatedAt": "2026-05-02T12:47:43.019811"
+            },
+            {
+              "id": 42,
+              "name": "Test A",
+              "slug": "test-cat-1777704683-t1",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T13:51:24.685822",
+              "updatedAt": "2026-05-02T13:51:25.219904"
+            },
+            {
+              "id": 12,
+              "name": "Túi xách",
+              "slug": "tui-xach-1777565859-11",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.367322",
+              "updatedAt": "2026-04-30T23:17:39.367322"
+            },
+            {
+              "id": 15,
+              "name": "Túi xách",
+              "slug": "tui-xach-1777565859-14",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.449282",
+              "updatedAt": "2026-04-30T23:17:39.449282"
+            },
+            {
+              "id": 44,
+              "name": "Validate Parent",
+              "slug": "test-cat-1777704683-vp",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T13:51:24.83286",
+              "updatedAt": "2026-05-02T13:51:24.83286"
+            },
+            {
+              "id": 35,
+              "name": "Validate Parent",
+              "slug": "test-cat-1777700861-vp",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T12:47:42.625656",
+              "updatedAt": "2026-05-02T12:47:42.625656"
+            },
+            {
+              "id": 9,
+              "name": "Váy đầm",
+              "slug": "vay-am-1777565859-8",
+              "description": null,
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.307211",
+              "updatedAt": "2026-04-30T23:17:39.307211"
+            }
+          ],
+          "facets": {
+            "active": 30,
+            "inactive": 0,
+            "deleted": 5,
+            "root": 28,
+            "withChildren": 2
+          }
+        }
+      },
+      "200_deleted_list": {
+        "status": 200,
+        "body": {
+          "data": [
+            {
+              "id": 37,
+              "name": "Updated Category",
+              "slug": "test-cat-1777704683",
+              "description": "Test",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T13:51:23.645016",
+              "updatedAt": "2026-05-02T13:51:23.921853"
+            },
+            {
+              "id": 38,
+              "name": "Child Category",
+              "slug": "test-cat-1777704683-child",
+              "description": null,
+              "image": null,
+              "parentId": 37,
+              "parentName": "Updated Category",
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T13:51:23.801878",
+              "updatedAt": "2026-05-02T13:51:23.801878"
+            },
+            {
+              "id": 28,
+              "name": "Updated Category",
+              "slug": "test-cat-1777700861",
+              "description": "Test",
+              "image": null,
+              "parentId": null,
+              "parentName": null,
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T12:47:41.585471",
+              "updatedAt": "2026-05-02T12:47:41.793604"
+            },
+            {
+              "id": 29,
+              "name": "Child Category",
+              "slug": "test-cat-1777700861-child",
+              "description": null,
+              "image": null,
+              "parentId": 28,
+              "parentName": "Updated Category",
+              "active": true,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-05-02T12:47:41.695801",
+              "updatedAt": "2026-05-02T12:47:41.695801"
+            },
+            {
+              "id": 1,
+              "name": "Updated Electronics",
+              "slug": "updated-electronics",
+              "description": "Updated description",
+              "image": "https://example.com/new.jpg",
+              "parentId": 3,
+              "parentName": "Quần jeans",
+              "active": false,
+              "sortOrder": 0,
+              "children": [],
+              "childrenCount": 0,
+              "createdAt": "2026-04-30T23:17:39.112051",
+              "updatedAt": "2026-05-01T18:07:47.604169"
             }
           ]
         }
       }
-    }
+    },
+    "notes": [
+      "Response tree có facets: {data: [...], facets: {active, inactive, deleted, root, withChildren}}",
+      "Response deleted list: {data: [...]} - không có facets",
+      "path field KHÔNG có trong response (chỉ có trong GET single category)",
+      "Performance: Chỉ 2 queries (1 tree + 1 facets), không có N+1 query"
+    ]
   },
-  "move": {
-    "endpoint": "PATCH /api/categories/move",
-    "description": "Di chuyển và/hoặc sắp xếp lại categories. Xử lý cả reorder trong cùng parent lẫn move cross-parent trong 1 request duy nhất.",
+  "move-down": {
+    "endpoint": "PATCH /api/categories/{id}/move-down",
+    "description": "Move category xuống 1 vị trí (swap với sibling sau đó).",
     "request": {
-      "body": {
-        "movedId": "number (required) — id của category được kéo",
-        "fromParentId": "number | null — parent cũ (null = từ root)",
-        "toParentId": "number | null — parent mới (null = move lên root)",
-        "targetOrderedIds": "number[] (required) — thứ tự mới của tất cả siblings ở parent mới",
-        "sourceOrderedIds": "number[] (optional) — thứ tự mới của siblings còn lại ở parent cũ (chỉ cần khi cross-parent)"
+      "path": {
+        "id": "number"
       }
     },
     "responses": {
-      "200_reorder_same_parent": {
-        "status": 200,
+      "200_ok": {
+        "status": 409,
         "body": {
-          "data": {
-            "updated": [
-              {
-                "id": 30,
-                "name": "Sort C",
-                "slug": "test-cat-1775738009-s3",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.996503",
-                "updatedAt": "2026-04-09T19:33:30.0203513"
-              },
-              {
-                "id": 28,
-                "name": "Sort A",
-                "slug": "test-cat-1775738009-s1",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 1,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.952953",
-                "updatedAt": "2026-04-09T19:33:30.0203513"
-              },
-              {
-                "id": 29,
-                "name": "Sort B",
-                "slug": "test-cat-1775738009-s2",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 2,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.975952",
-                "updatedAt": "2026-04-09T19:33:30.0203513"
-              }
-            ]
-          }
+          "status": 409,
+          "code": "ALREADY_LAST",
+          "message": "Category is already at the last position"
         }
       },
-      "200_move_cross_parent": {
+      "409_already_last": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "ALREADY_LAST",
+          "message": "Category is already at the last position"
+        }
+      }
+    },
+    "notes": [
+      "Chỉ swap trong cùng parent",
+      "Throw ALREADY_LAST nếu đã ở cuối cùng"
+    ]
+  },
+  "move-up": {
+    "endpoint": "PATCH /api/categories/{id}/move-up",
+    "description": "Move category lên 1 vị trí (swap với sibling trước đó).",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "ALREADY_FIRST",
+          "message": "Category is already at the first position"
+        }
+      },
+      "409_already_first": {
+        "status": 409,
+        "body": {
+          "status": 409,
+          "code": "ALREADY_FIRST",
+          "message": "Category is already at the first position"
+        }
+      }
+    },
+    "notes": [
+      "Chỉ swap trong cùng parent",
+      "Throw ALREADY_FIRST nếu đã ở đầu tiên"
+    ]
+  },
+  "move": {
+    "endpoint": "PATCH /api/categories/{id}/move",
+    "description": "Flexible move: change parent, reorder, hoặc cả hai. Support drag & drop.",
+    "request": {
+      "path": {
+        "id": "number"
+      },
+      "body": {
+        "newParentId": "number | null (optional) — null: move to root, không truyền: giữ nguyên parent",
+        "afterId": "number | null (optional) — null: đặt đầu tiên, không truyền: đặt cuối cùng"
+      }
+    },
+    "responses": {
+      "200_change_parent": {
         "status": 200,
         "body": {
           "data": {
-            "updated": [
-              {
-                "id": 29,
-                "name": "Sort B",
-                "slug": "test-cat-1775738009-s2",
-                "description": null,
-                "image": null,
-                "parentId": 28,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.975952",
-                "updatedAt": "2026-04-09T19:33:30.0497203"
-              },
-              {
-                "id": 30,
-                "name": "Sort C",
-                "slug": "test-cat-1775738009-s3",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.996503",
-                "updatedAt": "2026-04-09T19:33:30.0497203"
-              },
-              {
-                "id": 28,
-                "name": "Sort A",
-                "slug": "test-cat-1775738009-s1",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 1,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.952953",
-                "updatedAt": "2026-04-09T19:33:30.0497203"
-              }
-            ]
+            "id": 52,
+            "name": "Test B",
+            "slug": "test-cat-1777705150-t2",
+            "description": null,
+            "image": null,
+            "parentId": 51,
+            "parentName": null,
+            "active": false,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:12.048835",
+            "updatedAt": "2026-05-02T13:59:12.9461606"
           }
         }
       },
@@ -463,90 +958,58 @@
         "status": 200,
         "body": {
           "data": {
-            "updated": [
-              {
-                "id": 30,
-                "name": "Sort C",
-                "slug": "test-cat-1775738009-s3",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.996503",
-                "updatedAt": "2026-04-09T19:33:30.0796738"
-              },
-              {
-                "id": 28,
-                "name": "Sort A",
-                "slug": "test-cat-1775738009-s1",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 1,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.952953",
-                "updatedAt": "2026-04-09T19:33:30.0796738"
-              },
-              {
-                "id": 29,
-                "name": "Sort B",
-                "slug": "test-cat-1775738009-s2",
-                "description": null,
-                "image": null,
-                "parentId": null,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 2,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.975952",
-                "updatedAt": "2026-04-09T19:33:30.0796738"
-              }
-            ]
+            "id": 52,
+            "name": "Test B",
+            "slug": "test-cat-1777705150-t2",
+            "description": null,
+            "image": null,
+            "parentId": 51,
+            "parentName": null,
+            "active": false,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:12.048835",
+            "updatedAt": "2026-05-02T13:59:13.0051527"
+          }
+        }
+      },
+      "200_reorder": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 52,
+            "name": "Test B",
+            "slug": "test-cat-1777705150-t2",
+            "description": null,
+            "image": null,
+            "parentId": 51,
+            "parentName": null,
+            "active": false,
+            "sortOrder": 1,
+            "children": [],
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:12.048835",
+            "updatedAt": "2026-05-02T13:59:13.0412158"
           }
         }
       },
       "409_circular_ref": {
-        "status": 200,
+        "status": 409,
         "body": {
-          "data": {
-            "updated": [
-              {
-                "id": 28,
-                "name": "Sort A",
-                "slug": "test-cat-1775738009-s1",
-                "description": null,
-                "image": null,
-                "parentId": 29,
-                "parentName": null,
-                "active": true,
-                "sortOrder": 0,
-                "children": [],
-                "createdAt": "2026-04-09T19:33:29.952953",
-                "updatedAt": "2026-04-09T19:33:30.1099874"
-              }
-            ]
-          }
-        }
-      },
-      "404_not_found": {
-        "status": 404,
-        "body": {
-          "status": 404,
-          "code": "CATEGORY_NOT_FOUND",
-          "message": "Category not found"
+          "status": 409,
+          "code": "CIRCULAR_REFERENCE",
+          "message": "Cannot move category into its own descendant"
         }
       }
     },
     "notes": [
-      "Reorder trong cùng parent: fromParentId = toParentId, không cần sourceOrderedIds",
-      "Move cross-parent: cần sourceOrderedIds để reindex siblings ở parent cũ",
-      "targetOrderedIds phải chứa toàn bộ siblings của parent mới sau khi drop",
-      "Frontend nên dùng optimistic update: đổi state local khi drag, gọi API khi drop"
+      "Use cases:",
+      "- Move into parent: {newParentId: X}",
+      "- Move to root: {newParentId: null}",
+      "- Reorder (same parent): {afterId: Y}",
+      "- Drag & drop: {newParentId: X, afterId: Y}",
+      "Validate circular reference khi change parent"
     ]
   },
   "restore": {
@@ -574,6 +1037,48 @@
       }
     }
   },
+  "toggle": {
+    "endpoint": "PATCH /api/categories/{id}/toggle",
+    "description": "Toggle active status của category (active ↔ inactive).",
+    "request": {
+      "path": {
+        "id": "number"
+      }
+    },
+    "responses": {
+      "200_ok": {
+        "status": 200,
+        "body": {
+          "data": {
+            "id": 51,
+            "name": "Test A",
+            "slug": "test-cat-1777705150-t1",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:12.014197",
+            "updatedAt": "2026-05-02T13:59:13.107637"
+          }
+        }
+      },
+      "404_not_found": {
+        "status": 404,
+        "body": {
+          "status": 404,
+          "code": "CATEGORY_NOT_FOUND",
+          "message": "Category not found"
+        }
+      }
+    },
+    "notes": [
+      "Đơn giản hơn update khi chỉ cần toggle active"
+    ]
+  },
   "update": {
     "endpoint": "PUT /api/categories/{id}",
     "description": "Cập nhật category. Validate circular reference khi đổi parentId.",
@@ -595,9 +1100,9 @@
         "status": 200,
         "body": {
           "data": {
-            "id": 26,
+            "id": 46,
             "name": "Updated Category",
-            "slug": "test-cat-1775738009",
+            "slug": "test-cat-1777705150",
             "description": "Test",
             "image": null,
             "parentId": null,
@@ -605,8 +1110,9 @@
             "active": true,
             "sortOrder": 0,
             "children": [],
-            "createdAt": "2026-04-09T19:33:29.572625",
-            "updatedAt": "2026-04-09T19:33:29.7190523"
+            "childrenCount": 0,
+            "createdAt": "2026-05-02T13:59:11.129702",
+            "updatedAt": "2026-05-02T13:59:11.3347679"
           }
         }
       },
@@ -619,5 +1125,36 @@
         }
       }
     }
+  },
+  "validate-delete": {
+    "endpoint": "POST /api/categories/bulk/validate-delete",
+    "description": "Validate trước khi delete. Check categories nào có thể delete, nào không.",
+    "request": {
+      "body": {
+        "ids": "number[] (required)"
+      }
+    },
+    "responses": {
+      "200_with_blocked": {
+        "status": 200,
+        "body": {
+          "data": {
+            "canDelete": [
+              51
+            ],
+            "cannotDelete": [
+              53
+            ],
+            "reasons": {
+              "53": "Has 1 children"
+            }
+          }
+        }
+      }
+    },
+    "notes": [
+      "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children'}}",
+      "Frontend dùng để show warning trước khi delete"
+    ]
   }
 }

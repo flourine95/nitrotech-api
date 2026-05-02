@@ -1,0 +1,31 @@
+{
+  "endpoint": "POST /api/categories/bulk/validate-delete",
+  "description": "Validate trước khi delete. Check categories nào có thể delete, nào không.",
+  "request": {
+    "body": {
+      "ids": "number[] (required)"
+    }
+  },
+  "responses": {
+    "200_with_blocked": {
+      "status": 200,
+      "body": {
+        "data": {
+          "canDelete": [
+            51
+          ],
+          "cannotDelete": [
+            53
+          ],
+          "reasons": {
+            "53": "Has 1 children"
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children'}}",
+    "Frontend dùng để show warning trước khi delete"
+  ]
+}

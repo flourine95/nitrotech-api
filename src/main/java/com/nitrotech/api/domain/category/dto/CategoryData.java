@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.category.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -14,6 +16,7 @@ public record CategoryData(
         boolean active,
         int sortOrder,
         List<CategoryData> children,
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         List<BreadcrumbItem> path,
         Integer childrenCount,
         LocalDateTime createdAt,
@@ -24,6 +27,6 @@ public record CategoryData(
                         Long parentId, String parentName, boolean active, int sortOrder,
                         List<CategoryData> children, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this(id, name, slug, description, image, parentId, parentName, active, sortOrder,
-                children, List.of(), children != null ? children.size() : 0, createdAt, updatedAt);
+                children, null, children != null ? children.size() : 0, createdAt, updatedAt);
     }
 }

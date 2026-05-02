@@ -1,0 +1,22 @@
+{
+  "endpoint": "PATCH /api/categories/bulk/restore",
+  "description": "Bulk restore deleted categories.",
+  "request": {
+    "body": {
+      "ids": "number[] (required)"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 2,
+          "failed": 0,
+          "failedIds": [],
+          "failedReasons": {}
+        }
+      }
+    }
+  }
+}

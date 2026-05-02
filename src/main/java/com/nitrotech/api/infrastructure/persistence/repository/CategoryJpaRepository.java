@@ -37,6 +37,9 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     @Query("SELECT c FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NOT NULL")
     Optional<CategoryEntity> findDeletedById(@Param("id") Long id);
 
+    @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NOT NULL ORDER BY c.deletedAt DESC")
+    List<CategoryEntity> findAllDeleted();
+
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.slug = :slug AND c.deletedAt IS NULL AND c.id != :excludeId")
     boolean existsActiveBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
     
@@ -82,4 +85,16 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
         ORDER BY depth DESC
         """, nativeQuery = true)
     List<Object[]> findPath(@Param("categoryId") Long categoryId);
+    
+    // Facets query
+    @Query(value = """
+        SELECT 
+            COUNT(*) FILTER (WHERE active = true AND deleted_at IS NULL) as active,
+            COUNT(*) FILTER (WHERE active = false AND deleted_at IS NULL) as inactive,
+            COUNT(*) FILTER (WHERE deleted_at IS NOT NULL) as deleted,
+            COUNT(*) FILTER (WHERE parent_id IS NULL AND deleted_at IS NULL) as root,
+            COUNT(DISTINCT CASE WHEN id IN (SELECT DISTINCT parent_id FROM categories WHERE parent_id IS NOT NULL AND deleted_at IS NULL) THEN id END) as with_children
+        FROM categories
+        """, nativeQuery = true)
+    List<Object[]> getFacets();
 }

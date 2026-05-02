@@ -1,115 +1,33 @@
 {
-  "endpoint": "PATCH /api/categories/move",
-  "description": "Di chuyển và/hoặc sắp xếp lại categories. Xử lý cả reorder trong cùng parent lẫn move cross-parent trong 1 request duy nhất.",
+  "endpoint": "PATCH /api/categories/{id}/move",
+  "description": "Flexible move: change parent, reorder, hoặc cả hai. Support drag & drop.",
   "request": {
+    "path": {
+      "id": "number"
+    },
     "body": {
-      "movedId": "number (required) — id của category được kéo",
-      "fromParentId": "number | null — parent cũ (null = từ root)",
-      "toParentId": "number | null — parent mới (null = move lên root)",
-      "targetOrderedIds": "number[] (required) — thứ tự mới của tất cả siblings ở parent mới",
-      "sourceOrderedIds": "number[] (optional) — thứ tự mới của siblings còn lại ở parent cũ (chỉ cần khi cross-parent)"
+      "newParentId": "number | null (optional) — null: move to root, không truyền: giữ nguyên parent",
+      "afterId": "number | null (optional) — null: đặt đầu tiên, không truyền: đặt cuối cùng"
     }
   },
   "responses": {
-    "200_reorder_same_parent": {
+    "200_change_parent": {
       "status": 200,
       "body": {
         "data": {
-          "updated": [
-            {
-              "id": 30,
-              "name": "Sort C",
-              "slug": "test-cat-1775738009-s3",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 0,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.996503",
-              "updatedAt": "2026-04-09T19:33:30.0203513"
-            },
-            {
-              "id": 28,
-              "name": "Sort A",
-              "slug": "test-cat-1775738009-s1",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 1,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.952953",
-              "updatedAt": "2026-04-09T19:33:30.0203513"
-            },
-            {
-              "id": 29,
-              "name": "Sort B",
-              "slug": "test-cat-1775738009-s2",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 2,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.975952",
-              "updatedAt": "2026-04-09T19:33:30.0203513"
-            }
-          ]
-        }
-      }
-    },
-    "200_move_cross_parent": {
-      "status": 200,
-      "body": {
-        "data": {
-          "updated": [
-            {
-              "id": 29,
-              "name": "Sort B",
-              "slug": "test-cat-1775738009-s2",
-              "description": null,
-              "image": null,
-              "parentId": 28,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 0,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.975952",
-              "updatedAt": "2026-04-09T19:33:30.0497203"
-            },
-            {
-              "id": 30,
-              "name": "Sort C",
-              "slug": "test-cat-1775738009-s3",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 0,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.996503",
-              "updatedAt": "2026-04-09T19:33:30.0497203"
-            },
-            {
-              "id": 28,
-              "name": "Sort A",
-              "slug": "test-cat-1775738009-s1",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 1,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.952953",
-              "updatedAt": "2026-04-09T19:33:30.0497203"
-            }
-          ]
+          "id": 52,
+          "name": "Test B",
+          "slug": "test-cat-1777705150-t2",
+          "description": null,
+          "image": null,
+          "parentId": 51,
+          "parentName": null,
+          "active": false,
+          "sortOrder": 0,
+          "children": [],
+          "childrenCount": 0,
+          "createdAt": "2026-05-02T13:59:12.048835",
+          "updatedAt": "2026-05-02T13:59:12.9461606"
         }
       }
     },
@@ -117,89 +35,57 @@
       "status": 200,
       "body": {
         "data": {
-          "updated": [
-            {
-              "id": 30,
-              "name": "Sort C",
-              "slug": "test-cat-1775738009-s3",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 0,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.996503",
-              "updatedAt": "2026-04-09T19:33:30.0796738"
-            },
-            {
-              "id": 28,
-              "name": "Sort A",
-              "slug": "test-cat-1775738009-s1",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 1,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.952953",
-              "updatedAt": "2026-04-09T19:33:30.0796738"
-            },
-            {
-              "id": 29,
-              "name": "Sort B",
-              "slug": "test-cat-1775738009-s2",
-              "description": null,
-              "image": null,
-              "parentId": null,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 2,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.975952",
-              "updatedAt": "2026-04-09T19:33:30.0796738"
-            }
-          ]
+          "id": 52,
+          "name": "Test B",
+          "slug": "test-cat-1777705150-t2",
+          "description": null,
+          "image": null,
+          "parentId": 51,
+          "parentName": null,
+          "active": false,
+          "sortOrder": 0,
+          "children": [],
+          "childrenCount": 0,
+          "createdAt": "2026-05-02T13:59:12.048835",
+          "updatedAt": "2026-05-02T13:59:13.0051527"
+        }
+      }
+    },
+    "200_reorder": {
+      "status": 200,
+      "body": {
+        "data": {
+          "id": 52,
+          "name": "Test B",
+          "slug": "test-cat-1777705150-t2",
+          "description": null,
+          "image": null,
+          "parentId": 51,
+          "parentName": null,
+          "active": false,
+          "sortOrder": 1,
+          "children": [],
+          "childrenCount": 0,
+          "createdAt": "2026-05-02T13:59:12.048835",
+          "updatedAt": "2026-05-02T13:59:13.0412158"
         }
       }
     },
     "409_circular_ref": {
-      "status": 200,
+      "status": 409,
       "body": {
-        "data": {
-          "updated": [
-            {
-              "id": 28,
-              "name": "Sort A",
-              "slug": "test-cat-1775738009-s1",
-              "description": null,
-              "image": null,
-              "parentId": 29,
-              "parentName": null,
-              "active": true,
-              "sortOrder": 0,
-              "children": [],
-              "createdAt": "2026-04-09T19:33:29.952953",
-              "updatedAt": "2026-04-09T19:33:30.1099874"
-            }
-          ]
-        }
-      }
-    },
-    "404_not_found": {
-      "status": 404,
-      "body": {
-        "status": 404,
-        "code": "CATEGORY_NOT_FOUND",
-        "message": "Category not found"
+        "status": 409,
+        "code": "CIRCULAR_REFERENCE",
+        "message": "Cannot move category into its own descendant"
       }
     }
   },
   "notes": [
-    "Reorder trong cùng parent: fromParentId = toParentId, không cần sourceOrderedIds",
-    "Move cross-parent: cần sourceOrderedIds để reindex siblings ở parent cũ",
-    "targetOrderedIds phải chứa toàn bộ siblings của parent mới sau khi drop",
-    "Frontend nên dùng optimistic update: đổi state local khi drag, gọi API khi drop"
+    "Use cases:",
+    "- Move into parent: {newParentId: X}",
+    "- Move to root: {newParentId: null}",
+    "- Reorder (same parent): {afterId: Y}",
+    "- Drag & drop: {newParentId: X, afterId: Y}",
+    "Validate circular reference khi change parent"
   ]
 }

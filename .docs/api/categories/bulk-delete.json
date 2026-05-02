@@ -1,0 +1,41 @@
+{
+  "endpoint": "DELETE /api/categories/bulk",
+  "description": "Bulk soft delete categories. Chỉ delete categories không có children.",
+  "request": {
+    "body": {
+      "ids": "number[] (required)"
+    }
+  },
+  "responses": {
+    "200_partial_success": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 2,
+          "failed": 0,
+          "failedIds": [],
+          "failedReasons": {}
+        }
+      }
+    },
+    "404_not_found": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 0,
+          "failed": 1,
+          "failedIds": [
+            999999
+          ],
+          "failedReasons": {
+            "999999": "Category not found, already deleted, or has children"
+          }
+        }
+      }
+    }
+  },
+  "notes": [
+    "Response: {succeeded, failed, failedIds, failedReasons}",
+    "failedReasons: {'3': 'Has children'}"
+  ]
+}

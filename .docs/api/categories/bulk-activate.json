@@ -1,0 +1,22 @@
+{
+  "endpoint": "PATCH /api/categories/bulk/activate",
+  "description": "Bulk activate categories. Set active=true cho tất cả ids.",
+  "request": {
+    "body": {
+      "ids": "number[] (required)"
+    }
+  },
+  "responses": {
+    "200_ok": {
+      "status": 200,
+      "body": {
+        "data": {
+          "succeeded": 2,
+          "failed": 0,
+          "failedIds": [],
+          "failedReasons": {}
+        }
+      }
+    }
+  }
+}

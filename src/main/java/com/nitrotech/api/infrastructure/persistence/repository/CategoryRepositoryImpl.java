@@ -7,6 +7,7 @@ import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.BreadcrumbItem;
+import com.nitrotech.api.domain.category.dto.CategoryFacets;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
@@ -40,7 +41,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setImage(command.image());
         entity.setParentId(command.parentId());
         entity.setActive(command.active());
-        return toData(jpa.save(entity), null, List.of());
+        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
     }
 
     @Override
@@ -54,7 +55,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         if (command.parentId() != null) entity.setParentId(command.parentId());
         if (command.active() != null) entity.setActive(command.active());
         entity.setUpdatedAt(LocalDateTime.now());
-        return toData(jpa.save(entity), null, List.of());
+        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
     }
 
     @Override
@@ -75,7 +76,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable) {
         return jpa.findAll(CategorySpecification.from(filter), pageable)
-                .map(e -> toData(e, null, List.of()));
+                .map(e -> toData(e, null, List.of(), false));  // Don't load breadcrumb for list
     }
 
     @Override
@@ -88,6 +89,18 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         return all.stream()
                 .filter(e -> e.getParentId() == null)
                 .map(e -> buildTree(e, byParent))
+                .toList();
+    }
+
+    @Override
+    public List<CategoryData> findDeleted() {
+        return jpa.findAllDeleted().stream()
+                .map(e -> {
+                    String parentName = e.getParentId() != null
+                            ? jpa.findById(e.getParentId()).map(CategoryEntity::getName).orElse(null)
+                            : null;
+                    return toData(e, parentName, List.of(), false);  // Don't load breadcrumb for list
+                })
                 .toList();
     }
 
@@ -194,24 +207,50 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         return new MoveCategoryResult(updated);
     }
 
+    @Override
+    public CategoryFacets getFacets() {
+        List<Object[]> results = jpa.getFacets();
+        
+        // Handle case where result might be null or empty
+        if (results == null || results.isEmpty()) {
+            return new CategoryFacets(0L, 0L, 0L, 0L, 0L);
+        }
+        
+        Object[] result = results.get(0);
+        
+        return new CategoryFacets(
+                result[0] != null ? ((Number) result[0]).longValue() : 0L,  // active
+                result[1] != null ? ((Number) result[1]).longValue() : 0L,  // inactive
+                result[2] != null ? ((Number) result[2]).longValue() : 0L,  // deleted
+                result[3] != null ? ((Number) result[3]).longValue() : 0L,  // root
+                result[4] != null ? ((Number) result[4]).longValue() : 0L   // withChildren
+        );
+    }
+
     private CategoryData buildTree(CategoryEntity entity, Map<Long, List<CategoryEntity>> byParent) {
         List<CategoryData> children = byParent.getOrDefault(entity.getId(), List.of())
                 .stream()
                 .map(child -> buildTree(child, byParent))
                 .toList();
-        return toData(entity, null, children);
+        return toData(entity, null, children, false);  // Don't load breadcrumb for tree
     }
 
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children) {
-        // Get breadcrumb path
-        List<BreadcrumbItem> path = jpa.findPath(e.getId()).stream()
-                .map(row -> new BreadcrumbItem(
-                        ((Number) row[0]).longValue(),
-                        (String) row[1],
-                        (String) row[2],
-                        (Boolean) row[3]
-                ))
-                .toList();
+        return toData(e, parentName, children, true);  // Load breadcrumb by default
+    }
+
+    private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb) {
+        // Get breadcrumb path only if requested
+        List<BreadcrumbItem> path = loadBreadcrumb 
+                ? jpa.findPath(e.getId()).stream()
+                    .map(row -> new BreadcrumbItem(
+                            ((Number) row[0]).longValue(),
+                            (String) row[1],
+                            (String) row[2],
+                            (Boolean) row[3]
+                    ))
+                    .toList()
+                : null;  // Return null instead of empty list
         
         return new CategoryData(
                 e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
@@ -311,7 +350,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         jpa.save(entity);
         jpa.save(previousSibling);
         
-        return toData(entity, null, List.of());
+        return toData(entity, null, List.of(), false);  // Don't load breadcrumb
     }
 
     @Override
@@ -338,7 +377,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         jpa.save(entity);
         jpa.save(nextSibling);
         
-        return toData(entity, null, List.of());
+        return toData(entity, null, List.of(), false);  // Don't load breadcrumb
     }
 
     @Override
@@ -388,6 +427,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         }
         
         entity.setUpdatedAt(now);
-        return toData(jpa.save(entity), null, List.of());
+        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
     }
 }

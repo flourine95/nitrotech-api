@@ -11,31 +11,25 @@ import com.nitrotech.api.application.category.request.BulkDeactivateCategoryRequ
 import com.nitrotech.api.application.category.request.ValidateDeleteCategoryRequest;
 import com.nitrotech.api.application.category.request.SimpleMoveRequest;
 import com.nitrotech.api.domain.category.dto.CategoryData;
-import com.nitrotech.api.domain.category.dto.CategoryFilter;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.dto.BulkResult;
 import com.nitrotech.api.domain.category.dto.ValidateDeleteResult;
+import com.nitrotech.api.domain.category.dto.CategoryTreeResult;
 import com.nitrotech.api.domain.category.usecase.*;
 import com.nitrotech.api.shared.response.ApiResponse;
-import com.nitrotech.api.shared.util.SortUtils;
 import jakarta.validation.Valid;
-import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/categories")
 public class CategoryController {
-
-    private static final Set<String> SORTABLE_FIELDS =
-            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetCategoriesUseCase getCategoriesUseCase;
     private final GetCategoryUseCase getCategoryUseCase;
@@ -54,6 +48,7 @@ public class CategoryController {
     private final MoveUpCategoryUseCase moveUpCategoryUseCase;
     private final MoveDownCategoryUseCase moveDownCategoryUseCase;
     private final SimpleMoveCategoryUseCase simpleMoveCategoryUseCase;
+    private final ToggleCategoryUseCase toggleCategoryUseCase;
 
     public CategoryController(GetCategoriesUseCase getCategoriesUseCase,
                                GetCategoryUseCase getCategoryUseCase,
@@ -71,7 +66,8 @@ public class CategoryController {
                                ValidateBulkDeleteCategoryUseCase validateBulkDeleteCategoryUseCase,
                                MoveUpCategoryUseCase moveUpCategoryUseCase,
                                MoveDownCategoryUseCase moveDownCategoryUseCase,
-                               SimpleMoveCategoryUseCase simpleMoveCategoryUseCase) {
+                               SimpleMoveCategoryUseCase simpleMoveCategoryUseCase,
+                               ToggleCategoryUseCase toggleCategoryUseCase) {
         this.getCategoriesUseCase = getCategoriesUseCase;
         this.getCategoryUseCase = getCategoryUseCase;
         this.createCategoryUseCase = createCategoryUseCase;
@@ -89,26 +85,20 @@ public class CategoryController {
         this.moveUpCategoryUseCase = moveUpCategoryUseCase;
         this.moveDownCategoryUseCase = moveDownCategoryUseCase;
         this.simpleMoveCategoryUseCase = simpleMoveCategoryUseCase;
+        this.toggleCategoryUseCase = toggleCategoryUseCase;
     }
 
     @GetMapping
-    @SuppressWarnings("unchecked")
-    public ResponseEntity<?> list(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Boolean deleted,
-            @RequestParam(required = false) Long parentId,
-            @RequestParam(defaultValue = "false") boolean tree,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) List<String> sort
+    public ResponseEntity<ApiResponse<List<CategoryData>>> list(
+            @RequestParam(required = false) Boolean deleted
     ) {
-        if (tree) {
-            return ResponseEntity.ok(ApiResponse.ok(getCategoriesUseCase.executeTree(active)));
+        if (Boolean.TRUE.equals(deleted)) {
+            List<CategoryData> deletedList = getCategoriesUseCase.executeDeleted();
+            return ResponseEntity.ok(ApiResponse.ok(deletedList));
+        } else {
+            CategoryTreeResult result = getCategoriesUseCase.executeTreeWithFacets(null);
+            return ResponseEntity.ok(new ApiResponse<>(result.tree(), null, null, result.facets()));
         }
-        Pageable pageable = SortUtils.toPageable(page, size, sort, SORTABLE_FIELDS, "createdAt");
-        return ResponseEntity.ok(ApiResponse.paged(
-                getCategoriesUseCase.execute(new CategoryFilter(search, active, deleted, parentId), pageable)));
     }
 
     @GetMapping("/{id}")
@@ -215,5 +205,10 @@ public class CategoryController {
             @RequestBody SimpleMoveRequest request) {
         return ResponseEntity.ok(ApiResponse.ok(
                 simpleMoveCategoryUseCase.execute(id, request.newParentId(), request.afterId())));
+    }
+
+    @PatchMapping("/{id}/toggle")
+    public ResponseEntity<ApiResponse<CategoryData>> toggle(@PathVariable Long id) {
+        return ResponseEntity.ok(ApiResponse.ok(toggleCategoryUseCase.execute(id)));
     }
 }

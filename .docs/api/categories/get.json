@@ -1,6 +1,6 @@
 {
   "endpoint": "GET /api/categories/{id}",
-  "description": "Lấy chi tiết category theo id.",
+  "description": "Lấy chi tiết category theo id. Response có breadcrumb path.",
   "request": {
     "path": {
       "id": "number"
@@ -11,9 +11,9 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 26,
+          "id": 46,
           "name": "Test Category",
-          "slug": "test-cat-1775738009",
+          "slug": "test-cat-1777705150",
           "description": "Test",
           "image": null,
           "parentId": null,
@@ -21,8 +21,10 @@
           "active": true,
           "sortOrder": 0,
           "children": [],
-          "createdAt": "2026-04-09T19:33:29.572625",
-          "updatedAt": "2026-04-09T19:33:29.572625"
+          "path": [],
+          "childrenCount": 0,
+          "createdAt": "2026-05-02T13:59:11.129702",
+          "updatedAt": "2026-05-02T13:59:11.129702"
         }
       }
     },
@@ -34,5 +36,10 @@
         "message": "Category not found"
       }
     }
-  }
+  },
+  "notes": [
+    "Response có field path: [{id, name, slug, active}] - breadcrumb từ root đến parent",
+    "path = [] nếu category ở root (không có parent)",
+    "path field CHỈ có trong GET single category, KHÔNG có trong list/tree"
+  ]
 }
