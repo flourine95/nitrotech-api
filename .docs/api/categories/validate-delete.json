@@ -12,20 +12,21 @@
       "body": {
         "data": {
           "canDelete": [
-            51
+            69
           ],
           "cannotDelete": [
-            53
+            71
           ],
           "reasons": {
-            "53": "Has 1 children"
+            "71": "Has 1 children"
           }
         }
       }
     }
   },
   "notes": [
-    "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children'}}",
-    "Frontend dùng để show warning trước khi delete"
+    "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children and 12 products'}}",
+    "Frontend dùng để show warning trước khi delete",
+    "Reasons bao gồm: has children, has products, hoặc cả hai"
   ]
 }

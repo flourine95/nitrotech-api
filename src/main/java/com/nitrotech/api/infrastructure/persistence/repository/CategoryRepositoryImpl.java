@@ -15,6 +15,7 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -64,13 +65,15 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             String parentName = e.getParentId() != null
                     ? jpa.findActiveById(e.getParentId()).map(CategoryEntity::getName).orElse(null)
                     : null;
-            return toData(e, parentName, List.of());
+            int productCount = jpa.countProductsByCategoryId(id);
+            return toData(e, parentName, List.of(), true, productCount);  // Load breadcrumb and productCount
         });
     }
 
     @Override
     public Optional<CategoryData> findDeletedById(Long id) {
-        return jpa.findDeletedById(id).map(e -> toData(e, null, List.of()));
+        int productCount = jpa.countProductsByCategoryId(id);
+        return jpa.findDeletedById(id).map(e -> toData(e, null, List.of(), false, productCount));
     }
 
     @Override
@@ -82,13 +85,21 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public List<CategoryData> findTree(Boolean active) {
         List<CategoryEntity> all = jpa.findAllForTree(active);
+        
+        // Load product counts for all categories in one query
+        Map<Long, Integer> productCounts = jpa.getProductCountsForAllCategories().stream()
+                .collect(Collectors.toMap(
+                        row -> ((Number) row[0]).longValue(),
+                        row -> ((Number) row[1]).intValue()
+                ));
+        
         Map<Long, List<CategoryEntity>> byParent = all.stream()
                 .filter(e -> e.getParentId() != null)
                 .collect(Collectors.groupingBy(CategoryEntity::getParentId));
 
         return all.stream()
                 .filter(e -> e.getParentId() == null)
-                .map(e -> buildTree(e, byParent))
+                .map(e -> buildTree(e, byParent, productCounts))
                 .toList();
     }
 
@@ -168,7 +179,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
         LocalDateTime now = LocalDateTime.now();
         List<CategoryData> updated = new java.util.ArrayList<>();
@@ -216,7 +227,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             return new CategoryFacets(0L, 0L, 0L, 0L, 0L);
         }
         
-        Object[] result = results.get(0);
+        Object[] result = results.getFirst();
         
         return new CategoryFacets(
                 result[0] != null ? ((Number) result[0]).longValue() : 0L,  // active
@@ -227,19 +238,24 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         );
     }
 
-    private CategoryData buildTree(CategoryEntity entity, Map<Long, List<CategoryEntity>> byParent) {
+    private CategoryData buildTree(CategoryEntity entity, Map<Long, List<CategoryEntity>> byParent, Map<Long, Integer> productCounts) {
         List<CategoryData> children = byParent.getOrDefault(entity.getId(), List.of())
                 .stream()
-                .map(child -> buildTree(child, byParent))
+                .map(child -> buildTree(child, byParent, productCounts))
                 .toList();
-        return toData(entity, null, children, false);  // Don't load breadcrumb for tree
+        int productCount = productCounts.getOrDefault(entity.getId(), 0);
+        return toData(entity, null, children, false, productCount);  // Don't load breadcrumb for tree
     }
 
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children) {
-        return toData(e, parentName, children, true);  // Load breadcrumb by default
+        return toData(e, parentName, children, true, 0);  // Load breadcrumb by default, productCount = 0
     }
 
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb) {
+        return toData(e, parentName, children, loadBreadcrumb, 0);  // productCount = 0
+    }
+
+    private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb, int productCount) {
         // Get breadcrumb path only if requested
         List<BreadcrumbItem> path = loadBreadcrumb 
                 ? jpa.findPath(e.getId()).stream()
@@ -255,13 +271,13 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         return new CategoryData(
                 e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
                 e.getParentId(), parentName, e.isActive(), e.getSortOrder(), children,
-                path, children != null ? children.size() : 0,
+                path, children != null ? children.size() : 0, productCount,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<Long> bulkSoftDelete(List<Long> ids) {
         // Only delete categories that have no children
         List<Long> deletableIds = new ArrayList<>();
@@ -277,7 +293,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<Long> bulkRestore(List<Long> ids) {
         List<Long> restorableIds = jpa.findAllDeletedByIds(ids).stream()
                 .map(CategoryEntity::getId).toList();
@@ -288,7 +304,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<Long> bulkHardDelete(List<Long> ids) {
         // Only hard delete categories that are already soft deleted and have no children
         List<Long> deletableIds = new ArrayList<>();
@@ -305,7 +321,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<Long> bulkActivate(List<Long> ids) {
         List<Long> activatableIds = jpa.findAllActiveByIds(ids).stream()
                 .map(CategoryEntity::getId).toList();
@@ -316,7 +332,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public List<Long> bulkDeactivate(List<Long> ids) {
         List<Long> deactivatableIds = jpa.findAllActiveByIds(ids).stream()
                 .map(CategoryEntity::getId).toList();
@@ -327,7 +343,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public CategoryData moveUp(Long id) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
@@ -354,7 +370,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public CategoryData moveDown(Long id) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
@@ -381,7 +397,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    @org.springframework.transaction.annotation.Transactional
+    @Transactional
     public CategoryData move(Long id, Long newParentId, Long afterId) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));

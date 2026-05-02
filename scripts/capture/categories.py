@@ -24,7 +24,9 @@ def capture(s: requests.Session):
             "Response tree có facets: {data: [...], facets: {active, inactive, deleted, root, withChildren}}",
             "Response deleted list: {data: [...]} - không có facets",
             "path field KHÔNG có trong response (chỉ có trong GET single category)",
-            "Performance: Chỉ 2 queries (1 tree + 1 facets), không có N+1 query"
+            "productCount: số products trong category (chỉ đếm active products)",
+            "childrenCount: số children trực tiếp",
+            "Performance: 2 queries (1 tree + 1 product counts), không có N+1 query"
         ]
     ))
 
@@ -65,7 +67,7 @@ def capture(s: requests.Session):
     # get
     save("categories", "get", build_doc(
         endpoint="GET /api/categories/{id}",
-        description="Lấy chi tiết category theo id. Response có breadcrumb path.",
+        description="Lấy chi tiết category theo id. Response có breadcrumb path và productCount.",
         request={"path": {"id": "number"}},
         responses={
             "200_ok": call(s, "get", f"/api/categories/{parent_id}"),
@@ -74,7 +76,9 @@ def capture(s: requests.Session):
         notes=[
             "Response có field path: [{id, name, slug, active}] - breadcrumb từ root đến parent",
             "path = [] nếu category ở root (không có parent)",
-            "path field CHỈ có trong GET single category, KHÔNG có trong list/tree"
+            "path field CHỈ có trong GET single category, KHÔNG có trong list/tree",
+            "productCount: số products trong category (chỉ đếm active products)",
+            "Dùng productCount để validate delete: không cho delete nếu productCount > 0"
         ]
     ))
 
@@ -101,14 +105,18 @@ def capture(s: requests.Session):
 
     save("categories", "delete", build_doc(
         endpoint="DELETE /api/categories/{id}",
-        description="Soft delete category. Block nếu còn active children.",
+        description="Soft delete category. Block nếu còn active children hoặc có products.",
         request={"path": {"id": "number"}},
         responses={
             "409_has_children": delete_has_children,
             "200_ok": delete_parent,
             "404_not_found": call(s, "delete", "/api/categories/999999"),
         },
-        notes=["Phải xóa hoặc move children trước khi xóa parent"]
+        notes=[
+            "Phải xóa hoặc move children trước khi xóa parent",
+            "Block nếu category có products (productCount > 0)",
+            "Dùng GET /{id} để check productCount trước khi delete"
+        ]
     ))
 
     # restore
@@ -132,9 +140,11 @@ def capture(s: requests.Session):
             "200_ok": call(s, "delete", f"/api/categories/{parent_id}/permanent"),
             "404_not_found": call(s, "delete", "/api/categories/999999/permanent"),
         },
-        notes=["Phải soft delete trước",
-               "Block nếu còn children (kể cả deleted)",
-               "Block nếu có products liên kết"]
+        notes=[
+            "Phải soft delete trước",
+            "Block nếu còn children (kể cả deleted)",
+            "Block nếu có products liên kết (productCount > 0)"
+        ]
     ))
 
     # Tạo categories để test bulk operations và move
@@ -229,8 +239,9 @@ def capture(s: requests.Session):
                                     {"ids": [vp_id, s1_id]}) if vp_id and s1_id else {"skipped": True},
         },
         notes=[
-            "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children'}}",
-            "Frontend dùng để show warning trước khi delete"
+            "Response: {canDelete: [], cannotDelete: [], reasons: {'3': 'Has 5 children and 12 products'}}",
+            "Frontend dùng để show warning trước khi delete",
+            "Reasons bao gồm: has children, has products, hoặc cả hai"
         ]
     ))
 

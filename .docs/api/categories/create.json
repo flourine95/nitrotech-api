@@ -16,9 +16,9 @@
       "status": 201,
       "body": {
         "data": {
-          "id": 46,
+          "id": 64,
           "name": "Test Category",
-          "slug": "test-cat-1777705150",
+          "slug": "test-cat-1777706469",
           "description": "Test",
           "image": null,
           "parentId": null,
@@ -27,8 +27,9 @@
           "sortOrder": 0,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:11.1297016",
-          "updatedAt": "2026-05-02T13:59:11.1297016"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:09.5652595",
+          "updatedAt": "2026-05-02T14:21:09.5652595"
         },
         "message": "Created successfully"
       }

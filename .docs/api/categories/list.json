@@ -12,21 +12,6 @@
       "body": {
         "data": [
           {
-            "id": 5,
-            "name": "Áo sơ mi",
-            "slug": "ao-so-mi-1777565859-4",
-            "description": null,
-            "image": null,
-            "parentId": null,
-            "parentName": null,
-            "active": true,
-            "sortOrder": 0,
-            "children": [],
-            "childrenCount": 0,
-            "createdAt": "2026-04-30T23:17:39.218834",
-            "updatedAt": "2026-04-30T23:17:39.218834"
-          },
-          {
             "id": 7,
             "name": "Áo sơ mi",
             "slug": "ao-so-mi-1777565859-6",
@@ -38,8 +23,25 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 401,
             "createdAt": "2026-04-30T23:17:39.260646",
             "updatedAt": "2026-04-30T23:17:39.260646"
+          },
+          {
+            "id": 5,
+            "name": "Áo sơ mi",
+            "slug": "ao-so-mi-1777565859-4",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 400,
+            "createdAt": "2026-04-30T23:17:39.218834",
+            "updatedAt": "2026-04-30T23:17:39.218834"
           },
           {
             "id": 21,
@@ -53,6 +55,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 425,
             "createdAt": "2026-04-30T23:17:39.586605",
             "updatedAt": "2026-04-30T23:17:39.586605"
           },
@@ -68,6 +71,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 390,
             "createdAt": "2026-04-30T23:17:39.239168",
             "updatedAt": "2026-04-30T23:17:39.239168"
           },
@@ -83,6 +87,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 385,
             "createdAt": "2026-04-30T23:17:39.607638",
             "updatedAt": "2026-04-30T23:17:39.607638"
           },
@@ -98,6 +103,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 397,
             "createdAt": "2026-04-30T23:17:39.56298",
             "updatedAt": "2026-04-30T23:17:39.56298"
           },
@@ -124,11 +130,13 @@
                 "sortOrder": 0,
                 "children": [],
                 "childrenCount": 0,
+                "productCount": 0,
                 "createdAt": "2026-05-01T18:05:51.446114",
                 "updatedAt": "2026-05-01T18:05:51.446114"
               }
             ],
             "childrenCount": 1,
+            "productCount": 0,
             "createdAt": "2026-05-01T18:05:35.39605",
             "updatedAt": "2026-05-01T18:05:35.39605"
           },
@@ -144,6 +152,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 369,
             "createdAt": "2026-04-30T23:17:39.515016",
             "updatedAt": "2026-04-30T23:17:39.515016"
           },
@@ -159,6 +168,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 404,
             "createdAt": "2026-04-30T23:17:39.469455",
             "updatedAt": "2026-04-30T23:17:39.469455"
           },
@@ -174,23 +184,9 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 389,
             "createdAt": "2026-04-30T23:17:39.493493",
             "updatedAt": "2026-04-30T23:17:39.493493"
-          },
-          {
-            "id": 8,
-            "name": "Giày thể thao",
-            "slug": "giay-the-thao-1777565859-7",
-            "description": null,
-            "image": null,
-            "parentId": null,
-            "parentName": null,
-            "active": true,
-            "sortOrder": 0,
-            "children": [],
-            "childrenCount": 0,
-            "createdAt": "2026-04-30T23:17:39.282534",
-            "updatedAt": "2026-04-30T23:17:39.282534"
           },
           {
             "id": 14,
@@ -204,8 +200,25 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 383,
             "createdAt": "2026-04-30T23:17:39.426799",
             "updatedAt": "2026-04-30T23:17:39.426799"
+          },
+          {
+            "id": 8,
+            "name": "Giày thể thao",
+            "slug": "giay-the-thao-1777565859-7",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 394,
+            "createdAt": "2026-04-30T23:17:39.282534",
+            "updatedAt": "2026-04-30T23:17:39.282534"
           },
           {
             "id": 10,
@@ -219,6 +232,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 373,
             "createdAt": "2026-04-30T23:17:39.328339",
             "updatedAt": "2026-04-30T23:17:39.328339"
           },
@@ -234,6 +248,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 386,
             "createdAt": "2026-04-30T23:17:39.348251",
             "updatedAt": "2026-04-30T23:17:39.348251"
           },
@@ -260,11 +275,13 @@
                 "sortOrder": 0,
                 "children": [],
                 "childrenCount": 0,
+                "productCount": 415,
                 "createdAt": "2026-04-30T23:17:39.136851",
                 "updatedAt": "2026-05-01T18:07:08.694084"
               }
             ],
             "childrenCount": 1,
+            "productCount": 420,
             "createdAt": "2026-04-30T23:17:39.172259",
             "updatedAt": "2026-04-30T23:17:39.172259"
           },
@@ -280,6 +297,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 440,
             "createdAt": "2026-04-30T23:17:39.198992",
             "updatedAt": "2026-04-30T23:17:39.198992"
           },
@@ -295,6 +313,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 418,
             "createdAt": "2026-04-30T23:17:39.397712",
             "updatedAt": "2026-04-30T23:17:39.397712"
           },
@@ -310,8 +329,25 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 377,
             "createdAt": "2026-04-30T23:17:39.6482",
             "updatedAt": "2026-04-30T23:17:39.6482"
+          },
+          {
+            "id": 25,
+            "name": "Tất vớ (1777565859)",
+            "slug": "tat-vo-1777565859-24",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 433,
+            "createdAt": "2026-04-30T23:17:39.672366",
+            "updatedAt": "2026-04-30T23:17:39.672366"
           },
           {
             "id": 19,
@@ -325,6 +361,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 383,
             "createdAt": "2026-04-30T23:17:39.537505",
             "updatedAt": "2026-04-30T23:17:39.537505"
           },
@@ -340,13 +377,14 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 403,
             "createdAt": "2026-04-30T23:17:39.628203",
             "updatedAt": "2026-04-30T23:17:39.628203"
           },
           {
-            "id": 25,
-            "name": "Tất vớ (1777565859)",
-            "slug": "tat-vo-1777565859-24",
+            "id": 51,
+            "name": "Test A",
+            "slug": "test-cat-1777705150-t1",
             "description": null,
             "image": null,
             "parentId": null,
@@ -355,8 +393,25 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
-            "createdAt": "2026-04-30T23:17:39.672366",
-            "updatedAt": "2026-04-30T23:17:39.672366"
+            "productCount": 0,
+            "createdAt": "2026-05-02T13:59:12.014197",
+            "updatedAt": "2026-05-02T13:59:13.107637"
+          },
+          {
+            "id": 60,
+            "name": "Test A",
+            "slug": "test-cat-1777706360-t1",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T14:19:21.705846",
+            "updatedAt": "2026-05-02T14:19:22.117417"
           },
           {
             "id": 33,
@@ -370,6 +425,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T12:47:42.500087",
             "updatedAt": "2026-05-02T12:47:43.019811"
           },
@@ -385,6 +441,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T13:51:24.685822",
             "updatedAt": "2026-05-02T13:51:25.219904"
           },
@@ -400,6 +457,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 402,
             "createdAt": "2026-04-30T23:17:39.367322",
             "updatedAt": "2026-04-30T23:17:39.367322"
           },
@@ -415,13 +473,14 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 411,
             "createdAt": "2026-04-30T23:17:39.449282",
             "updatedAt": "2026-04-30T23:17:39.449282"
           },
           {
-            "id": 44,
+            "id": 62,
             "name": "Validate Parent",
-            "slug": "test-cat-1777704683-vp",
+            "slug": "test-cat-1777706360-vp",
             "description": null,
             "image": null,
             "parentId": null,
@@ -430,8 +489,9 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
-            "createdAt": "2026-05-02T13:51:24.83286",
-            "updatedAt": "2026-05-02T13:51:24.83286"
+            "productCount": 0,
+            "createdAt": "2026-05-02T14:19:21.828377",
+            "updatedAt": "2026-05-02T14:19:21.828377"
           },
           {
             "id": 35,
@@ -445,8 +505,41 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T12:47:42.625656",
             "updatedAt": "2026-05-02T12:47:42.625656"
+          },
+          {
+            "id": 44,
+            "name": "Validate Parent",
+            "slug": "test-cat-1777704683-vp",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T13:51:24.83286",
+            "updatedAt": "2026-05-02T13:51:24.83286"
+          },
+          {
+            "id": 53,
+            "name": "Validate Parent",
+            "slug": "test-cat-1777705150-vp",
+            "description": null,
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T13:59:12.163607",
+            "updatedAt": "2026-05-02T13:59:12.163607"
           },
           {
             "id": 9,
@@ -460,15 +553,16 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 412,
             "createdAt": "2026-04-30T23:17:39.307211",
             "updatedAt": "2026-04-30T23:17:39.307211"
           }
         ],
         "facets": {
-          "active": 30,
+          "active": 34,
           "inactive": 0,
-          "deleted": 5,
-          "root": 28,
+          "deleted": 9,
+          "root": 32,
           "withChildren": 2
         }
       }
@@ -477,6 +571,70 @@
       "status": 200,
       "body": {
         "data": [
+          {
+            "id": 55,
+            "name": "Updated Category",
+            "slug": "test-cat-1777706360",
+            "description": "Test",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T14:19:20.934808",
+            "updatedAt": "2026-05-02T14:19:21.102276"
+          },
+          {
+            "id": 56,
+            "name": "Child Category",
+            "slug": "test-cat-1777706360-child",
+            "description": null,
+            "image": null,
+            "parentId": 55,
+            "parentName": "Updated Category",
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T14:19:21.01949",
+            "updatedAt": "2026-05-02T14:19:21.01949"
+          },
+          {
+            "id": 46,
+            "name": "Updated Category",
+            "slug": "test-cat-1777705150",
+            "description": "Test",
+            "image": null,
+            "parentId": null,
+            "parentName": null,
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T13:59:11.129702",
+            "updatedAt": "2026-05-02T13:59:11.334768"
+          },
+          {
+            "id": 47,
+            "name": "Child Category",
+            "slug": "test-cat-1777705150-child",
+            "description": null,
+            "image": null,
+            "parentId": 46,
+            "parentName": "Updated Category",
+            "active": true,
+            "sortOrder": 0,
+            "children": [],
+            "childrenCount": 0,
+            "productCount": 0,
+            "createdAt": "2026-05-02T13:59:11.245764",
+            "updatedAt": "2026-05-02T13:59:11.245764"
+          },
           {
             "id": 37,
             "name": "Updated Category",
@@ -489,6 +647,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T13:51:23.645016",
             "updatedAt": "2026-05-02T13:51:23.921853"
           },
@@ -504,6 +663,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T13:51:23.801878",
             "updatedAt": "2026-05-02T13:51:23.801878"
           },
@@ -519,6 +679,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T12:47:41.585471",
             "updatedAt": "2026-05-02T12:47:41.793604"
           },
@@ -534,6 +695,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-05-02T12:47:41.695801",
             "updatedAt": "2026-05-02T12:47:41.695801"
           },
@@ -549,6 +711,7 @@
             "sortOrder": 0,
             "children": [],
             "childrenCount": 0,
+            "productCount": 0,
             "createdAt": "2026-04-30T23:17:39.112051",
             "updatedAt": "2026-05-01T18:07:47.604169"
           }
@@ -560,6 +723,8 @@
     "Response tree có facets: {data: [...], facets: {active, inactive, deleted, root, withChildren}}",
     "Response deleted list: {data: [...]} - không có facets",
     "path field KHÔNG có trong response (chỉ có trong GET single category)",
-    "Performance: Chỉ 2 queries (1 tree + 1 facets), không có N+1 query"
+    "productCount: số products trong category (chỉ đếm active products)",
+    "childrenCount: số children trực tiếp",
+    "Performance: 2 queries (1 tree + 1 product counts), không có N+1 query"
   ]
 }

@@ -97,4 +97,18 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
         FROM categories
         """, nativeQuery = true)
     List<Object[]> getFacets();
+    
+    // Get product counts for all categories in one query
+    @Query(value = """
+        SELECT c.id, COUNT(p.id)
+        FROM categories c
+        LEFT JOIN products p ON p.category_id = c.id AND p.deleted_at IS NULL
+        WHERE c.deleted_at IS NULL
+        GROUP BY c.id
+        """, nativeQuery = true)
+    List<Object[]> getProductCountsForAllCategories();
+    
+    // Count products for a single category (only active products)
+    @Query("SELECT COUNT(p) FROM ProductEntity p WHERE p.categoryId = :categoryId AND p.deletedAt IS NULL")
+    int countProductsByCategoryId(@Param("categoryId") Long categoryId);
 }

@@ -11,9 +11,9 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 51,
+          "id": 69,
           "name": "Test A",
-          "slug": "test-cat-1777705150-t1",
+          "slug": "test-cat-1777706469-t1",
           "description": null,
           "image": null,
           "parentId": null,
@@ -22,8 +22,9 @@
           "sortOrder": 0,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:12.014197",
-          "updatedAt": "2026-05-02T13:59:13.107637"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:10.121738",
+          "updatedAt": "2026-05-02T14:21:10.4332546"
         }
       }
     },

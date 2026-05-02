@@ -1,6 +1,6 @@
 {
   "endpoint": "DELETE /api/categories/{id}",
-  "description": "Soft delete category. Block nếu còn active children.",
+  "description": "Soft delete category. Block nếu còn active children hoặc có products.",
   "request": {
     "path": {
       "id": "number"
@@ -31,6 +31,8 @@
     }
   },
   "notes": [
-    "Phải xóa hoặc move children trước khi xóa parent"
+    "Phải xóa hoặc move children trước khi xóa parent",
+    "Block nếu category có products (productCount > 0)",
+    "Dùng GET /{id} để check productCount trước khi delete"
   ]
 }

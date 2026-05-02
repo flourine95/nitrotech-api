@@ -1,6 +1,6 @@
 {
   "endpoint": "GET /api/categories/{id}",
-  "description": "Lấy chi tiết category theo id. Response có breadcrumb path.",
+  "description": "Lấy chi tiết category theo id. Response có breadcrumb path và productCount.",
   "request": {
     "path": {
       "id": "number"
@@ -11,9 +11,9 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 46,
+          "id": 64,
           "name": "Test Category",
-          "slug": "test-cat-1777705150",
+          "slug": "test-cat-1777706469",
           "description": "Test",
           "image": null,
           "parentId": null,
@@ -23,8 +23,9 @@
           "children": [],
           "path": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:11.129702",
-          "updatedAt": "2026-05-02T13:59:11.129702"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:09.56526",
+          "updatedAt": "2026-05-02T14:21:09.56526"
         }
       }
     },
@@ -40,6 +41,8 @@
   "notes": [
     "Response có field path: [{id, name, slug, active}] - breadcrumb từ root đến parent",
     "path = [] nếu category ở root (không có parent)",
-    "path field CHỈ có trong GET single category, KHÔNG có trong list/tree"
+    "path field CHỈ có trong GET single category, KHÔNG có trong list/tree",
+    "productCount: số products trong category (chỉ đếm active products)",
+    "Dùng productCount để validate delete: không cho delete nếu productCount > 0"
   ]
 }

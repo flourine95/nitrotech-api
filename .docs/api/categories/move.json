@@ -15,19 +15,20 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 52,
+          "id": 70,
           "name": "Test B",
-          "slug": "test-cat-1777705150-t2",
+          "slug": "test-cat-1777706469-t2",
           "description": null,
           "image": null,
-          "parentId": 51,
+          "parentId": 69,
           "parentName": null,
           "active": false,
           "sortOrder": 0,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:12.048835",
-          "updatedAt": "2026-05-02T13:59:12.9461606"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:10.140218",
+          "updatedAt": "2026-05-02T14:21:10.3467354"
         }
       }
     },
@@ -35,19 +36,20 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 52,
+          "id": 70,
           "name": "Test B",
-          "slug": "test-cat-1777705150-t2",
+          "slug": "test-cat-1777706469-t2",
           "description": null,
           "image": null,
-          "parentId": 51,
+          "parentId": 69,
           "parentName": null,
           "active": false,
           "sortOrder": 0,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:12.048835",
-          "updatedAt": "2026-05-02T13:59:13.0051527"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:10.140218",
+          "updatedAt": "2026-05-02T14:21:10.3694369"
         }
       }
     },
@@ -55,19 +57,20 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 52,
+          "id": 70,
           "name": "Test B",
-          "slug": "test-cat-1777705150-t2",
+          "slug": "test-cat-1777706469-t2",
           "description": null,
           "image": null,
-          "parentId": 51,
+          "parentId": 69,
           "parentName": null,
           "active": false,
           "sortOrder": 1,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:12.048835",
-          "updatedAt": "2026-05-02T13:59:13.0412158"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:10.140218",
+          "updatedAt": "2026-05-02T14:21:10.3863316"
         }
       }
     },

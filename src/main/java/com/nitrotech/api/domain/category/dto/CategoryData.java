@@ -19,6 +19,7 @@ public record CategoryData(
         @JsonInclude(JsonInclude.Include.NON_NULL)
         List<BreadcrumbItem> path,
         Integer childrenCount,
+        Integer productCount,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {
@@ -27,6 +28,6 @@ public record CategoryData(
                         Long parentId, String parentName, boolean active, int sortOrder,
                         List<CategoryData> children, LocalDateTime createdAt, LocalDateTime updatedAt) {
         this(id, name, slug, description, image, parentId, parentName, active, sortOrder,
-                children, null, children != null ? children.size() : 0, createdAt, updatedAt);
+                children, null, children != null ? children.size() : 0, 0, createdAt, updatedAt);
     }
 }

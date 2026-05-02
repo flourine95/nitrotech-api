@@ -19,9 +19,9 @@
       "status": 200,
       "body": {
         "data": {
-          "id": 46,
+          "id": 64,
           "name": "Updated Category",
-          "slug": "test-cat-1777705150",
+          "slug": "test-cat-1777706469",
           "description": "Test",
           "image": null,
           "parentId": null,
@@ -30,8 +30,9 @@
           "sortOrder": 0,
           "children": [],
           "childrenCount": 0,
-          "createdAt": "2026-05-02T13:59:11.129702",
-          "updatedAt": "2026-05-02T13:59:11.3347679"
+          "productCount": 0,
+          "createdAt": "2026-05-02T14:21:09.56526",
+          "updatedAt": "2026-05-02T14:21:09.6753779"
         }
       }
     },

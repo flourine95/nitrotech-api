@@ -27,6 +27,6 @@
   "notes": [
     "Phải soft delete trước",
     "Block nếu còn children (kể cả deleted)",
-    "Block nếu có products liên kết"
+    "Block nếu có products liên kết (productCount > 0)"
   ]
 }
