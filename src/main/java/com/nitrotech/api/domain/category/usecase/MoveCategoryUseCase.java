@@ -18,18 +18,22 @@ public class MoveCategoryUseCase {
 
     public MoveCategoryResult execute(MoveCategoryCommand command) {
         if (!categoryRepository.existsById(command.movedId())) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", "Category not found");
+            throw new NotFoundException("CATEGORY_NOT_FOUND", 
+                    "Category with ID " + command.movedId() + " not found");
         }
 
         if (command.toParentId() != null) {
             if (!categoryRepository.existsById(command.toParentId())) {
-                throw new NotFoundException("CATEGORY_NOT_FOUND", "Target parent category not found");
+                throw new NotFoundException("CATEGORY_NOT_FOUND", 
+                        "Target parent category with ID " + command.toParentId() + " not found");
             }
             if (command.toParentId().equals(command.movedId())) {
-                throw new ConflictException("CATEGORY_CIRCULAR_REF", "Category cannot be its own parent");
+                throw new ConflictException("CATEGORY_CIRCULAR_REF", 
+                        "Category cannot be its own parent");
             }
             if (categoryRepository.isDescendantOf(command.toParentId(), command.movedId())) {
-                throw new ConflictException("CATEGORY_CIRCULAR_REF", "Cannot move category into its own descendant");
+                throw new ConflictException("CATEGORY_CIRCULAR_REF", 
+                        "Cannot move category into its own descendant");
             }
         }
 

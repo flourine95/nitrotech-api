@@ -16,6 +16,7 @@ public class GetCategoryUseCase {
 
     public CategoryData execute(Long id) {
         return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
+                        "Category with ID " + id + " not found"));
     }
 }

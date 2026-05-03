@@ -16,7 +16,8 @@ public class DeleteCategoryUseCase {
 
     public void execute(Long id) {
         if (!categoryRepository.existsById(id)) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", "Category not found");
+            throw new NotFoundException("CATEGORY_NOT_FOUND", 
+                    "Category with ID " + id + " not found");
         }
         if (categoryRepository.hasActiveChildren(id)) {
             throw new ConflictException("CATEGORY_HAS_CHILDREN",

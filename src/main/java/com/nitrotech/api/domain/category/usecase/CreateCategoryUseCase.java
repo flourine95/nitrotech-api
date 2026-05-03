@@ -18,10 +18,12 @@ public class CreateCategoryUseCase {
 
     public CategoryData execute(CreateCategoryCommand command) {
         if (categoryRepository.existsBySlug(command.slug())) {
-            throw new ConflictException("CATEGORY_SLUG_EXISTS", "Slug already exists");
+            throw new ConflictException("CATEGORY_SLUG_EXISTS", 
+                    "Slug '" + command.slug() + "' already exists");
         }
         if (command.parentId() != null && !categoryRepository.existsById(command.parentId())) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", "Parent category not found");
+            throw new NotFoundException("CATEGORY_NOT_FOUND", 
+                    "Parent category with ID " + command.parentId() + " not found");
         }
         return categoryRepository.create(command);
     }
