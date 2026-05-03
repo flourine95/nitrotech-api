@@ -1,16 +1,10 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
-import com.nitrotech.api.domain.category.dto.CategoryData;
-import com.nitrotech.api.domain.category.dto.CategoryFilter;
-import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
-import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
-import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
-import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
-import com.nitrotech.api.domain.category.dto.BreadcrumbItem;
-import com.nitrotech.api.domain.category.dto.CategoryFacets;
+import com.nitrotech.api.domain.category.dto.*;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
+import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -85,14 +80,14 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public List<CategoryData> findTree(Boolean active) {
         List<CategoryEntity> all = jpa.findAllForTree(active);
-        
+
         // Load product counts for all categories in one query
         Map<Long, Integer> productCounts = jpa.getProductCountsForAllCategories().stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
                         row -> ((Number) row[1]).intValue()
                 ));
-        
+
         Map<Long, List<CategoryEntity>> byParent = all.stream()
                 .filter(e -> e.getParentId() != null)
                 .collect(Collectors.groupingBy(CategoryEntity::getParentId));
@@ -182,7 +177,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Transactional
     public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
         LocalDateTime now = LocalDateTime.now();
-        List<CategoryData> updated = new java.util.ArrayList<>();
+        List<CategoryData> updated = new ArrayList<>();
 
         // 1. Update parentId cho node được move
         CategoryEntity moved = jpa.findActiveById(command.movedId())
@@ -202,7 +197,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         }
 
         // 3. Reindex source siblings (parent cũ) nếu cross-parent move
-        boolean isCrossParent = !java.util.Objects.equals(command.fromParentId(), command.toParentId());
+        boolean isCrossParent = !Objects.equals(command.fromParentId(), command.toParentId());
         if (isCrossParent && command.sourceOrderedIds() != null) {
             for (int i = 0; i < command.sourceOrderedIds().size(); i++) {
                 final int sortOrder = i;
@@ -221,14 +216,14 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public CategoryFacets getFacets() {
         List<Object[]> results = jpa.getFacets();
-        
+
         // Handle case where result might be null or empty
         if (results == null || results.isEmpty()) {
             return new CategoryFacets(0L, 0L, 0L, 0L, 0L);
         }
-        
+
         Object[] result = results.getFirst();
-        
+
         return new CategoryFacets(
                 result[0] != null ? ((Number) result[0]).longValue() : 0L,  // active
                 result[1] != null ? ((Number) result[1]).longValue() : 0L,  // inactive
@@ -257,17 +252,17 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb, int productCount) {
         // Get breadcrumb path only if requested
-        List<BreadcrumbItem> path = loadBreadcrumb 
+        List<BreadcrumbItem> path = loadBreadcrumb
                 ? jpa.findPath(e.getId()).stream()
-                    .map(row -> new BreadcrumbItem(
-                            ((Number) row[0]).longValue(),
-                            (String) row[1],
-                            (String) row[2],
-                            (Boolean) row[3]
-                    ))
-                    .toList()
+                  .map(row -> new BreadcrumbItem(
+                          ((Number) row[0]).longValue(),
+                          (String) row[1],
+                          (String) row[2],
+                          (Boolean) row[3]
+                  ))
+                  .toList()
                 : null;  // Return null instead of empty list
-        
+
         return new CategoryData(
                 e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
                 e.getParentId(), parentName, e.isActive(), e.getSortOrder(), children,
@@ -347,25 +342,41 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public CategoryData moveUp(Long id) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
-        
-        // Find sibling before (same parent, sortOrder < current)
+
+        // Find all siblings (same parent), sorted by sortOrder then id
         List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
-        CategoryEntity previousSibling = siblings.stream()
-                .filter(s -> s.getSortOrder() < entity.getSortOrder())
-                .max((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
-                .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
-                        "ALREADY_FIRST", "Category is already at the first position"));
-        
-        // Swap sortOrder
-        int tempOrder = entity.getSortOrder();
-        entity.setSortOrder(previousSibling.getSortOrder());
-        previousSibling.setSortOrder(tempOrder);
-        entity.setUpdatedAt(LocalDateTime.now());
-        previousSibling.setUpdatedAt(LocalDateTime.now());
-        
-        jpa.save(entity);
-        jpa.save(previousSibling);
-        
+        siblings.sort((a, b) -> {
+            int cmp = Integer.compare(a.getSortOrder(), b.getSortOrder());
+            return cmp != 0 ? cmp : Long.compare(a.getId(), b.getId());
+        });
+
+        // Find current position
+        int currentIndex = -1;
+        for (int i = 0; i < siblings.size(); i++) {
+            if (siblings.get(i).getId().equals(id)) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        if (currentIndex <= 0) {
+            throw new ConflictException(
+                    "ALREADY_FIRST", "Category is already at the first position");
+        }
+
+        // Swap positions in list
+        CategoryEntity temp = siblings.get(currentIndex);
+        siblings.set(currentIndex, siblings.get(currentIndex - 1));
+        siblings.set(currentIndex - 1, temp);
+
+        // Reindex sortOrder to ensure uniqueness
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < siblings.size(); i++) {
+            siblings.get(i).setSortOrder(i);
+            siblings.get(i).setUpdatedAt(now);
+            jpa.save(siblings.get(i));
+        }
+
         return toData(entity, null, List.of(), false);  // Don't load breadcrumb
     }
 
@@ -374,25 +385,41 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public CategoryData moveDown(Long id) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
-        
-        // Find sibling after (same parent, sortOrder > current)
+
+        // Find all siblings (same parent), sorted by sortOrder then id
         List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
-        CategoryEntity nextSibling = siblings.stream()
-                .filter(s -> s.getSortOrder() > entity.getSortOrder())
-                .min((a, b) -> Integer.compare(a.getSortOrder(), b.getSortOrder()))
-                .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
-                        "ALREADY_LAST", "Category is already at the last position"));
-        
-        // Swap sortOrder
-        int tempOrder = entity.getSortOrder();
-        entity.setSortOrder(nextSibling.getSortOrder());
-        nextSibling.setSortOrder(tempOrder);
-        entity.setUpdatedAt(LocalDateTime.now());
-        nextSibling.setUpdatedAt(LocalDateTime.now());
-        
-        jpa.save(entity);
-        jpa.save(nextSibling);
-        
+        siblings.sort((a, b) -> {
+            int cmp = Integer.compare(a.getSortOrder(), b.getSortOrder());
+            return cmp != 0 ? cmp : Long.compare(a.getId(), b.getId());
+        });
+
+        // Find current position
+        int currentIndex = -1;
+        for (int i = 0; i < siblings.size(); i++) {
+            if (siblings.get(i).getId().equals(id)) {
+                currentIndex = i;
+                break;
+            }
+        }
+
+        if (currentIndex < 0 || currentIndex >= siblings.size() - 1) {
+            throw new ConflictException(
+                    "ALREADY_LAST", "Category is already at the last position");
+        }
+
+        // Swap positions in list
+        CategoryEntity temp = siblings.get(currentIndex);
+        siblings.set(currentIndex, siblings.get(currentIndex + 1));
+        siblings.set(currentIndex + 1, temp);
+
+        // Reindex sortOrder to ensure uniqueness
+        LocalDateTime now = LocalDateTime.now();
+        for (int i = 0; i < siblings.size(); i++) {
+            siblings.get(i).setSortOrder(i);
+            siblings.get(i).setUpdatedAt(now);
+            jpa.save(siblings.get(i));
+        }
+
         return toData(entity, null, List.of(), false);  // Don't load breadcrumb
     }
 
@@ -401,27 +428,27 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public CategoryData move(Long id, Long newParentId, Long afterId) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
-        
+
         LocalDateTime now = LocalDateTime.now();
-        
+
         // Validate circular reference if changing parent
         if (newParentId != null && !newParentId.equals(entity.getParentId())) {
             if (isDescendantOf(newParentId, id)) {
-                throw new com.nitrotech.api.shared.exception.ConflictException(
+                throw new ConflictException(
                         "CIRCULAR_REFERENCE", "Cannot move category into its own descendant");
             }
             entity.setParentId(newParentId);
         }
-        
+
         // Calculate sortOrder
         if (afterId != null) {
             // Place after specific category
             CategoryEntity afterCategory = jpa.findActiveById(afterId)
-                    .orElseThrow(() -> new com.nitrotech.api.shared.exception.ConflictException(
+                    .orElseThrow(() -> new ConflictException(
                             "INVALID_AFTER_ID", "afterId category not found"));
-            
+
             entity.setSortOrder(afterCategory.getSortOrder() + 1);
-            
+
             // Shift categories after
             List<CategoryEntity> toShift = jpa.findAllActive(null, entity.getParentId()).stream()
                     .filter(c -> !c.getId().equals(id) && c.getSortOrder() > afterCategory.getSortOrder())
@@ -441,7 +468,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                     .orElse(-1);
             entity.setSortOrder(maxOrder + 1);
         }
-        
+
         entity.setUpdatedAt(now);
         return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
     }
