@@ -12,12 +12,9 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 @Repository
 public class CategoryRepositoryImpl implements CategoryRepository {
@@ -37,7 +34,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setImage(command.image());
         entity.setParentId(command.parentId());
         entity.setActive(command.active());
-        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
+        return toDataSimple(jpa.save(entity));
     }
 
     @Override
@@ -50,31 +47,24 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         if (command.image() != null) entity.setImage(command.image());
         if (command.parentId() != null) entity.setParentId(command.parentId());
         if (command.active() != null) entity.setActive(command.active());
-        entity.setUpdatedAt(LocalDateTime.now());
-        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
+        return toDataSimple(jpa.save(entity));
     }
 
     @Override
     public Optional<CategoryData> findById(Long id) {
-        return jpa.findActiveById(id).map(e -> {
-            String parentName = e.getParentId() != null
-                    ? jpa.findActiveById(e.getParentId()).map(CategoryEntity::getName).orElse(null)
-                    : null;
-            int productCount = jpa.countProductsByCategoryId(id);
-            return toData(e, parentName, List.of(), true, productCount);  // Load breadcrumb and productCount
-        });
+        return jpa.findActiveById(id).map(this::toDataForDetail);
     }
 
     @Override
     public Optional<CategoryData> findDeletedById(Long id) {
         int productCount = jpa.countProductsByCategoryId(id);
-        return jpa.findDeletedById(id).map(e -> toData(e, null, List.of(), false, productCount));
+        return jpa.findDeletedById(id).map(e -> toDataForDeleted(e, productCount));
     }
 
     @Override
     public Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable) {
         return jpa.findAll(CategorySpecification.from(filter), pageable)
-                .map(e -> toData(e, null, List.of(), false));  // Don't load breadcrumb for list
+                .map(this::toDataSimple);
     }
 
     @Override
@@ -101,12 +91,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public List<CategoryData> findDeleted() {
         return jpa.findAllDeleted().stream()
-                .map(e -> {
-                    String parentName = e.getParentId() != null
-                            ? jpa.findById(e.getParentId()).map(CategoryEntity::getName).orElse(null)
-                            : null;
-                    return toData(e, parentName, List.of(), false);  // Don't load breadcrumb for list
-                })
+                .map(e -> toDataForDeleted(e, 0))
                 .toList();
     }
 
@@ -176,14 +161,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
-        LocalDateTime now = LocalDateTime.now();
         List<CategoryData> updated = new ArrayList<>();
 
         // 1. Update parentId cho node được move
         CategoryEntity moved = jpa.findActiveById(command.movedId())
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
         moved.setParentId(command.toParentId());
-        moved.setUpdatedAt(now);
         jpa.save(moved);
 
         // 2. Reindex target siblings (parent mới)
@@ -191,8 +174,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             Long siblingId = command.targetOrderedIds().get(i);
             jpa.findById(siblingId).ifPresent(e -> {
                 e.setSortOrder(command.targetOrderedIds().indexOf(siblingId));
-                e.setUpdatedAt(now);
-                updated.add(toData(jpa.save(e), null, List.of()));
+                updated.add(toDataSimple(jpa.save(e)));
             });
         }
 
@@ -204,8 +186,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 Long siblingId = command.sourceOrderedIds().get(i);
                 jpa.findById(siblingId).ifPresent(e -> {
                     e.setSortOrder(sortOrder);
-                    e.setUpdatedAt(now);
-                    updated.add(toData(jpa.save(e), null, List.of()));
+                    updated.add(toDataSimple(jpa.save(e)));
                 });
             }
         }
@@ -239,35 +220,85 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 .map(child -> buildTree(child, byParent, productCounts))
                 .toList();
         int productCount = productCounts.getOrDefault(entity.getId(), 0);
-        return toData(entity, null, children, false, productCount);  // Don't load breadcrumb for tree
+        return toDataForTree(entity, children, productCount);
     }
 
-    private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children) {
-        return toData(e, parentName, children, true, 0);  // Load breadcrumb by default, productCount = 0
+    /**
+     * Simple conversion for list, move, and bulk operations.
+     * No breadcrumb, no product count.
+     */
+    private CategoryData toDataSimple(CategoryEntity entity) {
+        return new CategoryData(
+                entity.getId(), entity.getName(), entity.getSlug(),
+                entity.getDescription(), entity.getImage(),
+                entity.getParentId(), null, entity.isActive(),
+                entity.getSortOrder(), List.of(),
+                null, 0, 0,
+                entity.getCreatedAt(), entity.getUpdatedAt()
+        );
     }
 
-    private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb) {
-        return toData(e, parentName, children, loadBreadcrumb, 0);  // productCount = 0
-    }
+    /**
+     * Detailed conversion for get by id operations.
+     * Includes breadcrumb and product count.
+     */
+    private CategoryData toDataForDetail(CategoryEntity entity) {
+        List<BreadcrumbItem> path = jpa.findPath(entity.getId()).stream()
+                .map(row -> new BreadcrumbItem(
+                        ((Number) row[0]).longValue(),
+                        (String) row[1],
+                        (String) row[2],
+                        (Boolean) row[3]
+                ))
+                .toList();
 
-    private CategoryData toData(CategoryEntity e, String parentName, List<CategoryData> children, boolean loadBreadcrumb, int productCount) {
-        // Get breadcrumb path only if requested
-        List<BreadcrumbItem> path = loadBreadcrumb
-                ? jpa.findPath(e.getId()).stream()
-                  .map(row -> new BreadcrumbItem(
-                          ((Number) row[0]).longValue(),
-                          (String) row[1],
-                          (String) row[2],
-                          (Boolean) row[3]
-                  ))
-                  .toList()
-                : null;  // Return null instead of empty list
+        String parentName = entity.getParentId() != null
+                ? jpa.findById(entity.getParentId()).map(CategoryEntity::getName).orElse(null)
+                : null;
+
+        int productCount = jpa.countProductsByCategoryId(entity.getId());
 
         return new CategoryData(
-                e.getId(), e.getName(), e.getSlug(), e.getDescription(), e.getImage(),
-                e.getParentId(), parentName, e.isActive(), e.getSortOrder(), children,
-                path, children != null ? children.size() : 0, productCount,
-                e.getCreatedAt(), e.getUpdatedAt()
+                entity.getId(), entity.getName(), entity.getSlug(),
+                entity.getDescription(), entity.getImage(),
+                entity.getParentId(), parentName, entity.isActive(),
+                entity.getSortOrder(), List.of(),
+                path, 0, productCount,
+                entity.getCreatedAt(), entity.getUpdatedAt()
+        );
+    }
+
+    /**
+     * Tree conversion with children and product count.
+     * No breadcrumb (not needed for tree view).
+     */
+    private CategoryData toDataForTree(CategoryEntity entity, List<CategoryData> children, int productCount) {
+        return new CategoryData(
+                entity.getId(), entity.getName(), entity.getSlug(),
+                entity.getDescription(), entity.getImage(),
+                entity.getParentId(), null, entity.isActive(),
+                entity.getSortOrder(), children,
+                null, children.size(), productCount,
+                entity.getCreatedAt(), entity.getUpdatedAt()
+        );
+    }
+
+    /**
+     * Conversion for deleted items with product count.
+     * No breadcrumb, includes parent name.
+     */
+    private CategoryData toDataForDeleted(CategoryEntity entity, int productCount) {
+        String parentName = entity.getParentId() != null
+                ? jpa.findById(entity.getParentId()).map(CategoryEntity::getName).orElse(null)
+                : null;
+
+        return new CategoryData(
+                entity.getId(), entity.getName(), entity.getSlug(),
+                entity.getDescription(), entity.getImage(),
+                entity.getParentId(), parentName, entity.isActive(),
+                entity.getSortOrder(), List.of(),
+                null, 0, productCount,
+                entity.getCreatedAt(), entity.getUpdatedAt()
         );
     }
 
@@ -343,41 +374,23 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
 
-        // Find all siblings (same parent), sorted by sortOrder then id
         List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
-        siblings.sort((a, b) -> {
-            int cmp = Integer.compare(a.getSortOrder(), b.getSortOrder());
-            return cmp != 0 ? cmp : Long.compare(a.getId(), b.getId());
-        });
+        siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
 
-        // Find current position
-        int currentIndex = -1;
-        for (int i = 0; i < siblings.size(); i++) {
-            if (siblings.get(i).getId().equals(id)) {
-                currentIndex = i;
-                break;
-            }
-        }
+        int currentIndex = IntStream.range(0, siblings.size()).filter(i -> siblings.get(i).getId().equals(id)).findFirst().orElse(-1);
 
-        if (currentIndex <= 0) {
-            throw new ConflictException(
-                    "ALREADY_FIRST", "Category is already at the first position");
-        }
+        if (currentIndex <= 0) throw new ConflictException("ALREADY_FIRST", "Category is already at the first position");
 
-        // Swap positions in list
         CategoryEntity temp = siblings.get(currentIndex);
         siblings.set(currentIndex, siblings.get(currentIndex - 1));
         siblings.set(currentIndex - 1, temp);
 
-        // Reindex sortOrder to ensure uniqueness
-        LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
-            siblings.get(i).setUpdatedAt(now);
             jpa.save(siblings.get(i));
         }
 
-        return toData(entity, null, List.of(), false);  // Don't load breadcrumb
+        return toDataSimple(entity);
     }
 
     @Override
@@ -386,41 +399,24 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
 
-        // Find all siblings (same parent), sorted by sortOrder then id
         List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
-        siblings.sort((a, b) -> {
-            int cmp = Integer.compare(a.getSortOrder(), b.getSortOrder());
-            return cmp != 0 ? cmp : Long.compare(a.getId(), b.getId());
-        });
+        siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
 
-        // Find current position
-        int currentIndex = -1;
-        for (int i = 0; i < siblings.size(); i++) {
-            if (siblings.get(i).getId().equals(id)) {
-                currentIndex = i;
-                break;
-            }
-        }
+        int currentIndex = IntStream.range(0, siblings.size()).filter(i -> siblings.get(i).getId().equals(id)).findFirst().orElse(-1);
 
-        if (currentIndex < 0 || currentIndex >= siblings.size() - 1) {
-            throw new ConflictException(
-                    "ALREADY_LAST", "Category is already at the last position");
-        }
+        if (currentIndex < 0 || currentIndex >= siblings.size() - 1) throw new ConflictException(
+                "ALREADY_LAST", "Category is already at the last position");
 
-        // Swap positions in list
         CategoryEntity temp = siblings.get(currentIndex);
         siblings.set(currentIndex, siblings.get(currentIndex + 1));
         siblings.set(currentIndex + 1, temp);
 
-        // Reindex sortOrder to ensure uniqueness
-        LocalDateTime now = LocalDateTime.now();
         for (int i = 0; i < siblings.size(); i++) {
             siblings.get(i).setSortOrder(i);
-            siblings.get(i).setUpdatedAt(now);
             jpa.save(siblings.get(i));
         }
 
-        return toData(entity, null, List.of(), false);  // Don't load breadcrumb
+        return toDataSimple(entity);
     }
 
     @Override
@@ -428,8 +424,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public CategoryData move(Long id, Long newParentId, Long afterId) {
         CategoryEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
-
-        LocalDateTime now = LocalDateTime.now();
 
         // Validate circular reference if changing parent
         if (newParentId != null && !newParentId.equals(entity.getParentId())) {
@@ -455,7 +449,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                     .toList();
             for (CategoryEntity c : toShift) {
                 c.setSortOrder(c.getSortOrder() + 1);
-                c.setUpdatedAt(now);
                 jpa.save(c);
             }
         } else {
@@ -469,7 +462,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             entity.setSortOrder(maxOrder + 1);
         }
 
-        entity.setUpdatedAt(now);
-        return toData(jpa.save(entity), null, List.of(), false);  // Don't load breadcrumb
+        return toDataSimple(jpa.save(entity));
     }
 }
