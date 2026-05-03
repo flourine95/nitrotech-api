@@ -26,6 +26,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    @Transactional
     public CategoryData create(CreateCategoryCommand command) {
         CategoryEntity entity = new CategoryEntity();
         entity.setName(command.name());
@@ -34,6 +35,15 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setImage(command.image());
         entity.setParentId(command.parentId());
         entity.setActive(command.active());
+        
+        // Set sortOrder to end of siblings list
+        List<CategoryEntity> siblings = jpa.findAllActive(null, command.parentId());
+        int maxOrder = siblings.stream()
+                .mapToInt(CategoryEntity::getSortOrder)
+                .max()
+                .orElse(-1);
+        entity.setSortOrder(maxOrder + 1);
+        
         return toDataSimple(jpa.save(entity));
     }
 
@@ -138,17 +148,41 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    @Transactional
     public void softDelete(Long id) {
         jpa.findActiveById(id).ifPresent(e -> {
+            Long parentId = e.getParentId();
+            int deletedSortOrder = e.getSortOrder();
+            
+            // Soft delete the category
             e.setDeletedAt(LocalDateTime.now());
             jpa.save(e);
+            
+            // Reindex siblings after the deleted category
+            List<CategoryEntity> siblings = jpa.findAllActive(null, parentId);
+            siblings.stream()
+                    .filter(sibling -> sibling.getSortOrder() > deletedSortOrder)
+                    .forEach(sibling -> {
+                        sibling.setSortOrder(sibling.getSortOrder() - 1);
+                        jpa.save(sibling);
+                    });
         });
     }
 
     @Override
+    @Transactional
     public void restore(Long id) {
         jpa.findDeletedById(id).ifPresent(e -> {
             e.setDeletedAt(null);
+            
+            // Set sortOrder to end of siblings list
+            List<CategoryEntity> siblings = jpa.findAllActive(null, e.getParentId());
+            int maxOrder = siblings.stream()
+                    .mapToInt(CategoryEntity::getSortOrder)
+                    .max()
+                    .orElse(-1);
+            e.setSortOrder(maxOrder + 1);
+            
             jpa.save(e);
         });
     }
@@ -426,8 +460,9 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
 
         // Validate circular reference if changing parent
-        if (newParentId != null && !newParentId.equals(entity.getParentId())) {
-            if (isDescendantOf(newParentId, id)) {
+        if (!Objects.equals(newParentId, entity.getParentId())) {
+            // Validate circular reference only if newParentId is not null
+            if (newParentId != null && isDescendantOf(newParentId, id)) {
                 throw new ConflictException(
                         "CIRCULAR_REFERENCE", "Cannot move category into its own descendant");
             }
