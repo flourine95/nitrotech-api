@@ -6,16 +6,13 @@ import com.nitrotech.api.domain.address.dto.AddressData;
 import com.nitrotech.api.domain.address.dto.CreateAddressCommand;
 import com.nitrotech.api.domain.address.dto.UpdateAddressCommand;
 import com.nitrotech.api.domain.address.usecase.*;
-import com.nitrotech.api.domain.auth.dto.UserProfileData;
-import com.nitrotech.api.domain.auth.usecase.GetProfileUseCase;
-import com.nitrotech.api.shared.response.ApiResponse;
 import jakarta.validation.Valid;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/addresses")
@@ -24,80 +21,104 @@ public class AddressController {
     private final GetAddressesUseCase getAddressesUseCase;
     private final CreateAddressUseCase createAddressUseCase;
     private final UpdateAddressUseCase updateAddressUseCase;
-    private final SetDefaultAddressUseCase setDefaultAddressUseCase;
     private final DeleteAddressUseCase deleteAddressUseCase;
-    private final GetProfileUseCase getProfileUseCase;
+    private final SetDefaultAddressUseCase setDefaultAddressUseCase;
 
-    public AddressController(GetAddressesUseCase getAddressesUseCase,
-                              CreateAddressUseCase createAddressUseCase,
-                              UpdateAddressUseCase updateAddressUseCase,
-                              SetDefaultAddressUseCase setDefaultAddressUseCase,
-                              DeleteAddressUseCase deleteAddressUseCase,
-                              GetProfileUseCase getProfileUseCase) {
+    public AddressController(
+        GetAddressesUseCase getAddressesUseCase,
+        CreateAddressUseCase createAddressUseCase,
+        UpdateAddressUseCase updateAddressUseCase,
+        DeleteAddressUseCase deleteAddressUseCase,
+        SetDefaultAddressUseCase setDefaultAddressUseCase
+    ) {
         this.getAddressesUseCase = getAddressesUseCase;
         this.createAddressUseCase = createAddressUseCase;
         this.updateAddressUseCase = updateAddressUseCase;
-        this.setDefaultAddressUseCase = setDefaultAddressUseCase;
         this.deleteAddressUseCase = deleteAddressUseCase;
-        this.getProfileUseCase = getProfileUseCase;
+        this.setDefaultAddressUseCase = setDefaultAddressUseCase;
     }
 
     @GetMapping
-    public ResponseEntity<ApiResponse<List<AddressData>>> list(@AuthenticationPrincipal String email) {
-        return ResponseEntity.ok(ApiResponse.ok(getAddressesUseCase.execute(userId(email))));
+    public ResponseEntity<Map<String, Object>> getAddresses(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        List<AddressData> addresses = getAddressesUseCase.execute(userId);
+        return ResponseEntity.ok(Map.of("data", addresses));
     }
 
     @PostMapping
-    public ResponseEntity<ApiResponse<AddressData>> create(
-            @AuthenticationPrincipal String email,
-            @Valid @RequestBody CreateAddressRequest req
+    public ResponseEntity<Map<String, Object>> createAddress(
+        @Valid @RequestBody CreateAddressRequest request,
+        Authentication authentication
     ) {
-        AddressData data = createAddressUseCase.execute(new CreateAddressCommand(
-                userId(email), req.receiver(), req.phone(),
-                req.province(), req.provinceCode(),
-                req.district(), req.districtCode(),
-                req.ward(), req.wardCode(),
-                req.street(), req.defaultAddress()
+        Long userId = Long.parseLong(authentication.getName());
+        
+        CreateAddressCommand command = new CreateAddressCommand(
+            request.receiver(),
+            request.phone(),
+            request.province(),
+            request.provinceCode(),
+            request.district(),
+            request.districtCode(),
+            request.ward(),
+            request.wardCode(),
+            request.street(),
+            request.defaultAddress()
+        );
+        
+        AddressData address = createAddressUseCase.execute(userId, command);
+        
+        return ResponseEntity.status(201).body(Map.of(
+            "data", address,
+            "message", "Address created successfully"
         ));
-        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResponse.created(data));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<ApiResponse<AddressData>> update(
-            @AuthenticationPrincipal String email,
-            @PathVariable Long id,
-            @Valid @RequestBody UpdateAddressRequest req
+    public ResponseEntity<Map<String, Object>> updateAddress(
+        @PathVariable Long id,
+        @Valid @RequestBody UpdateAddressRequest request,
+        Authentication authentication
     ) {
-        AddressData data = updateAddressUseCase.execute(new UpdateAddressCommand(
-                id, userId(email), req.receiver(), req.phone(),
-                req.province(), req.provinceCode(),
-                req.district(), req.districtCode(),
-                req.ward(), req.wardCode(),
-                req.street(), req.defaultAddress()
+        Long userId = Long.parseLong(authentication.getName());
+        
+        UpdateAddressCommand command = new UpdateAddressCommand(
+            request.receiver(),
+            request.phone(),
+            request.province(),
+            request.provinceCode(),
+            request.district(),
+            request.districtCode(),
+            request.ward(),
+            request.wardCode(),
+            request.street(),
+            request.defaultAddress()
+        );
+        
+        AddressData address = updateAddressUseCase.execute(userId, id, command);
+        
+        return ResponseEntity.ok(Map.of(
+            "data", address,
+            "message", "Address updated successfully"
         ));
-        return ResponseEntity.ok(ApiResponse.ok(data));
-    }
-
-    @PatchMapping("/{id}/default")
-    public ResponseEntity<ApiResponse<Void>> setDefault(
-            @AuthenticationPrincipal String email,
-            @PathVariable Long id
-    ) {
-        setDefaultAddressUseCase.execute(id, userId(email));
-        return ResponseEntity.ok(ApiResponse.ok(null, "Default address updated"));
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<ApiResponse<Void>> delete(
-            @AuthenticationPrincipal String email,
-            @PathVariable Long id
+    public ResponseEntity<Map<String, Object>> deleteAddress(
+        @PathVariable Long id,
+        Authentication authentication
     ) {
-        deleteAddressUseCase.execute(id, userId(email));
-        return ResponseEntity.ok(ApiResponse.ok(null, "Address deleted successfully"));
+        Long userId = Long.parseLong(authentication.getName());
+        deleteAddressUseCase.execute(userId, id);
+        return ResponseEntity.ok(Map.of("message", "Address deleted successfully"));
     }
 
-    private Long userId(String email) {
-        UserProfileData user = getProfileUseCase.executeByEmail(email);
-        return user.id();
+    @PatchMapping("/{id}/set-default")
+    public ResponseEntity<Map<String, Object>> setDefaultAddress(
+        @PathVariable Long id,
+        Authentication authentication
+    ) {
+        Long userId = Long.parseLong(authentication.getName());
+        setDefaultAddressUseCase.execute(userId, id);
+        return ResponseEntity.ok(Map.of("message", "Default address updated"));
     }
 }

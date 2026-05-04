@@ -1,24 +1,51 @@
 package com.nitrotech.api.application.address.request;
 
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record UpdateAddressRequest(
-        @Size(max = 255)
-        String receiver,
+    @NotBlank(message = "Receiver name is required")
+    @Size(max = 255, message = "Receiver name must not exceed 255 characters")
+    String receiver,
 
-        @Pattern(regexp = "^[0-9]{9,11}$", message = "Phone must be 9-11 digits")
-        String phone,
+    @NotBlank(message = "Phone number is required")
+    @Pattern(regexp = "^0[0-9]{9}$", message = "Phone number must be 10 digits starting with 0")
+    String phone,
 
-        String province,
-        String provinceCode,
-        String district,
-        String districtCode,
-        String ward,
-        String wardCode,
+    @NotBlank(message = "Province is required")
+    @Size(max = 100, message = "Province must not exceed 100 characters")
+    String province,
 
-        @Size(max = 255)
-        String street,
+    @NotBlank(message = "District code is required")
+    @Size(max = 20, message = "Province code must not exceed 20 characters")
+    String provinceCode,
 
-        Boolean defaultAddress
-) {}
+    @NotBlank(message = "District is required")
+    @Size(max = 100, message = "District must not exceed 100 characters")
+    String district,
+
+    @NotBlank(message = "District code is required")
+    @Size(max = 20, message = "District code must not exceed 20 characters")
+    String districtCode,
+
+    @NotBlank(message = "Ward is required")
+    @Size(max = 100, message = "Ward must not exceed 100 characters")
+    String ward,
+
+    @NotBlank(message = "Ward code is required")
+    @Size(max = 20, message = "Ward code must not exceed 20 characters")
+    String wardCode,
+
+    @NotBlank(message = "Street address is required")
+    @Size(max = 255, message = "Street address must not exceed 255 characters")
+    String street,
+
+    Boolean defaultAddress
+) {
+    public UpdateAddressRequest {
+        if (defaultAddress == null) {
+            defaultAddress = false;
+        }
+    }
+}

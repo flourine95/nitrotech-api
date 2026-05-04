@@ -1,5 +1,8 @@
 package com.nitrotech.api.shared.exception;
 
+import com.nitrotech.api.domain.address.exception.AddressAccessDeniedException;
+import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
+import com.nitrotech.api.domain.address.exception.CannotDeleteDefaultAddressException;
 import com.nitrotech.api.shared.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +24,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(ErrorResponse.of(404, ex.getCode(), ex.getMessage()));
+    }
+
+    @ExceptionHandler(AddressNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleAddressNotFound(AddressNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                .body(ErrorResponse.of(404, "ADDRESS_NOT_FOUND", ex.getMessage()));
+    }
+
+    @ExceptionHandler(AddressAccessDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAddressAccessDenied(AddressAccessDeniedException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ErrorResponse.of(403, "ADDRESS_ACCESS_DENIED", ex.getMessage()));
+    }
+
+    @ExceptionHandler(CannotDeleteDefaultAddressException.class)
+    public ResponseEntity<ErrorResponse> handleCannotDeleteDefaultAddress(CannotDeleteDefaultAddressException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(ErrorResponse.of(409, "CANNOT_DELETE_DEFAULT_ADDRESS", ex.getMessage()));
     }
 
     @ExceptionHandler(NoResourceFoundException.class)
