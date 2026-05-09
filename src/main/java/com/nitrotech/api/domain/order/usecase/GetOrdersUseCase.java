@@ -3,7 +3,7 @@ package com.nitrotech.api.domain.order.usecase;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListQuery;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
-import com.nitrotech.api.shared.response.ApiResponse;
+import com.nitrotech.api.shared.response.ApiResult;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -17,9 +17,9 @@ public class GetOrdersUseCase {
         this.orderRepository = orderRepository;
     }
 
-    public ApiResponse<List<OrderData>> execute(OrderListQuery query) {
+    public ApiResult<List<OrderData>> execute(OrderListQuery query) {
         List<OrderData> data = orderRepository.findAll(query);
         long total = orderRepository.countAll(query);
-        return ApiResponse.paginated(data, query.page(), query.size(), total);
+        return ApiResult.paginated(data, query.page(), query.size(), total);
     }
 }

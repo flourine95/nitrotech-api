@@ -6,10 +6,10 @@ import com.nitrotech.api.domain.address.dto.UpdateAddressCommand;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.AddressEntity;
 import com.nitrotech.api.infrastructure.persistence.mapper.AddressMapper;
+import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -56,7 +56,8 @@ public class AddressRepositoryImpl implements AddressRepository {
     @Transactional
     public AddressData update(Long id, UpdateAddressCommand command) {
         AddressEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new RuntimeException("Address not found"));
+                .orElseThrow(() -> new NotFoundException("ADDRESS_NOT_FOUND", 
+                        "Address with ID " + id + " not found"));
 
         mapper.updateEntity(entity, command);
 
