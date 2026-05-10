@@ -1,13 +1,13 @@
 package com.nitrotech.api.application.promotion.controller;
 
 import com.nitrotech.api.application.promotion.request.CreatePromotionRequest;
-import com.nitrotech.api.domain.auth.usecase.GetProfileUseCase;
 import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
 import com.nitrotech.api.domain.promotion.dto.CreatePromotionCommand;
 import com.nitrotech.api.domain.promotion.dto.PromotionData;
 import com.nitrotech.api.domain.promotion.usecase.ManagePromotionUseCase;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.shared.response.ApiResult;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -32,7 +32,6 @@ public class PromotionController {
 
     private final ManagePromotionUseCase managePromotionUseCase;
     private final ValidatePromotionUseCase validatePromotionUseCase;
-    private final GetProfileUseCase getProfileUseCase;
 
     @Operation(summary = "Validate promotion code", description = "Check if a promotion code is valid for the current user and order amount. Use before checkout to preview the discount.")
     @ApiResponses(value = {
@@ -42,13 +41,12 @@ public class PromotionController {
     })
     @GetMapping("/promotions/validate")
     public ResponseEntity<ApiResult<ApplyPromotionResult>> validate(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "Promotion code to validate") @RequestParam String code,
             @Parameter(description = "Order amount to calculate discount against") @RequestParam BigDecimal orderAmount
     ) {
-        Long userId = getProfileUseCase.executeByEmail(email).id();
         return ResponseEntity.ok(ApiResult.ok(
-                validatePromotionUseCase.execute(code, userId, orderAmount)));
+                validatePromotionUseCase.execute(code, principal.id(), orderAmount)));
     }
 
     @Operation(summary = "List promotions (admin)", description = "Admin endpoint. Get paginated list of promotions with optional status filter.")

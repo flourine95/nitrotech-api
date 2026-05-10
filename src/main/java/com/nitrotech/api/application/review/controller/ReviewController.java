@@ -1,11 +1,11 @@
 package com.nitrotech.api.application.review.controller;
 
 import com.nitrotech.api.application.review.request.CreateReviewRequest;
-import com.nitrotech.api.domain.auth.usecase.GetProfileUseCase;
 import com.nitrotech.api.domain.review.dto.CreateReviewCommand;
 import com.nitrotech.api.domain.review.dto.ReviewData;
 import com.nitrotech.api.domain.review.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,7 +29,6 @@ public class ReviewController {
     private final CreateReviewUseCase createReviewUseCase;
     private final GetReviewsUseCase getReviewsUseCase;
     private final ModerateReviewUseCase moderateReviewUseCase;
-    private final GetProfileUseCase getProfileUseCase;
 
     @Operation(summary = "List reviews for product", description = "Public endpoint. Get approved reviews for a product, paginated.")
     @ApiResponses(value = {
@@ -55,11 +54,11 @@ public class ReviewController {
     })
     @PostMapping("/api/reviews")
     public ResponseEntity<ApiResult<ReviewData>> create(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateReviewRequest req
     ) {
         ReviewData data = createReviewUseCase.execute(new CreateReviewCommand(
-                userId(email), req.productId(), req.orderId(),
+                principal.id(), req.productId(), req.orderId(),
                 req.rating(), req.comment(), req.images()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(data));
     }
@@ -104,9 +103,5 @@ public class ReviewController {
             @Parameter(description = "Review ID") @PathVariable Long id
     ) {
         return ResponseEntity.ok(ApiResult.ok(moderateReviewUseCase.reject(id)));
-    }
-
-    private Long userId(String email) {
-        return getProfileUseCase.executeByEmail(email).id();
     }
 }

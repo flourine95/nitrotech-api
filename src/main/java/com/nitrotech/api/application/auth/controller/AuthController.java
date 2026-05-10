@@ -4,6 +4,7 @@ import com.nitrotech.api.application.auth.request.*;
 import com.nitrotech.api.domain.auth.dto.*;
 import com.nitrotech.api.domain.auth.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -22,8 +23,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -70,8 +69,9 @@ public class AuthController {
     ) {
         AuthResult result = loginUseCase.execute(new LoginCommand(request.email(), request.password()));
 
+        UserPrincipal principal = new UserPrincipal(result.user().id(), result.user().email(), result.user().name());
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                result.user().email(), null, List.of());
+                principal, null, principal.getAuthorities());
         SecurityContext context = SecurityContextHolder.createEmptyContext();
         context.setAuthentication(authentication);
         SecurityContextHolder.setContext(context);
@@ -101,10 +101,10 @@ public class AuthController {
     })
     @PostMapping("/logout-all")
     public ResponseEntity<ApiResult<Void>> logoutAll(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             HttpServletRequest request
     ) {
-        logoutUseCase.executeAll(email, request);
+        logoutUseCase.executeAll(principal.email(), request);
         return ResponseEntity.ok(ApiResult.ok(null, "Logged out from all devices"));
     }
 
@@ -158,8 +158,8 @@ public class AuthController {
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content(mediaType = "application/json"))
     })
     @GetMapping("/me")
-    public ResponseEntity<ApiResult<UserProfileData>> me(@AuthenticationPrincipal String email) {
-        return ResponseEntity.ok(ApiResult.ok(getProfileUseCase.executeByEmail(email)));
+    public ResponseEntity<ApiResult<UserProfileData>> me(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResult.ok(getProfileUseCase.execute(principal.id())));
     }
 
     @Operation(summary = "Update profile", description = "Update the current user's name, phone, and avatar.")
@@ -170,12 +170,11 @@ public class AuthController {
     })
     @PutMapping("/profile")
     public ResponseEntity<ApiResult<UserProfileData>> updateProfile(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody UpdateProfileRequest request
     ) {
-        UserProfileData current = getProfileUseCase.executeByEmail(email);
         return ResponseEntity.ok(ApiResult.ok(updateProfileUseCase.execute(
-                new UpdateProfileCommand(current.id(), request.name(), request.phone(), request.avatar()))));
+                new UpdateProfileCommand(principal.id(), request.name(), request.phone(), request.avatar()))));
     }
 
     @Operation(summary = "Change password", description = "Change the current user's password. Requires the current password for verification.")
@@ -186,12 +185,11 @@ public class AuthController {
     })
     @PutMapping("/change-password")
     public ResponseEntity<ApiResult<Void>> changePassword(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody ChangePasswordRequest request
     ) {
-        UserProfileData current = getProfileUseCase.executeByEmail(email);
         changePasswordUseCase.execute(
-                new ChangePasswordCommand(current.id(), request.currentPassword(), request.newPassword()));
+                new ChangePasswordCommand(principal.id(), request.currentPassword(), request.newPassword()));
         return ResponseEntity.ok(ApiResult.ok(null, "Password changed successfully"));
     }
 }

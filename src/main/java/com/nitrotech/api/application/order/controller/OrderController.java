@@ -2,12 +2,12 @@ package com.nitrotech.api.application.order.controller;
 
 import com.nitrotech.api.application.order.request.CreateOrderRequest;
 import com.nitrotech.api.application.order.request.UpdateOrderStatusRequest;
-import com.nitrotech.api.domain.auth.usecase.GetProfileUseCase;
 import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListQuery;
 import com.nitrotech.api.domain.order.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,7 +34,6 @@ public class OrderController {
     private final GetOrderUseCase getOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
-    private final GetProfileUseCase getProfileUseCase;
 
     @Operation(summary = "List orders", description = "Get paginated list of orders for the current user, optionally filtered by status.")
     @ApiResponses(value = {
@@ -43,13 +42,13 @@ public class OrderController {
     })
     @GetMapping
     public ResponseEntity<ApiResult<List<OrderData>>> list(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "Filter by order status (e.g. pending, confirmed, shipped, delivered, cancelled)") @RequestParam(required = false) String status,
             @Parameter(description = "Page number (0-based)") @RequestParam(defaultValue = "0") int page,
             @Parameter(description = "Page size") @RequestParam(defaultValue = "10") int size
     ) {
         return ResponseEntity.ok(getOrdersUseCase.execute(
-                new OrderListQuery(userId(email), status, page, size)));
+                new OrderListQuery(principal.id(), status, page, size)));
     }
 
     @Operation(summary = "Get order by ID", description = "Retrieve a single order. Users can only access their own orders.")
@@ -60,10 +59,10 @@ public class OrderController {
     })
     @GetMapping("/{id}")
     public ResponseEntity<ApiResult<OrderData>> get(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "Order ID") @PathVariable Long id
     ) {
-        return ResponseEntity.ok(ApiResult.ok(getOrderUseCase.execute(id, userId(email))));
+        return ResponseEntity.ok(ApiResult.ok(getOrderUseCase.execute(id, principal.id())));
     }
 
     @Operation(summary = "Place order", description = "Create a new order from the current user's cart. Clears the cart on success.")
@@ -76,12 +75,12 @@ public class OrderController {
     })
     @PostMapping
     public ResponseEntity<ApiResult<OrderData>> place(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateOrderRequest req
     ) {
         String paymentMethod = req.paymentMethod() != null ? req.paymentMethod() : "cod";
         OrderData order = placeOrderUseCase.execute(new CreateOrderCommand(
-                userId(email), req.addressId(), paymentMethod, req.promotionCode(), req.note()));
+                principal.id(), req.addressId(), paymentMethod, req.promotionCode(), req.note()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(order));
     }
 
@@ -94,10 +93,10 @@ public class OrderController {
     })
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<ApiResult<OrderData>> cancel(
-            @AuthenticationPrincipal String email,
+            @AuthenticationPrincipal UserPrincipal principal,
             @Parameter(description = "Order ID") @PathVariable Long id
     ) {
-        return ResponseEntity.ok(ApiResult.ok(cancelOrderUseCase.execute(id, userId(email))));
+        return ResponseEntity.ok(ApiResult.ok(cancelOrderUseCase.execute(id, principal.id())));
     }
 
     @Operation(summary = "Update order status (admin)", description = "Admin endpoint. Update the status of any order (e.g. confirmed → shipped → delivered).")
@@ -114,9 +113,5 @@ public class OrderController {
             @Valid @RequestBody UpdateOrderStatusRequest req
     ) {
         return ResponseEntity.ok(ApiResult.ok(updateOrderStatusUseCase.execute(id, req.status())));
-    }
-
-    private Long userId(String email) {
-        return getProfileUseCase.executeByEmail(email).id();
     }
 }

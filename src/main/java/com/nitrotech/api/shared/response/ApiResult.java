@@ -15,10 +15,10 @@ public record ApiResult<T>(
         @Schema(description = "Human-readable message", example = "Created successfully")
         String message,
 
-        @Schema(description = "Pagination metadata (present on paged responses)")
+        @Schema(description = "Pagination metadata (present on paged responses)", nullable = true)
         PageMeta meta,
 
-        @Schema(description = "Additional statistics or metadata (endpoint-specific)")
+        @Schema(description = "Additional statistics or metadata (endpoint-specific)", nullable = true)
         Object facets
 ) {
     public static <T> ApiResult<T> ok(T data) {

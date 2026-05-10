@@ -7,6 +7,7 @@ import com.nitrotech.api.domain.address.dto.CreateAddressCommand;
 import com.nitrotech.api.domain.address.dto.UpdateAddressCommand;
 import com.nitrotech.api.domain.address.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -16,7 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -39,9 +40,8 @@ public class AddressController {
             @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content(mediaType = "application/json"))
     })
     @GetMapping
-    public ResponseEntity<ApiResult<List<AddressData>>> getAddresses(Authentication authentication) {
-        Long userId = Long.parseLong(authentication.getName());
-        return ResponseEntity.ok(ApiResult.ok(getAddressesUseCase.execute(userId)));
+    public ResponseEntity<ApiResult<List<AddressData>>> getAddresses(@AuthenticationPrincipal UserPrincipal principal) {
+        return ResponseEntity.ok(ApiResult.ok(getAddressesUseCase.execute(principal.id())));
     }
 
     @Operation(summary = "Create address", description = "Add a new address for the current user.")
@@ -53,9 +53,8 @@ public class AddressController {
     @PostMapping
     public ResponseEntity<ApiResult<AddressData>> createAddress(
             @Valid @RequestBody CreateAddressRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Long userId = Long.parseLong(authentication.getName());
         CreateAddressCommand command = new CreateAddressCommand(
                 request.receiver(), request.phone(),
                 request.province(), request.provinceCode(),
@@ -63,7 +62,7 @@ public class AddressController {
                 request.ward(), request.wardCode(),
                 request.street(), request.defaultAddress()
         );
-        AddressData address = createAddressUseCase.execute(userId, command);
+        AddressData address = createAddressUseCase.execute(principal.id(), command);
         return ResponseEntity.status(201).body(ApiResult.ok(address, "Address created successfully"));
     }
 
@@ -78,9 +77,8 @@ public class AddressController {
     public ResponseEntity<ApiResult<AddressData>> updateAddress(
             @Parameter(description = "Address ID") @PathVariable Long id,
             @Valid @RequestBody UpdateAddressRequest request,
-            Authentication authentication
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Long userId = Long.parseLong(authentication.getName());
         UpdateAddressCommand command = new UpdateAddressCommand(
                 request.receiver(), request.phone(),
                 request.province(), request.provinceCode(),
@@ -88,7 +86,7 @@ public class AddressController {
                 request.ward(), request.wardCode(),
                 request.street(), request.defaultAddress()
         );
-        AddressData address = updateAddressUseCase.execute(userId, id, command);
+        AddressData address = updateAddressUseCase.execute(principal.id(), id, command);
         return ResponseEntity.ok(ApiResult.ok(address, "Address updated successfully"));
     }
 
@@ -101,10 +99,9 @@ public class AddressController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResult<Void>> deleteAddress(
             @Parameter(description = "Address ID") @PathVariable Long id,
-            Authentication authentication
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Long userId = Long.parseLong(authentication.getName());
-        deleteAddressUseCase.execute(userId, id);
+        deleteAddressUseCase.execute(principal.id(), id);
         return ResponseEntity.ok(ApiResult.ok(null, "Address deleted successfully"));
     }
 
@@ -117,10 +114,9 @@ public class AddressController {
     @PatchMapping("/{id}/set-default")
     public ResponseEntity<ApiResult<Void>> setDefaultAddress(
             @Parameter(description = "Address ID") @PathVariable Long id,
-            Authentication authentication
+            @AuthenticationPrincipal UserPrincipal principal
     ) {
-        Long userId = Long.parseLong(authentication.getName());
-        setDefaultAddressUseCase.execute(userId, id);
+        setDefaultAddressUseCase.execute(principal.id(), id);
         return ResponseEntity.ok(ApiResult.ok(null, "Default address updated"));
     }
 }
