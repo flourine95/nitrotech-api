@@ -152,13 +152,15 @@ public class AuthController {
         return ResponseEntity.ok(ApiResult.ok(null, "Verification email sent"));
     }
 
-    @Operation(summary = "Get current user", description = "Retrieve the profile of the currently authenticated user.")
+    @Operation(summary = "Get current user", description = "Retrieve the profile of the currently authenticated user. Returns null if not authenticated.")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Profile retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "Not authenticated", content = @Content(mediaType = "application/json"))
+            @ApiResponse(responseCode = "200", description = "Profile retrieved successfully or null if not authenticated")
     })
     @GetMapping("/me")
     public ResponseEntity<ApiResult<UserProfileData>> me(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.ok(ApiResult.ok(null));
+        }
         return ResponseEntity.ok(ApiResult.ok(getProfileUseCase.execute(principal.id())));
     }
 
