@@ -116,6 +116,9 @@ log.info("Processing " + product.getName());  // Creates string even if log disa
 - Use parameterized logging: `log.info("Message: {}", value)`
 - Levels: `debug` (dev), `info` (important events), `warn` (recoverable), `error` (failures)
 - Never use `System.out.println` or `System.err.println`
+- **Don't over-log**: Only log important events, not every method call
+- Avoid logging in simple CRUD operations (create, update, delete)
+- Log at service/use case level for business operations, not in repositories
 
 ---
 
@@ -199,7 +202,7 @@ if ((order.getStatus().equals("pending") || order.getStatus().equals("confirmed"
 ```
 
 **Naming conventions:**
-- `is*` - State checks: `isPending()`, `isActive()`, `isDeleted()`
+- `is*` - State checks: `isPending()`, `isActive()`, `isDeleted()`, `isExpired()`, `isValid()`
 - `has*` - Validation: `hasStock()`, `hasPrice()`, `hasChildren()`
 - `can*` - Permissions/Rules: `canBeCancelled()`, `canBeEdited()`
 
@@ -208,6 +211,29 @@ if ((order.getStatus().equals("pending") || order.getStatus().equals("confirmed"
 - Return boolean, never null
 - Combine simple predicates into complex ones
 - Keep entity methods simple (no repository calls)
+- Use in Stream filters with method references: `.filter(Entity::isValid)`
+
+**Examples:**
+```java
+# Entity predicate methods
+public boolean isExpired() {
+    return expiresAt.isBefore(LocalDateTime.now());
+}
+
+public boolean isValid() {
+    return !used && !isExpired();
+}
+
+# Usage in repository with method reference
+return jpa.findByToken(token)
+    .filter(UserTokenEntity::isValid)
+    .map(this::toDto);
+
+# Usage in service
+if (!token.isValid()) {
+    throw new InvalidTokenException();
+}
+```
 
 ---
 

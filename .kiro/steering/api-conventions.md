@@ -319,12 +319,30 @@ public class BrandRepositoryImpl implements BrandRepository {
 - Simple one-way mappings (entity → DTO)
 - Repository implementations
 - Custom logic needed
+- Few fields (< 5 fields)
 
 **Naming:**
 - `toData(Entity)` → Data
 - `toEntity(Command)` → Entity
 - `toListData(Entity)` → Data (for list endpoints)
 - `toDetailData(Entity)` → Data (for detail endpoints)
+- `toResetToken(Entity)` → Nested record DTO
+- `toVerificationToken(Entity)` → Nested record DTO
+
+**Examples:**
+```java
+# Simple mapper for nested record
+private PasswordResetTokenRepository.ResetToken toResetToken(UserTokenEntity e) {
+    return new PasswordResetTokenRepository.ResetToken(
+        e.getId(), e.getUserId(), e.getToken()
+    );
+}
+
+# Usage with method reference
+return jpa.findByToken(token)
+    .filter(UserTokenEntity::isValid)
+    .map(this::toResetToken);
+```
 
 ---
 

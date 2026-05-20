@@ -66,15 +66,31 @@ log.debug("Processing: {}", msg);
 
 ### Extract complex conditions to predicate methods
 ```java
+# BAD - Complex lambda in filter
+.filter(e -> !e.isUsed() && e.getExpiresAt().isAfter(LocalDateTime.now()))
+
+# GOOD - Extract to entity predicate method
+.filter(UserTokenEntity::isValid)
+
+# Entity
+public boolean isValid() {
+    return !used && !isExpired();
+}
+
+public boolean isExpired() {
+    return expiresAt.isBefore(LocalDateTime.now());
+}
+```
+
+### Use method references over lambdas
+```java
 # BAD
-if (order.getStatus().equals("pending") || order.getStatus().equals("confirmed")) { }
+.map(e -> toDto(e))
+.filter(item -> item != null)
 
 # GOOD
-if (order.canBeCancelled()) { }
-
-public boolean canBeCancelled() {
-    return isPending() || isConfirmed();
-}
+.map(this::toDto)
+.filter(Objects::nonNull)
 ```
 
 ## Pre-Commit Checklist
@@ -84,6 +100,8 @@ public boolean canBeCancelled() {
 - [ ] @Transactional on multi-step operations
 - [ ] Batch queries used (no N+1)
 - [ ] Soft delete filter included
-- [ ] Proper logging (no System.out)
-- [ ] Complex conditions extracted to methods
+- [ ] Proper logging (no System.out, no over-logging)
+- [ ] Complex conditions extracted to entity predicate methods
+- [ ] Method references used instead of simple lambdas
+- [ ] Private mapper methods for simple DTOs (not MapStruct)
 - [ ] Code compiles without warnings
