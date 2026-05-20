@@ -10,6 +10,7 @@ public interface ProductRepository {
     ProductData create(CreateProductCommand command);
     ProductData update(UpdateProductCommand command);
     Optional<ProductData> findById(Long id);
+    Optional<ProductData> findBySlug(String slug);
     Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
     boolean existsBySlug(String slug);

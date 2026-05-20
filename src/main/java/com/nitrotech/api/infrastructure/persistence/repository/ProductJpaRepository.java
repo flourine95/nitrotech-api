@@ -16,6 +16,8 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
 
+    Optional<ProductEntity> findBySlugAndDeletedAtIsNull(String slug);
+
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NULL AND p.id = :id")
     Optional<ProductEntity> findActiveById(@Param("id") Long id);
 

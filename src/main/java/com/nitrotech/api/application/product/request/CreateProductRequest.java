@@ -6,6 +6,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -31,5 +32,11 @@ public record CreateProductRequest(
         List<String> images,
 
         @Valid
-        List<CreateVariantRequest> variants
-) {}
+        List<CreateVariantRequest> variants,
+
+        @Size(max = 50, message = "Manual badge must be at most 50 characters")
+        String manualBadge,
+
+        LocalDateTime manualBadgeExpiresAt
+) {
+}

@@ -22,6 +22,9 @@ public record ProductData(
         Integer variantCount,               // số variant active
         BigDecimal priceMin,                // giá thấp nhất từ variants active
         BigDecimal priceMax,                // giá cao nhất từ variants active
+        String badge,                       // "new", "bestseller", "lowstock", "preorder", null
+        Double rating,                      // avg rating from reviews
+        Integer reviewCount,                // total approved reviews
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

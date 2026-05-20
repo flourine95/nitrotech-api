@@ -47,6 +47,8 @@ public class ProductRepositoryImpl implements ProductRepository {
         entity.setThumbnail(command.thumbnail());
         entity.setSpecs(command.specs());
         entity.setActive(command.active());
+        entity.setManualBadge(command.manualBadge());
+        entity.setManualBadgeExpiresAt(command.manualBadgeExpiresAt());
         ProductEntity saved = productJpa.save(entity);
 
         saveImages(saved.getId(), command.images());
@@ -71,6 +73,10 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (command.thumbnail() != null) entity.setThumbnail(command.thumbnail());
         if (command.specs() != null) entity.setSpecs(command.specs());
         if (command.active() != null) entity.setActive(command.active());
+        if (command.manualBadge() != null || command.manualBadgeExpiresAt() != null) {
+            entity.setManualBadge(command.manualBadge());
+            entity.setManualBadgeExpiresAt(command.manualBadgeExpiresAt());
+        }
         entity.setUpdatedAt(LocalDateTime.now());
         ProductEntity saved = productJpa.save(entity);
 
@@ -85,6 +91,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public Optional<ProductData> findById(Long id) {
         return productJpa.findActiveById(id).map(this::toDetailData);
+    }
+
+    @Override
+    public Optional<ProductData> findBySlug(String slug) {
+        return productJpa.findBySlugAndDeletedAtIsNull(slug).map(this::toDetailData);
     }
 
     @Override
@@ -141,6 +152,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (command.price() != null) entity.setPrice(command.price());
         if (command.attributes() != null) entity.setAttributes(command.attributes());
         if (command.active() != null) entity.setActive(command.active());
+        if (command.imageId() != null) entity.setImageId(command.imageId());
         entity.setUpdatedAt(LocalDateTime.now());
         return toVariantData(variantJpa.save(entity));
     }
@@ -206,6 +218,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         entity.setPrice(command.price());
         entity.setAttributes(command.attributes());
         entity.setActive(command.active());
+        entity.setImageId(command.imageId());
         return variantJpa.save(entity);
     }
 
@@ -214,6 +227,10 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<String> images = imageJpa.findByProductIdOrderBySortOrderAsc(e.getId())
                 .stream().map(ProductImageEntity::getUrl).toList();
         int variantCount = productJpa.countActiveVariants(e.getId());
+        
+        // Compute badge
+        String badge = computeBadge(e, variantCount);
+        
         return new ProductData(
                 e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
                 e.getBrandId(), resolveBrandName(e.getBrandId()),
@@ -223,6 +240,9 @@ public class ProductRepositoryImpl implements ProductRepository {
                 variantCount,
                 productJpa.findMinPrice(e.getId()),
                 productJpa.findMaxPrice(e.getId()),
+                badge,
+                null,  // rating - TODO: aggregate from reviews
+                null,  // reviewCount - TODO: aggregate from reviews
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -233,6 +253,10 @@ public class ProductRepositoryImpl implements ProductRepository {
                 .stream().map(ProductImageEntity::getUrl).toList();
         List<ProductVariantData> variants = variantJpa.findActiveByProductId(e.getId())
                 .stream().map(this::toVariantData).toList();
+        
+        // Compute badge
+        String badge = computeBadge(e, variants.size());
+        
         return new ProductData(
                 e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
                 e.getBrandId(), resolveBrandName(e.getBrandId()),
@@ -246,6 +270,9 @@ public class ProductRepositoryImpl implements ProductRepository {
                 variants.stream().map(ProductVariantData::price)
                         .filter(p -> p != null)
                         .max(java.math.BigDecimal::compareTo).orElse(null),
+                badge,
+                null,  // rating - TODO: aggregate from reviews
+                null,  // reviewCount - TODO: aggregate from reviews
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -261,11 +288,62 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {
+        String imageUrl = null;
+        if (e.getImageId() != null) {
+            imageUrl = imageJpa.findById(e.getImageId())
+                    .map(ProductImageEntity::getUrl)
+                    .orElse(null);
+        }
+        
         return new ProductVariantData(
                 e.getId(), e.getProductId(), e.getSku(), e.getName(),
                 e.getPrice(), e.getAttributes(), e.isActive(),
+                e.getImageId(), imageUrl,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
+    }
+
+    // ── Badge computation ─────────────────────────────────────────────────────
+
+    /**
+     * Compute badge for product with priority system:
+     * 1. Manual badge (if set and not expired) - highest priority
+     * 2. Auto-computed badges - fallback
+     *    - lowstock: variantCount <= 5
+     *    - bestseller: TODO (requires order_items data)
+     *    - new: created < 30 days ago
+     */
+    private String computeBadge(ProductEntity product, int variantCount) {
+        LocalDateTime now = LocalDateTime.now();
+        
+        // 1️⃣ Manual badge (highest priority)
+        if (product.getManualBadge() != null) {
+            // Check if expired
+            if (product.getManualBadgeExpiresAt() == null || 
+                product.getManualBadgeExpiresAt().isAfter(now)) {
+                return product.getManualBadge();
+            }
+            // Expired → fallback to auto badge
+        }
+        
+        // 2️⃣ Auto-computed badges (fallback)
+        
+        // Low stock (sắp hết) - Priority 1
+        if (variantCount > 0 && variantCount <= 5) {
+            return "lowstock";
+        }
+        
+        // Best seller (bán chạy) - Priority 2
+        // TODO: Implement when order_items data available
+        // int sold30Days = getSoldLast30Days(product.getId());
+        // if (sold30Days >= 100) return "bestseller";
+        
+        // New (mới) - Priority 3
+        if (product.getCreatedAt().isAfter(now.minusDays(30))) {
+            return "new";
+        }
+        
+        return null;
     }
 
     // ── Batch loading helpers ─────────────────────────────────────────────────
@@ -323,6 +401,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<String> images = imagesMap.getOrDefault(e.getId(), List.of());
         ProductStats stats = statsMap.getOrDefault(e.getId(), new ProductStats(0, null, null));
         
+        // Compute badge
+        String badge = computeBadge(e, stats.variantCount);
+        
         return new ProductData(
                 e.getId(), e.getCategoryId(), categoryNames.get(e.getCategoryId()),
                 e.getBrandId(), brandNames.get(e.getBrandId()),
@@ -332,6 +413,9 @@ public class ProductRepositoryImpl implements ProductRepository {
                 stats.variantCount,
                 stats.minPrice,
                 stats.maxPrice,
+                badge,
+                null,  // rating - TODO
+                null,  // reviewCount - TODO
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }

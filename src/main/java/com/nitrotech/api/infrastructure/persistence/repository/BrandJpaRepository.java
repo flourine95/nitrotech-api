@@ -23,6 +23,8 @@ public interface BrandJpaRepository extends JpaRepository<BrandEntity, Long>,
     @Query("SELECT b FROM BrandEntity b WHERE b.id = :id AND b.deletedAt IS NULL")
     Optional<BrandEntity> findActiveById(@Param("id") Long id);
 
+    Optional<BrandEntity> findBySlugAndDeletedAtIsNull(String slug);
+
     @Query("SELECT b FROM BrandEntity b WHERE b.id = :id AND b.deletedAt IS NOT NULL")
     Optional<BrandEntity> findDeletedById(@Param("id") Long id);
 

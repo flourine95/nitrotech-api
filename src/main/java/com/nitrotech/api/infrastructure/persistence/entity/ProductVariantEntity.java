@@ -36,6 +36,8 @@ public class ProductVariantEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> attributes;
 
+    private Long imageId;
+
     @Column(nullable = false)
     private boolean active = true;
 

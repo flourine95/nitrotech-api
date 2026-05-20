@@ -22,5 +22,6 @@ public record CreateVariantRequest(
         BigDecimal price,
 
         Map<String, Object> attributes,
-        boolean active
+        boolean active,
+        Long imageId
 ) {}

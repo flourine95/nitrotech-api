@@ -10,5 +10,6 @@ public record UpdateVariantCommand(
         String name,
         BigDecimal price,
         Map<String, Object> attributes,
-        Boolean active
+        Boolean active,
+        Long imageId
 ) {}

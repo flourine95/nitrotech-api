@@ -12,6 +12,8 @@ public record ProductVariantData(
         BigDecimal price,
         Map<String, Object> attributes,
         boolean active,
+        Long imageId,
+        String imageUrl,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

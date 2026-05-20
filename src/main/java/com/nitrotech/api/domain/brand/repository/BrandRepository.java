@@ -15,6 +15,7 @@ public interface BrandRepository {
     BrandData create(CreateBrandCommand command);
     BrandData update(UpdateBrandCommand command);
     Optional<BrandData> findById(Long id);
+    Optional<BrandData> findBySlug(String slug);
     Optional<BrandData> findDeletedById(Long id);
     Page<BrandData> findAll(BrandFilter filter, Pageable pageable);
     BrandFacets countFacets(String search);
