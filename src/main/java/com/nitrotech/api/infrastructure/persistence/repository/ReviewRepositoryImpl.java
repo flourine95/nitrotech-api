@@ -89,7 +89,7 @@ public class ReviewRepositoryImpl implements ReviewRepository {
         String userName = userJpa.findById(e.getUserId())
                 .map(UserEntity::getName).orElse(null);
         return new ReviewData(e.getId(), e.getProductId(), e.getUserId(), userName,
-                e.getOrderId(), e.getRating(), e.getComment(), e.getImages(),
+                e.getOrderId(), e.getRating().intValue(), e.getComment(), e.getImages(),
                 e.getStatus(), e.getCreatedAt(), e.getUpdatedAt());
     }
 }

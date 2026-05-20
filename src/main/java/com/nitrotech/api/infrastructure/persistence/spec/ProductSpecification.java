@@ -3,8 +3,6 @@ package com.nitrotech.api.infrastructure.persistence.spec;
 import com.nitrotech.api.domain.product.dto.ProductFilter;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
-import jakarta.persistence.criteria.Join;
-import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -72,26 +70,26 @@ public class ProductSpecification {
     private static Specification<ProductEntity> priceRange(BigDecimal minPrice, BigDecimal maxPrice) {
         return (root, query, cb) -> {
             if (minPrice == null && maxPrice == null) return cb.conjunction();
-            
+
             // Subquery to check if product has any variant within price range
             Subquery<Long> subquery = query.subquery(Long.class);
             var variantRoot = subquery.from(ProductVariantEntity.class);
-            
+
             List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(variantRoot.get("productId"), root.get("id")));
             predicates.add(cb.isTrue(variantRoot.get("active")));
             predicates.add(cb.isNull(variantRoot.get("deletedAt")));
-            
+
             if (minPrice != null) {
                 predicates.add(cb.greaterThanOrEqualTo(variantRoot.get("price"), minPrice));
             }
             if (maxPrice != null) {
                 predicates.add(cb.lessThanOrEqualTo(variantRoot.get("price"), maxPrice));
             }
-            
+
             subquery.select(variantRoot.get("id"))
                     .where(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
-            
+
             return cb.exists(subquery);
         };
     }

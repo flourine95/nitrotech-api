@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Repository
@@ -22,17 +23,20 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final ProductVariantJpaRepository variantJpa;
     private final CategoryJpaRepository categoryJpa;
     private final BrandJpaRepository brandJpa;
+    private final ReviewJpaRepository reviewJpa;
 
     public ProductRepositoryImpl(ProductJpaRepository productJpa,
                                   ProductImageJpaRepository imageJpa,
                                   ProductVariantJpaRepository variantJpa,
                                   CategoryJpaRepository categoryJpa,
-                                  BrandJpaRepository brandJpa) {
+                                  BrandJpaRepository brandJpa,
+                                  ReviewJpaRepository reviewJpa) {
         this.productJpa = productJpa;
         this.imageJpa = imageJpa;
         this.variantJpa = variantJpa;
         this.categoryJpa = categoryJpa;
         this.brandJpa = brandJpa;
+        this.reviewJpa = reviewJpa;
     }
 
     @Override
@@ -110,15 +114,16 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<Long> productIds = page.getContent().stream().map(ProductEntity::getId).toList();
         var imagesMap = batchLoadImages(productIds);
         var statsMap = batchLoadProductStats(productIds);
+        var reviewStatsMap = batchLoadReviewStats(productIds);
         var categoryNames = batchLoadCategoryNames(
-                page.getContent().stream().map(ProductEntity::getCategoryId).filter(id -> id != null).distinct().toList()
+                page.getContent().stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
         var brandNames = batchLoadBrandNames(
                 page.getContent().stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
         );
         
         // Map nhanh từ cache
-        return page.map(e -> toListDataBatched(e, imagesMap, statsMap, categoryNames, brandNames));
+        return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames));
     }
 
     @Override
@@ -199,6 +204,15 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
+    /**
+     * Round rating to 1 decimal place for cleaner display
+     * Example: 3.66666666666667 → 3.7
+     */
+    private Double roundRating(Double rating) {
+        if (rating == null) return null;
+        return Math.round(rating * 10.0) / 10.0;
+    }
+
     private void saveImages(Long productId, List<String> urls) {
         if (urls == null) return;
         for (int i = 0; i < urls.size(); i++) {
@@ -231,6 +245,22 @@ public class ProductRepositoryImpl implements ProductRepository {
         // Compute badge
         String badge = computeBadge(e, variantCount);
         
+        // Get review stats (safe handling)
+        Object[] reviewStats = reviewJpa.getReviewStats(e.getId());
+        Double rating = null;
+        Integer reviewCount = null;
+        
+        if (reviewStats != null && reviewStats.length >= 2) {
+            if (reviewStats[0] instanceof Number) {
+                double rawRating = ((Number) reviewStats[0]).doubleValue();
+                rating = rawRating > 0 ? roundRating(rawRating) : null;
+            }
+            if (reviewStats[1] instanceof Number) {
+                reviewCount = ((Number) reviewStats[1]).intValue();
+                if (reviewCount == 0) reviewCount = null;
+            }
+        }
+        
         return new ProductData(
                 e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
                 e.getBrandId(), resolveBrandName(e.getBrandId()),
@@ -241,8 +271,8 @@ public class ProductRepositoryImpl implements ProductRepository {
                 productJpa.findMinPrice(e.getId()),
                 productJpa.findMaxPrice(e.getId()),
                 badge,
-                null,  // rating - TODO: aggregate from reviews
-                null,  // reviewCount - TODO: aggregate from reviews
+                rating,
+                reviewCount,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -256,6 +286,13 @@ public class ProductRepositoryImpl implements ProductRepository {
         
         // Compute badge
         String badge = computeBadge(e, variants.size());
+        
+        // Get review stats - TEMPORARY: Use batch query for single product
+        java.util.Map<Long, ReviewStats> reviewStatsMap = batchLoadReviewStats(List.of(e.getId()));
+        ReviewStats reviewStats = reviewStatsMap.get(e.getId());
+        
+        Double rating = reviewStats != null ? reviewStats.rating() : null;
+        Integer reviewCount = reviewStats != null ? reviewStats.reviewCount() : null;
         
         return new ProductData(
                 e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
@@ -271,8 +308,8 @@ public class ProductRepositoryImpl implements ProductRepository {
                         .filter(p -> p != null)
                         .max(java.math.BigDecimal::compareTo).orElse(null),
                 badge,
-                null,  // rating - TODO: aggregate from reviews
-                null,  // reviewCount - TODO: aggregate from reviews
+                rating,
+                reviewCount,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
@@ -373,6 +410,34 @@ public class ProductRepositoryImpl implements ProductRepository {
         return result;
     }
 
+    private java.util.Map<Long, ReviewStats> batchLoadReviewStats(List<Long> productIds) {
+        List<Object[]> results = reviewJpa.getReviewStatsBatch(productIds);
+        java.util.Map<Long, ReviewStats> map = new java.util.HashMap<>();
+        
+        for (Object[] row : results) {
+            if (row != null && row.length >= 3) {
+                Long productId = row[0] instanceof Number ? ((Number) row[0]).longValue() : null;
+                if (productId == null) continue;
+                
+                Double avgRating = null;
+                if (row[1] instanceof Number) {
+                    double rawRating = ((Number) row[1]).doubleValue();
+                    avgRating = rawRating > 0 ? roundRating(rawRating) : null;
+                }
+                
+                Integer reviewCount = null;
+                if (row[2] instanceof Number) {
+                    int count = ((Number) row[2]).intValue();
+                    reviewCount = count > 0 ? count : null;
+                }
+                
+                map.put(productId, new ReviewStats(avgRating, reviewCount));
+            }
+        }
+        
+        return map;
+    }
+
     private java.util.Map<Long, String> batchLoadCategoryNames(List<Long> categoryIds) {
         if (categoryIds.isEmpty()) return java.util.Map.of();
         return categoryJpa.findAllById(categoryIds).stream()
@@ -395,11 +460,13 @@ public class ProductRepositoryImpl implements ProductRepository {
             ProductEntity e,
             java.util.Map<Long, List<String>> imagesMap,
             java.util.Map<Long, ProductStats> statsMap,
+            java.util.Map<Long, ReviewStats> reviewStatsMap,
             java.util.Map<Long, String> categoryNames,
             java.util.Map<Long, String> brandNames
     ) {
         List<String> images = imagesMap.getOrDefault(e.getId(), List.of());
         ProductStats stats = statsMap.getOrDefault(e.getId(), new ProductStats(0, null, null));
+        ReviewStats reviewStats = reviewStatsMap.getOrDefault(e.getId(), new ReviewStats(null, null));
         
         // Compute badge
         String badge = computeBadge(e, stats.variantCount);
@@ -414,11 +481,12 @@ public class ProductRepositoryImpl implements ProductRepository {
                 stats.minPrice,
                 stats.maxPrice,
                 badge,
-                null,  // rating - TODO
-                null,  // reviewCount - TODO
+                reviewStats.rating,
+                reviewStats.reviewCount,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
     }
 
     private record ProductStats(int variantCount, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {}
+    private record ReviewStats(Double rating, Integer reviewCount) {}
 }

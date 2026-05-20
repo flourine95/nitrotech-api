@@ -19,17 +19,17 @@ public class ReviewEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
-    @Column(nullable = false)
+    @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(nullable = false)
+    @Column(name = "order_id", nullable = false)
     private Long orderId;
 
     @Column(nullable = false)
-    private short rating;
+    private Short rating;  // SMALLINT in DB (1-5)
 
     @Column(columnDefinition = "TEXT")
     private String comment;
@@ -38,14 +38,15 @@ public class ReviewEntity {
     @Column(columnDefinition = "jsonb")
     private List<String> images;
 
-    @Column(nullable = false)
-    private String status = "pending";
+    @Column(nullable = false, length = 20)
+    private String status = "pending"; // pending, approved, rejected
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    @Column(nullable = false)
+    @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt = LocalDateTime.now();
 
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 }
