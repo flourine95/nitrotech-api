@@ -7,14 +7,14 @@ import java.time.LocalDateTime;
 
 public record CreateBannerRequest(
         @NotBlank(message = "Title is required")
-        @Size(max = 255)
+        @Size(max = 255, message = "Title must be at most 255 characters")
         String title,
 
         @NotBlank(message = "Image is required")
-        @Size(max = 500)
+        @Size(max = 500, message = "Image must be at most 500 characters")
         String image,
 
-        @Size(max = 500)
+        @Size(max = 500, message = "URL must be at most 500 characters")
         String url,
 
         @NotBlank(message = "Position is required")
