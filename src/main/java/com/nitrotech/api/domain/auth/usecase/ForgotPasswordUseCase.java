@@ -3,10 +3,12 @@ package com.nitrotech.api.domain.auth.usecase;
 import com.nitrotech.api.domain.auth.exception.EmailNotFoundException;
 import com.nitrotech.api.domain.auth.repository.PasswordResetTokenRepository;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class ForgotPasswordUseCase {
 
     private final UserRepository userRepository;
@@ -15,14 +17,6 @@ public class ForgotPasswordUseCase {
 
     @Value("${app.frontend-url:http://localhost:3000}")
     private String frontendUrl;
-
-    public ForgotPasswordUseCase(UserRepository userRepository,
-                                  PasswordResetTokenRepository resetTokenRepository,
-                                  EmailSender emailSender) {
-        this.userRepository = userRepository;
-        this.resetTokenRepository = resetTokenRepository;
-        this.emailSender = emailSender;
-    }
 
     public void execute(String email) {
         var user = userRepository.findByEmail(email)

@@ -5,19 +5,17 @@ import com.nitrotech.api.domain.auth.dto.UserProfileData;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class UserRepositoryImpl implements UserRepository {
 
     private final UserJpaRepository jpa;
-
-    public UserRepositoryImpl(UserJpaRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     public boolean existsByEmail(String email) {

@@ -3,6 +3,7 @@ package com.nitrotech.api.infrastructure.persistence.repository;
 import com.nitrotech.api.domain.auth.repository.EmailVerificationTokenRepository;
 import com.nitrotech.api.domain.auth.repository.PasswordResetTokenRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.UserTokenEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -11,15 +12,10 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
+@RequiredArgsConstructor
 public class UserTokenRepositoryImpl implements PasswordResetTokenRepository, EmailVerificationTokenRepository {
 
     private final UserTokenJpaRepository jpa;
-
-    public UserTokenRepositoryImpl(UserTokenJpaRepository jpa) {
-        this.jpa = jpa;
-    }
-
-    // --- PasswordResetTokenRepository ---
 
     @Override
     public String create(Long userId, int expiryMinutes) {
@@ -29,17 +25,18 @@ public class UserTokenRepositoryImpl implements PasswordResetTokenRepository, Em
     @Override
     public Optional<PasswordResetTokenRepository.ResetToken> findValid(String token) {
         return jpa.findByTokenAndType(token, UserTokenEntity.Type.password_reset)
-                .filter(e -> !e.isUsed() && e.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(e -> new PasswordResetTokenRepository.ResetToken(e.getId(), e.getUserId(), e.getToken()));
+                .filter(UserTokenEntity::isValid)
+                .map(this::toResetToken);
     }
 
     @Override
     public void markUsed(String token) {
         jpa.findByTokenAndType(token, UserTokenEntity.Type.password_reset)
-                .ifPresent(e -> { e.setUsed(true); jpa.save(e); });
+                .ifPresent(e -> {
+                    e.setUsed(true);
+                    jpa.save(e);
+                });
     }
-
-    // --- EmailVerificationTokenRepository ---
 
     @Override
     public String createVerification(Long userId, int expiryMinutes) {
@@ -49,14 +46,17 @@ public class UserTokenRepositoryImpl implements PasswordResetTokenRepository, Em
     @Override
     public Optional<EmailVerificationTokenRepository.VerificationToken> findValidVerification(String token) {
         return jpa.findByTokenAndType(token, UserTokenEntity.Type.email_verification)
-                .filter(e -> !e.isUsed() && e.getExpiresAt().isAfter(LocalDateTime.now()))
-                .map(e -> new EmailVerificationTokenRepository.VerificationToken(e.getId(), e.getUserId(), e.getToken()));
+                .filter(UserTokenEntity::isValid)
+                .map(this::toVerificationToken);
     }
 
     @Override
     public void markVerificationUsed(String token) {
         jpa.findByTokenAndType(token, UserTokenEntity.Type.email_verification)
-                .ifPresent(e -> { e.setUsed(true); jpa.save(e); });
+                .ifPresent(e -> {
+                    e.setUsed(true);
+                    jpa.save(e);
+                });
     }
 
     @Override
@@ -65,7 +65,13 @@ public class UserTokenRepositoryImpl implements PasswordResetTokenRepository, Em
         jpa.deleteByUserIdAndType(userId, UserTokenEntity.Type.email_verification);
     }
 
-    // --- shared ---
+    private PasswordResetTokenRepository.ResetToken toResetToken(UserTokenEntity e) {
+        return new PasswordResetTokenRepository.ResetToken(e.getId(), e.getUserId(), e.getToken());
+    }
+
+    private EmailVerificationTokenRepository.VerificationToken toVerificationToken(UserTokenEntity e) {
+        return new EmailVerificationTokenRepository.VerificationToken(e.getId(), e.getUserId(), e.getToken());
+    }
 
     private String createToken(Long userId, int expiryMinutes, UserTokenEntity.Type type) {
         UserTokenEntity entity = new UserTokenEntity();
