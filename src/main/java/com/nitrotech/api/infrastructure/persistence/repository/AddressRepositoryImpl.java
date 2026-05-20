@@ -7,6 +7,7 @@ import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.AddressEntity;
 import com.nitrotech.api.infrastructure.persistence.mapper.AddressMapper;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,15 +15,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class AddressRepositoryImpl implements AddressRepository {
 
     private final AddressJpaRepository jpa;
     private final AddressMapper mapper;
-
-    public AddressRepositoryImpl(AddressJpaRepository jpa, AddressMapper mapper) {
-        this.jpa = jpa;
-        this.mapper = mapper;
-    }
 
     @Override
     public List<AddressData> findByUserId(Long userId) {

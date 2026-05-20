@@ -3,17 +3,18 @@ package com.nitrotech.api.domain.address.usecase;
 import com.nitrotech.api.domain.address.dto.AddressData;
 import com.nitrotech.api.domain.address.dto.CreateAddressCommand;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+@Service
+@RequiredArgsConstructor
 public class CreateAddressUseCase {
 
     private final AddressRepository addressRepository;
 
-    public CreateAddressUseCase(AddressRepository addressRepository) {
-        this.addressRepository = addressRepository;
-    }
-
+    @Transactional
     public AddressData execute(Long userId, CreateAddressCommand command) {
-        // If this is the first address, force it to be default
         long addressCount = addressRepository.countByUserId(userId);
         boolean shouldBeDefault = addressCount == 0 || command.defaultAddress();
 
@@ -32,7 +33,6 @@ public class CreateAddressUseCase {
 
         AddressData address = addressRepository.create(userId, finalCommand);
 
-        // If set as default, unset other addresses
         if (shouldBeDefault) {
             addressRepository.setAsDefault(userId, address.id());
         }

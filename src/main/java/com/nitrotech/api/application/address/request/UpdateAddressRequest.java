@@ -17,7 +17,7 @@ public record UpdateAddressRequest(
     @Size(max = 100, message = "Province must not exceed 100 characters")
     String province,
 
-    @NotBlank(message = "District code is required")
+    @NotBlank(message = "Province code is required")
     @Size(max = 20, message = "Province code must not exceed 20 characters")
     String provinceCode,
 

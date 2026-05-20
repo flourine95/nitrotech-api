@@ -10,6 +10,7 @@ import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -45,7 +46,7 @@ public class AddressController {
                 request.street(), request.defaultAddress()
         );
         AddressData address = createAddressUseCase.execute(principal.id(), command);
-        return ResponseEntity.status(201).body(ApiResult.ok(address, "Address created successfully"));
+        return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(address));
     }
 
     @PutMapping("/{id}")
@@ -62,7 +63,7 @@ public class AddressController {
                 request.street(), request.defaultAddress()
         );
         AddressData address = updateAddressUseCase.execute(principal.id(), id, command);
-        return ResponseEntity.ok(ApiResult.ok(address, "Address updated successfully"));
+        return ResponseEntity.ok(ApiResult.ok(address));
     }
 
     @DeleteMapping("/{id}")
