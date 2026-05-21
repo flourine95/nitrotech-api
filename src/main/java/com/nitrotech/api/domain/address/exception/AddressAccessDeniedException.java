@@ -1,8 +1,10 @@
 package com.nitrotech.api.domain.address.exception;
 
-public class AddressAccessDeniedException extends RuntimeException {
+import com.nitrotech.api.shared.exception.ForbiddenException;
+
+public class AddressAccessDeniedException extends ForbiddenException {
 
     public AddressAccessDeniedException() {
-        super("This address does not belong to you");
+        super("ADDRESS_ACCESS_DENIED", "This address does not belong to you");
     }
 }
