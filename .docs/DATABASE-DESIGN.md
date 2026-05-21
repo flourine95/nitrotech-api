@@ -1,31 +1,29 @@
 # Database Design — Nitrotech API
 
-## Nguyên tắc chung
+## Design Principles
 
-- Tất cả bảng có `created_at`, `updated_at`
-- Bảng quan trọng có `deleted_at` (soft delete)
-- Không dùng prefix `is_` cho boolean column
-- Dùng `BIGSERIAL` cho primary key (PostgreSQL)
-- Boolean trạng thái dùng thống nhất tên `active`
-- Enum dùng `VARCHAR` + CHECK CONSTRAINT
-- Product variant dùng `JSONB` cho attributes (GIN index)
+- All tables have `created_at`, `updated_at` timestamps
+- Important tables have `deleted_at` for soft delete
+- No `is_` prefix for boolean columns
+- Use `BIGSERIAL` for primary keys (PostgreSQL)
+- Boolean status fields consistently named `active`
+- Enums use `VARCHAR` or JPA `@Enumerated(EnumType.STRING)`
+- Product variants use `JSONB` for attributes with GIN index
 
 ---
 
 ## Soft Delete
 
-| Bảng | Soft delete |
-|------|-------------|
-| `users` | ✅ |
-| `products` | ✅ |
-| `product_variants` | ✅ |
-| `categories` | ✅ |
-| `brands` | ✅ |
-| `orders` | ✅ |
-| `roles` | ✅ |
-| `permissions` | ✅ |
-| `reviews` | ✅ |
-| Các bảng còn lại | ❌ |
+| Table | Soft delete |
+|-------|-------------|
+| `users` | Yes |
+| `products` | Yes |
+| `product_variants` | Yes |
+| `categories` | Yes |
+| `brands` | Yes |
+| `orders` | Yes |
+| `reviews` | Yes |
+| Other tables | No |
 
 ---
 
@@ -40,8 +38,8 @@ CREATE TABLE users (
     password    VARCHAR(255),
     phone       VARCHAR(20),
     avatar      VARCHAR(500),
-    status      VARCHAR(20)  NOT NULL DEFAULT 'inactive',  -- inactive | active | banned | suspended
-    provider    VARCHAR(20)  NOT NULL DEFAULT 'local',     -- local | google | facebook
+    status      VARCHAR(20)  NOT NULL DEFAULT 'inactive',  -- inactive, active, banned, suspended
+    provider    VARCHAR(20)  NOT NULL DEFAULT 'local',     -- local, google, facebook
     provider_id VARCHAR(100),
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
@@ -51,7 +49,25 @@ CREATE TABLE users (
 
 ---
 
-### roles & permissions
+### user_tokens
+```sql
+CREATE TABLE user_tokens (
+    id         BIGSERIAL    PRIMARY KEY,
+    user_id    BIGINT       NOT NULL,
+    token      VARCHAR(255) NOT NULL UNIQUE,
+    type       VARCHAR(30)  NOT NULL,           -- password_reset, email_verification
+    expires_at TIMESTAMP    NOT NULL,
+    used       BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_token_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_token_lookup ON user_tokens (token, type) WHERE NOT used;
+```
+
+---
+
+### roles & permissions (not implemented)
 ```sql
 CREATE TABLE roles (
     id          BIGSERIAL    PRIMARY KEY,
@@ -67,9 +83,9 @@ CREATE TABLE roles (
 CREATE TABLE permissions (
     id          BIGSERIAL    PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
-    slug        VARCHAR(100) NOT NULL UNIQUE,   -- product:create | order:delete
+    slug        VARCHAR(100) NOT NULL UNIQUE,   -- product:create, order:delete
     description VARCHAR(500),
-    group_name  VARCHAR(100),                   -- product | order | user | ...
+    group_name  VARCHAR(100),                   -- product, order, user, etc.
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMP
@@ -144,6 +160,7 @@ CREATE TABLE categories (
     image       VARCHAR(500),
     parent_id   BIGINT,
     active      BOOLEAN      NOT NULL DEFAULT TRUE,
+    sort_order  INT          NOT NULL DEFAULT 0,
     created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
     deleted_at  TIMESTAMP,
@@ -156,18 +173,20 @@ CREATE TABLE categories (
 ### products & variants
 ```sql
 CREATE TABLE products (
-    id          BIGSERIAL    PRIMARY KEY,
-    category_id BIGINT       NOT NULL,
-    brand_id    BIGINT,
-    name        VARCHAR(255) NOT NULL,
-    slug        VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
-    thumbnail   VARCHAR(500),
-    specs       JSONB,                          -- thông số kỹ thuật chung
-    active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP,
+    id                        BIGSERIAL    PRIMARY KEY,
+    category_id               BIGINT       NOT NULL,
+    brand_id                  BIGINT,
+    name                      VARCHAR(255) NOT NULL,
+    slug                      VARCHAR(255) NOT NULL UNIQUE,
+    description               TEXT,
+    thumbnail                 VARCHAR(500),
+    specs                     JSONB,                          -- general specifications
+    active                    BOOLEAN      NOT NULL DEFAULT TRUE,
+    manual_badge              VARCHAR(50),                    -- manual badge: "HOT", "NEW", "SALE"
+    manual_badge_expires_at   TIMESTAMP,                      -- badge expiration time
+    created_at                TIMESTAMP    NOT NULL DEFAULT NOW(),
+    updated_at                TIMESTAMP    NOT NULL DEFAULT NOW(),
+    deleted_at                TIMESTAMP,
     CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES categories(id),
     CONSTRAINT fk_product_brand    FOREIGN KEY (brand_id)    REFERENCES brands(id)
 );
@@ -188,10 +207,13 @@ CREATE TABLE product_variants (
     name       VARCHAR(255)   NOT NULL,         -- "i7 / 32GB / 512GB / Silver"
     price      DECIMAL(15, 2) NOT NULL,
     attributes JSONB,                           -- {"cpu": "i7-13700H", "ram_gb": 32, "storage_gb": 512}
+    image_id   BIGINT,                          -- variant thumbnail image
+    active     BOOLEAN        NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP      NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP,
-    CONSTRAINT fk_variant_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
+    CONSTRAINT fk_variant_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    CONSTRAINT fk_variant_image   FOREIGN KEY (image_id)   REFERENCES product_images(id) ON DELETE SET NULL
 );
 
 CREATE INDEX idx_variant_attributes ON product_variants USING GIN (attributes);
@@ -205,14 +227,15 @@ CREATE TABLE reviews (
     id         BIGSERIAL PRIMARY KEY,
     product_id BIGINT    NOT NULL,
     user_id    BIGINT    NOT NULL,
-    order_id   BIGINT    NOT NULL,              -- chỉ user đã mua mới review được
+    order_id   BIGINT    NOT NULL,              -- only users who purchased can review
     rating     SMALLINT  NOT NULL CHECK (rating BETWEEN 1 AND 5),
     comment    TEXT,
-    status     VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending | approved | rejected
+    images     JSONB,                            -- review image URLs: ["url1", "url2"]
+    status     VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending, approved, rejected
     created_at TIMESTAMP   NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP   NOT NULL DEFAULT NOW(),
     deleted_at TIMESTAMP,
-    UNIQUE (product_id, user_id, order_id),     -- mỗi order chỉ review 1 lần
+    UNIQUE (product_id, user_id, order_id),     -- one review per order
     CONSTRAINT fk_review_product FOREIGN KEY (product_id) REFERENCES products(id),
     CONSTRAINT fk_review_user    FOREIGN KEY (user_id)    REFERENCES users(id),
     CONSTRAINT fk_review_order   FOREIGN KEY (order_id)   REFERENCES orders(id)
@@ -225,7 +248,7 @@ CREATE TABLE reviews (
 ```sql
 CREATE TABLE carts (
     id         BIGSERIAL PRIMARY KEY,
-    user_id    BIGINT    NOT NULL UNIQUE,       -- 1 user 1 cart
+    user_id    BIGINT    NOT NULL UNIQUE,       -- one cart per user
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
@@ -251,14 +274,15 @@ CREATE TABLE cart_items (
 CREATE TABLE orders (
     id               BIGSERIAL      PRIMARY KEY,
     user_id          BIGINT         NOT NULL,
-    shipping_address JSONB          NOT NULL,   -- snapshot địa chỉ lúc đặt hàng
+    shipping_address JSONB          NOT NULL,   -- address snapshot at order time
     status           VARCHAR(20)    NOT NULL DEFAULT 'pending',
-    -- pending | confirmed | processing | shipped | delivered | cancelled | refunded
+    -- pending, confirmed, processing, shipped, delivered, cancelled, refunded
+    payment_method   VARCHAR(20)    NOT NULL DEFAULT 'cod',  -- cod, vnpay, momo
     total_amount     DECIMAL(15, 2) NOT NULL,
     discount_amount  DECIMAL(15, 2) NOT NULL DEFAULT 0,
     shipping_fee     DECIMAL(15, 2) NOT NULL DEFAULT 0,
     final_amount     DECIMAL(15, 2) NOT NULL,
-    coupon_code      VARCHAR(50),
+    promotion_code   VARCHAR(50),
     note             TEXT,
     created_at       TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at       TIMESTAMP      NOT NULL DEFAULT NOW(),
@@ -270,8 +294,8 @@ CREATE TABLE order_items (
     id         BIGSERIAL      PRIMARY KEY,
     order_id   BIGINT         NOT NULL,
     variant_id BIGINT         NOT NULL,
-    name       VARCHAR(255)   NOT NULL,         -- snapshot tên variant
-    sku        VARCHAR(100)   NOT NULL,         -- snapshot SKU
+    name       VARCHAR(255)   NOT NULL,         -- variant name snapshot
+    sku        VARCHAR(100)   NOT NULL,         -- SKU snapshot
     quantity   INT            NOT NULL,
     unit_price DECIMAL(15, 2) NOT NULL,
     subtotal   DECIMAL(15, 2) NOT NULL,
@@ -283,17 +307,17 @@ CREATE TABLE order_items (
 
 ---
 
-### payments
+### payments (not implemented)
 ```sql
 CREATE TABLE payment_transactions (
     id              BIGSERIAL      PRIMARY KEY,
     order_id        BIGINT         NOT NULL,
-    provider        VARCHAR(20)    NOT NULL,    -- cod | vnpay | momo
+    provider        VARCHAR(20)    NOT NULL,    -- cod, vnpay, momo
     amount          DECIMAL(15, 2) NOT NULL,
     status          VARCHAR(20)    NOT NULL DEFAULT 'pending',
-    -- pending | success | failed | refunded
-    provider_ref    VARCHAR(255),               -- mã giao dịch từ VNPay/MoMo
-    provider_data   JSONB,                      -- raw response từ provider
+    -- pending, success, failed, refunded
+    provider_ref    VARCHAR(255),               -- transaction ID from VNPay/MoMo
+    provider_data   JSONB,                      -- raw response from provider
     paid_at         TIMESTAMP,
     created_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
@@ -303,15 +327,15 @@ CREATE TABLE payment_transactions (
 
 ---
 
-### shipments
+### shipments (not implemented)
 ```sql
 CREATE TABLE shipments (
     id           BIGSERIAL      PRIMARY KEY,
     order_id     BIGINT         NOT NULL UNIQUE,
-    provider     VARCHAR(20)    NOT NULL,       -- ghn | ghtk | self
+    provider     VARCHAR(20)    NOT NULL,       -- ghn, ghtk, self
     tracking_code VARCHAR(100),
     status       VARCHAR(30)    NOT NULL DEFAULT 'pending',
-    -- pending | picked_up | in_transit | delivered | failed | returned
+    -- pending, picked_up, in_transit, delivered, failed, returned
     fee          DECIMAL(15, 2) NOT NULL DEFAULT 0,
     estimated_at TIMESTAMP,
     shipped_at   TIMESTAMP,
@@ -339,39 +363,32 @@ CREATE TABLE promotions (
     id                  BIGSERIAL      PRIMARY KEY,
     name                VARCHAR(255)   NOT NULL,
     description         TEXT,
-    code                VARCHAR(50)    UNIQUE,          -- NULL = sale tự động, có giá trị = voucher code
-    type                VARCHAR(20)    NOT NULL,        -- percentage | fixed | freeship
+    code                VARCHAR(50)    UNIQUE,          -- NULL = auto sale, value = voucher code
+    type                VARCHAR(20)    NOT NULL,        -- percentage, fixed, freeship
     discount_value      DECIMAL(15, 2) NOT NULL,
     min_order_amount    DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    max_discount_amount DECIMAL(15, 2),                -- giới hạn giảm tối đa, quan trọng với percentage
+    max_discount_amount DECIMAL(15, 2),                -- max discount cap, important for percentage
     stackable           BOOLEAN        NOT NULL DEFAULT FALSE,
     priority            INT            NOT NULL DEFAULT 0,
     usage_limit         INT,                           -- NULL = unlimited
     usage_per_user      INT            NOT NULL DEFAULT 1,
     start_at            TIMESTAMP      NOT NULL,
     end_at              TIMESTAMP      NOT NULL,
-    status              VARCHAR(20)    NOT NULL DEFAULT 'draft',  -- draft | active | paused | ended
+    status              VARCHAR(20)    NOT NULL DEFAULT 'draft',  -- draft, active, paused, ended
     created_at          TIMESTAMP      NOT NULL DEFAULT NOW(),
     updated_at          TIMESTAMP      NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE promotion_targets (
-    id           BIGSERIAL   PRIMARY KEY,
-    promotion_id BIGINT      NOT NULL,
-    target_type  VARCHAR(20) NOT NULL,                 -- product | variant | category | brand | order
-    target_id    BIGINT      NOT NULL,
-    excluded     BOOLEAN     NOT NULL DEFAULT FALSE,   -- FALSE = include, TRUE = exclude
-    CONSTRAINT fk_pt_promotion FOREIGN KEY (promotion_id) REFERENCES promotions(id) ON DELETE CASCADE
-);
-
-CREATE INDEX idx_pt_lookup ON promotion_targets (promotion_id, target_type, target_id);
+CREATE TABLE promotion_targets (not implemented)
+-- This table is designed but has no entity yet
+-- Used to apply promotions to specific products/categories/brands
 
 CREATE TABLE promotion_usages (
     id              BIGSERIAL      PRIMARY KEY,
     promotion_id    BIGINT         NOT NULL,
     user_id         BIGINT         NOT NULL,
     order_id        BIGINT         NOT NULL,
-    used_code       VARCHAR(50),                       -- lưu lại code đã dùng nếu có
+    used_code       VARCHAR(50),                       -- store used code if any
     discount_amount DECIMAL(15, 2) NOT NULL,
     created_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_pu_promotion FOREIGN KEY (promotion_id) REFERENCES promotions(id),
@@ -379,7 +396,6 @@ CREATE TABLE promotion_usages (
     CONSTRAINT fk_pu_order     FOREIGN KEY (order_id)     REFERENCES orders(id)
 );
 
--- Index để check usage_limit và usage_per_user nhanh
 CREATE INDEX idx_pu_lookup ON promotion_usages (promotion_id, user_id);
 ```
 
@@ -392,7 +408,7 @@ CREATE TABLE banners (
     title      VARCHAR(255) NOT NULL,
     image      VARCHAR(500) NOT NULL,
     url        VARCHAR(500),
-    position   VARCHAR(50)  NOT NULL,           -- home_hero | home_secondary | sidebar
+    position   VARCHAR(50)  NOT NULL,           -- home_hero, home_secondary, sidebar
     active     BOOLEAN      NOT NULL DEFAULT TRUE,
     start_date TIMESTAMP,
     end_date   TIMESTAMP,
@@ -433,22 +449,28 @@ CREATE TABLE wishlists (
 
 ---
 
-## Migration order
+## Implemented Tables
 
-```
-V1__create_users.sql
-V2__create_roles_permissions.sql
-V3__create_addresses.sql
-V4__create_brands.sql
-V5__create_categories.sql
-V6__create_products.sql
-V7__create_carts.sql
-V8__create_orders.sql
-V9__create_payments_shipments.sql
-V10__create_inventories.sql
-V11__create_promotions.sql
-V12__create_reviews.sql
-V13__create_banners.sql
-V14__create_wishlists.sql
-V15__seed_roles_permissions.sql
-```
+The following tables have entities and are operational:
+
+- users, user_tokens
+- addresses
+- brands
+- categories
+- products, product_images, product_variants
+- reviews
+- carts, cart_items
+- orders, order_items
+- promotions, promotion_usages
+- banners
+- inventories
+- wishlists
+
+## Not Implemented Tables
+
+The following tables are designed in docs but have no entities yet:
+
+- roles, permissions, role_permissions, user_roles
+- payment_transactions
+- shipments, shipment_logs
+- promotion_targets

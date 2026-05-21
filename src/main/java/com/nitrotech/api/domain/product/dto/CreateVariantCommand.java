@@ -8,5 +8,6 @@ public record CreateVariantCommand(
         String name,
         BigDecimal price,
         Map<String, Object> attributes,
-        boolean active
+        boolean active,
+        Long imageId
 ) {}

@@ -2,7 +2,9 @@ package com.nitrotech.api.domain.review.usecase;
 
 import com.nitrotech.api.domain.review.dto.ReviewData;
 import com.nitrotech.api.domain.review.repository.ReviewRepository;
-import com.nitrotech.api.shared.response.ApiResponse;
+import com.nitrotech.api.shared.response.ApiResult;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -16,15 +18,13 @@ public class GetReviewsUseCase {
         this.reviewRepository = reviewRepository;
     }
 
-    public ApiResponse<List<ReviewData>> executeByProduct(Long productId, String status, int page, int size) {
-        List<ReviewData> data = reviewRepository.findByProductId(productId, status, page, size);
-        long total = reviewRepository.countByProductId(productId, status);
-        return ApiResponse.paginated(data, page, size, total);
+    public ApiResult<List<ReviewData>> executeByProduct(Long productId, String status, int page, int size) {
+        Page<ReviewData> result = reviewRepository.findByProductId(productId, status, PageRequest.of(page, size));
+        return ApiResult.paged(result);
     }
 
-    public ApiResponse<List<ReviewData>> executePending(int page, int size) {
-        List<ReviewData> data = reviewRepository.findPending(page, size);
-        long total = reviewRepository.countPending();
-        return ApiResponse.paginated(data, page, size, total);
+    public ApiResult<List<ReviewData>> executePending(int page, int size) {
+        Page<ReviewData> result = reviewRepository.findPending(PageRequest.of(page, size));
+        return ApiResult.paged(result);
     }
 }

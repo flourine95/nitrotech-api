@@ -5,19 +5,17 @@ import com.nitrotech.api.domain.promotion.dto.PromotionData;
 import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 
 @Service
+@RequiredArgsConstructor
 public class ValidatePromotionUseCase {
 
     private final PromotionRepository promotionRepository;
-
-    public ValidatePromotionUseCase(PromotionRepository promotionRepository) {
-        this.promotionRepository = promotionRepository;
-    }
 
     public ApplyPromotionResult execute(String code, Long userId, BigDecimal orderAmount) {
         PromotionData promotion = promotionRepository.findActiveByCode(code)

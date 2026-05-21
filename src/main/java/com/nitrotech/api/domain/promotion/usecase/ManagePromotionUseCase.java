@@ -6,18 +6,16 @@ import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class ManagePromotionUseCase {
 
     private final PromotionRepository promotionRepository;
-
-    public ManagePromotionUseCase(PromotionRepository promotionRepository) {
-        this.promotionRepository = promotionRepository;
-    }
 
     public PromotionData create(CreatePromotionCommand command) {
         if (command.code() != null && promotionRepository.existsByCode(command.code())) {
@@ -46,12 +44,8 @@ public class ManagePromotionUseCase {
         return promotionRepository.updateStatus(id, status);
     }
 
-    public List<PromotionData> findAll(String status, int page, int size) {
-        return promotionRepository.findAll(status, page, size);
-    }
-
-    public long countAll(String status) {
-        return promotionRepository.countAll(status);
+    public Page<PromotionData> findAll(String status, int page, int size) {
+        return promotionRepository.findAll(status, PageRequest.of(page, size));
     }
 
     public PromotionData findById(Long id) {

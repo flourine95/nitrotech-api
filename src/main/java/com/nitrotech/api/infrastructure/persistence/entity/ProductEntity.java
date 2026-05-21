@@ -42,6 +42,12 @@ public class ProductEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "manual_badge", length = 50)
+    private String manualBadge;
+
+    @Column(name = "manual_badge_expires_at")
+    private LocalDateTime manualBadgeExpiresAt;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

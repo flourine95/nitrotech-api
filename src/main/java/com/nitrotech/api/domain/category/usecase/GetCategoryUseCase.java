@@ -3,19 +3,25 @@ package com.nitrotech.api.domain.category.usecase;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class GetCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
 
-    public GetCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
-
-    public CategoryData execute(Long id) {
-        return categoryRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+    public CategoryData execute(String idOrSlug) {
+        try {
+            Long id = Long.parseLong(idOrSlug);
+            return categoryRepository.findById(id)
+                    .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
+                            "Category with ID " + id + " not found"));
+        } catch (NumberFormatException e) {
+            return categoryRepository.findBySlug(idOrSlug)
+                    .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
+                            "Category with slug '" + idOrSlug + "' not found"));
+        }
     }
 }

@@ -5,19 +5,16 @@ import com.nitrotech.api.domain.auth.dto.LoginCommand;
 import com.nitrotech.api.domain.auth.exception.AccountNotActiveException;
 import com.nitrotech.api.domain.auth.exception.InvalidCredentialsException;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class LoginUseCase {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-
-    public LoginUseCase(UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
 
     public AuthResult execute(LoginCommand command) {
         UserRepository.UserCredential credential = userRepository.findCredentialByEmail(command.email())

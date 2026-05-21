@@ -3,6 +3,7 @@ package com.nitrotech.api.application.product.request;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -21,5 +22,10 @@ public record UpdateProductRequest(
         String thumbnail,
         Map<String, Object> specs,
         Boolean active,
-        List<String> images
+        List<String> images,
+
+        @Size(max = 50, message = "Manual badge must be at most 50 characters")
+        String manualBadge,
+
+        LocalDateTime manualBadgeExpiresAt
 ) {}

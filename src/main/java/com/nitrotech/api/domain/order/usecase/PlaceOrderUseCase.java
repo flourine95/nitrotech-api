@@ -9,6 +9,7 @@ import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,21 +17,13 @@ import java.math.BigDecimal;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class PlaceOrderUseCase {
 
     private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final AddressRepository addressRepository;
     private final InventoryRepository inventoryRepository;
-
-    public PlaceOrderUseCase(OrderRepository orderRepository, CartRepository cartRepository,
-                              AddressRepository addressRepository,
-                              InventoryRepository inventoryRepository) {
-        this.orderRepository = orderRepository;
-        this.cartRepository = cartRepository;
-        this.addressRepository = addressRepository;
-        this.inventoryRepository = inventoryRepository;
-    }
 
     @Transactional
     public OrderData execute(CreateOrderCommand command) {

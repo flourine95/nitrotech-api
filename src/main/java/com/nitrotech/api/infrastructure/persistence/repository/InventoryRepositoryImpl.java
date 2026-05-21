@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.inventory.dto.InventoryData;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.InventoryEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,15 +13,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class InventoryRepositoryImpl implements InventoryRepository {
 
     private final InventoryJpaRepository jpa;
     private final ProductVariantJpaRepository variantJpa;
-
-    public InventoryRepositoryImpl(InventoryJpaRepository jpa, ProductVariantJpaRepository variantJpa) {
-        this.jpa = jpa;
-        this.variantJpa = variantJpa;
-    }
 
     @Override
     @Transactional

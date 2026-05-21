@@ -7,22 +7,16 @@ import com.nitrotech.api.domain.product.dto.ProductData;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class CreateProductUseCase {
 
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final BrandRepository brandRepository;
-
-    public CreateProductUseCase(ProductRepository productRepository,
-                                 CategoryRepository categoryRepository,
-                                 BrandRepository brandRepository) {
-        this.productRepository = productRepository;
-        this.categoryRepository = categoryRepository;
-        this.brandRepository = brandRepository;
-    }
 
     public ProductData execute(CreateProductCommand command) {
         if (!categoryRepository.existsById(command.categoryId())) {

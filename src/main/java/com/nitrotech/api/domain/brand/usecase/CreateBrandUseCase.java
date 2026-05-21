@@ -4,17 +4,17 @@ import com.nitrotech.api.domain.brand.dto.BrandData;
 import com.nitrotech.api.domain.brand.dto.CreateBrandCommand;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class CreateBrandUseCase {
 
     private final BrandRepository brandRepository;
 
-    public CreateBrandUseCase(BrandRepository brandRepository) {
-        this.brandRepository = brandRepository;
-    }
-
+    @Transactional
     public BrandData execute(CreateBrandCommand command) {
         if (brandRepository.existsBySlug(command.slug())) {
             throw new ConflictException("BRAND_SLUG_EXISTS", "Slug already exists");

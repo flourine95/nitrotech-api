@@ -1,22 +1,26 @@
 package com.nitrotech.api.domain.address.usecase;
 
+import com.nitrotech.api.domain.address.dto.AddressData;
+import com.nitrotech.api.domain.address.exception.AddressAccessDeniedException;
+import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class SetDefaultAddressUseCase {
 
     private final AddressRepository addressRepository;
 
-    public SetDefaultAddressUseCase(AddressRepository addressRepository) {
-        this.addressRepository = addressRepository;
-    }
+    public void execute(Long userId, Long addressId) {
+        AddressData address = addressRepository.findById(addressId)
+            .orElseThrow(() -> AddressNotFoundException.withId(addressId));
 
-    public void execute(Long id, Long userId) {
-        if (!addressRepository.existsByIdAndUserId(id, userId)) {
-            throw new NotFoundException("ADDRESS_NOT_FOUND", "Address not found");
+        if (!address.userId().equals(userId)) {
+            throw new AddressAccessDeniedException();
         }
-        addressRepository.setDefault(id, userId);
+
+        addressRepository.setAsDefault(userId, addressId);
     }
 }

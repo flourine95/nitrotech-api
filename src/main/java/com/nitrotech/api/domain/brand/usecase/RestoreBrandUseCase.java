@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.brand.usecase;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class RestoreBrandUseCase {
 
     private final BrandRepository brandRepository;
-
-    public RestoreBrandUseCase(BrandRepository brandRepository) {
-        this.brandRepository = brandRepository;
-    }
 
     public void execute(Long id) {
         var brand = brandRepository.findDeletedById(id)

@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.product.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -13,5 +14,7 @@ public record UpdateProductCommand(
         String thumbnail,
         Map<String, Object> specs,
         Boolean active,
-        List<String> images
+        List<String> images,
+        String manualBadge,
+        LocalDateTime manualBadgeExpiresAt
 ) {}

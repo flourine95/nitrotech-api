@@ -3,19 +3,15 @@ package com.nitrotech.api.domain.category.usecase;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class HardDeleteCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
     private final ProductCategoryChecker productCategoryChecker;
-
-    public HardDeleteCategoryUseCase(CategoryRepository categoryRepository,
-                                     ProductCategoryChecker productCategoryChecker) {
-        this.categoryRepository = categoryRepository;
-        this.productCategoryChecker = productCategoryChecker;
-    }
 
     public void execute(Long id) {
         // Chỉ cho hard delete record đã soft deleted

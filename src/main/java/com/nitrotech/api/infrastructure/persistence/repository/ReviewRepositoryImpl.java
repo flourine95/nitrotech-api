@@ -6,11 +6,11 @@ import com.nitrotech.api.domain.review.repository.ReviewRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ReviewEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -42,25 +42,13 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     }
 
     @Override
-    public List<ReviewData> findByProductId(Long productId, String status, int page, int size) {
-        return jpa.findByProductId(productId, status, PageRequest.of(page, size))
-                .getContent().stream().map(this::toData).toList();
+    public Page<ReviewData> findByProductId(Long productId, String status, Pageable pageable) {
+        return jpa.findByProductId(productId, status, pageable).map(this::toData);
     }
 
     @Override
-    public long countByProductId(Long productId, String status) {
-        return jpa.findByProductId(productId, status, PageRequest.of(0, Integer.MAX_VALUE))
-                .getTotalElements();
-    }
-
-    @Override
-    public List<ReviewData> findPending(int page, int size) {
-        return jpa.findPending(PageRequest.of(page, size)).getContent().stream().map(this::toData).toList();
-    }
-
-    @Override
-    public long countPending() {
-        return jpa.findPending(PageRequest.of(0, Integer.MAX_VALUE)).getTotalElements();
+    public Page<ReviewData> findPending(Pageable pageable) {
+        return jpa.findPending(pageable).map(this::toData);
     }
 
     @Override
@@ -89,7 +77,7 @@ public class ReviewRepositoryImpl implements ReviewRepository {
         String userName = userJpa.findById(e.getUserId())
                 .map(UserEntity::getName).orElse(null);
         return new ReviewData(e.getId(), e.getProductId(), e.getUserId(), userName,
-                e.getOrderId(), e.getRating(), e.getComment(), e.getImages(),
+                e.getOrderId(), e.getRating().intValue(), e.getComment(), e.getImages(),
                 e.getStatus(), e.getCreatedAt(), e.getUpdatedAt());
     }
 }

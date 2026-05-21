@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.category.usecase;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class RestoreCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public RestoreCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public void execute(Long id) {
         // Tìm record đã deleted — nếu không tìm thấy thì 404

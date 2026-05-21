@@ -2,23 +2,34 @@ package com.nitrotech.api.domain.address.usecase;
 
 import com.nitrotech.api.domain.address.dto.AddressData;
 import com.nitrotech.api.domain.address.dto.UpdateAddressCommand;
+import com.nitrotech.api.domain.address.exception.AddressAccessDeniedException;
+import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateAddressUseCase {
 
     private final AddressRepository addressRepository;
 
-    public UpdateAddressUseCase(AddressRepository addressRepository) {
-        this.addressRepository = addressRepository;
-    }
+    @Transactional
+    public AddressData execute(Long userId, Long addressId, UpdateAddressCommand command) {
+        AddressData existingAddress = addressRepository.findById(addressId)
+            .orElseThrow(() -> AddressNotFoundException.withId(addressId));
 
-    public AddressData execute(UpdateAddressCommand command) {
-        if (!addressRepository.existsByIdAndUserId(command.id(), command.userId())) {
-            throw new NotFoundException("ADDRESS_NOT_FOUND", "Address not found");
+        if (!existingAddress.userId().equals(userId)) {
+            throw new AddressAccessDeniedException();
         }
-        return addressRepository.update(command);
+
+        AddressData updatedAddress = addressRepository.update(addressId, command);
+
+        if (command.defaultAddress() && !existingAddress.defaultAddress()) {
+            addressRepository.setAsDefault(userId, addressId);
+        }
+
+        return updatedAddress;
     }
 }

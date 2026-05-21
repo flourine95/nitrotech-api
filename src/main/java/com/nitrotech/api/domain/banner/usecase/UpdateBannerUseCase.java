@@ -5,16 +5,14 @@ import com.nitrotech.api.domain.banner.dto.UpdateBannerCommand;
 import com.nitrotech.api.domain.banner.repository.BannerRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateBannerUseCase {
 
     private final BannerRepository bannerRepository;
-
-    public UpdateBannerUseCase(BannerRepository bannerRepository) {
-        this.bannerRepository = bannerRepository;
-    }
 
     public BannerData execute(UpdateBannerCommand command) {
         if (!bannerRepository.existsById(command.id())) {

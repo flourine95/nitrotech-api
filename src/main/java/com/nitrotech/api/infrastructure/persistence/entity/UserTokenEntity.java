@@ -36,4 +36,12 @@ public class UserTokenEntity {
 
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    public boolean isExpired() {
+        return expiresAt.isBefore(LocalDateTime.now());
+    }
+
+    public boolean isValid() {
+        return !used && !isExpired();
+    }
 }

@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.banner.dto.UpdateBannerCommand;
 import com.nitrotech.api.domain.banner.repository.BannerRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.BannerEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
@@ -13,13 +14,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class BannerRepositoryImpl implements BannerRepository {
 
     private final BannerJpaRepository jpa;
-
-    public BannerRepositoryImpl(BannerJpaRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     public BannerData create(CreateBannerCommand command) {
@@ -58,12 +56,16 @@ public class BannerRepositoryImpl implements BannerRepository {
 
     @Override
     public List<BannerData> findActive(String position) {
-        return jpa.findActive(position, LocalDateTime.now()).stream().map(this::toData).toList();
+        return jpa.findActive(position, LocalDateTime.now()).stream()
+                .map(this::toData)
+                .toList();
     }
 
     @Override
     public List<BannerData> findAll(Boolean active, String position) {
-        return jpa.findAllFiltered(active, position).stream().map(this::toData).toList();
+        return jpa.findAllFiltered(active, position).stream()
+                .map(this::toData)
+                .toList();
     }
 
     @Override

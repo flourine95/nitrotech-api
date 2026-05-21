@@ -17,5 +17,6 @@ public record UpdateVariantRequest(
         BigDecimal price,
 
         Map<String, Object> attributes,
-        Boolean active
+        Boolean active,
+        Long imageId
 ) {}
