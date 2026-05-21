@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.cart.usecase;
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateCartItemUseCase {
 
     private final CartRepository cartRepository;
-
-    public UpdateCartItemUseCase(CartRepository cartRepository) {
-        this.cartRepository = cartRepository;
-    }
 
     public CartItemData execute(Long userId, Long variantId, int quantity) {
         if (!cartRepository.hasItem(userId, variantId)) {

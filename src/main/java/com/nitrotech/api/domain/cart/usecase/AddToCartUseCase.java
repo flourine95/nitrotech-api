@@ -6,21 +6,16 @@ import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AddToCartUseCase {
 
     private final CartRepository cartRepository;
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
-
-    public AddToCartUseCase(CartRepository cartRepository, ProductRepository productRepository,
-                             InventoryRepository inventoryRepository) {
-        this.cartRepository = cartRepository;
-        this.productRepository = productRepository;
-        this.inventoryRepository = inventoryRepository;
-    }
 
     public CartItemData execute(Long userId, Long variantId, int quantity) {
         if (!productRepository.existsVariantById(variantId)) {

@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CartEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.CartItemEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,20 +15,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class CartRepositoryImpl implements CartRepository {
 
     private final CartJpaRepository cartJpa;
     private final CartItemJpaRepository itemJpa;
     private final ProductVariantJpaRepository variantJpa;
     private final ProductJpaRepository productJpa;
-
-    public CartRepositoryImpl(CartJpaRepository cartJpa, CartItemJpaRepository itemJpa,
-                               ProductVariantJpaRepository variantJpa, ProductJpaRepository productJpa) {
-        this.cartJpa = cartJpa;
-        this.itemJpa = itemJpa;
-        this.variantJpa = variantJpa;
-        this.productJpa = productJpa;
-    }
 
     @Override
     @Transactional
