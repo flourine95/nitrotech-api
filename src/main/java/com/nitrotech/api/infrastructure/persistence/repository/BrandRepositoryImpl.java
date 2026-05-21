@@ -9,6 +9,7 @@ import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.BrandEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.BrandSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -19,13 +20,10 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class BrandRepositoryImpl implements BrandRepository {
 
     private final BrandJpaRepository jpa;
-
-    public BrandRepositoryImpl(BrandJpaRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     public BrandData create(CreateBrandCommand command) {

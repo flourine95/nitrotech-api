@@ -2,6 +2,7 @@ package com.nitrotech.api.domain.brand.usecase;
 
 import com.nitrotech.api.domain.brand.dto.BulkResult;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,13 +10,10 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class BulkRestoreBrandUseCase {
 
     private final BrandRepository brandRepository;
-
-    public BulkRestoreBrandUseCase(BrandRepository brandRepository) {
-        this.brandRepository = brandRepository;
-    }
 
     public BulkResult execute(List<Long> ids) {
         List<Long> restored = brandRepository.bulkRestore(ids);

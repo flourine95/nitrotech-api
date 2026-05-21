@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record BulkRestoreBrandRequest(
-        @NotEmpty(message = "ids must not be empty")
+        @NotEmpty(message = "IDs must not be empty")
         @Size(max = 100, message = "Cannot restore more than 100 brands at once")
         List<Long> ids
 ) {}
