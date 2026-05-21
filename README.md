@@ -1,20 +1,13 @@
 # Nitrotech API
 
-REST API xây dựng trên **Spring Boot 4** + **Java 21**, áp dụng kiến trúc **Domain-Oriented Layered Architecture**.
+E-commerce REST API built with Spring Boot 4 and Java 21.
 
----
+## Requirements
 
-## Yêu cầu hệ thống
+- Java 21+
+- Docker & Docker Compose 24+
 
-| Công cụ | Phiên bản |
-|---------|-----------|
-| Java | 21+ |
-| Docker & Docker Compose | 24+ |
-| Gradle | 8+ (wrapper đã có sẵn) |
-
----
-
-## Cài đặt & Chạy dự án
+## Quick Start
 
 ### 1. Clone repository
 
@@ -23,203 +16,98 @@ git clone https://github.com/flourine95/nitrotech-api.git
 cd nitrotech-api
 ```
 
-### 2. Khởi động services
-
-Dự án dùng Docker Compose để chạy PostgreSQL và Redis. Spring Boot DevTools tự động start containers khi chạy app.
-
-Nếu muốn start thủ công:
+### 2. Start infrastructure services
 
 ```bash
 docker compose up -d
 ```
 
-Services mặc định:
-- PostgreSQL: `localhost:5432` — database `nitrotech`, user `nitrotech`, password `nitrotech`
-- Redis: `localhost:6379`
+This starts PostgreSQL and Redis.
 
-### 3. Cấu hình môi trường
+### 3. Configure environment
 
-Tạo file `application-dev.yaml` từ template:
+Copy the example configuration:
 
 ```bash
 cp src/main/resources/application-dev.example.yaml src/main/resources/application-dev.yaml
 ```
 
-Chỉnh các giá trị cần thiết trong `application-dev.yaml`:
+Edit `application-dev.yaml` with your credentials:
 
 ```yaml
 spring:
   mail:
-    username: your-mailtrap-username   # Lấy tại mailtrap.io → Sandboxes → SMTP Settings
+    username: your-mailtrap-username
     password: your-mailtrap-password
 
 cloudinary:
-  cloud-name: your-cloud-name          # Lấy tại cloudinary.com/console
+  cloud-name: your-cloud-name
   api-key: your-api-key
   api-secret: your-api-secret
 ```
 
-| File | Commit | Mục đích |
-|------|--------|----------|
-| `application.yaml` | ✅ | Config chung, dùng biến môi trường |
-| `application-dev.yaml` | ❌ | Local dev, chứa credentials |
-| `application-dev.example.yaml` | ✅ | Template cho team |
-| `application-prod.yaml` | ❌ | Production, chứa credentials |
-| `application-test.yaml` | ✅ | CI/CD, dùng H2 in-memory |
-
-### 4. Chạy ứng dụng
+### 4. Run application
 
 ```bash
 ./gradlew bootRun
 ```
 
-Ứng dụng chạy tại `http://localhost:8080` — tự redirect sang Swagger UI.
+Application runs at `http://localhost:8080` and redirects to Swagger UI.
 
----
+## Configuration Files
 
-## Biến môi trường (Production)
+| File | Committed | Purpose |
+|------|-----------|---------|
+| `application.yaml` | Yes | Base configuration with environment variables |
+| `application-dev.yaml` | No | Local development with credentials |
+| `application-dev.example.yaml` | Yes | Template for team |
+| `application-prod.yaml` | No | Production with credentials |
+| `application-test.yaml` | Yes | CI/CD with H2 in-memory database |
 
-| Biến | Bắt buộc | Mô tả |
-|------|----------|-------|
-| `DB_URL` | ✅ | JDBC URL PostgreSQL |
-| `DB_USERNAME` | ✅ | Database username |
-| `DB_PASSWORD` | ✅ | Database password |
-| `REDIS_URL` | ✅ | Redis URL (redis://host:6379) |
-| `MAIL_HOST` | ✅ | SMTP host |
-| `MAIL_USERNAME` | ✅ | SMTP username |
-| `MAIL_PASSWORD` | ✅ | SMTP password |
-| `MAIL_FROM` | ✅ | Email gửi đi |
-| `FRONTEND_URL` | ✅ | URL frontend (dùng trong email link) |
-| `CORS_ALLOWED_ORIGINS` | ✅ | Domain frontend, phân cách bằng dấu phẩy |
-| `CLOUDINARY_CLOUD_NAME` | ✅ | Cloudinary cloud name |
-| `CLOUDINARY_API_KEY` | ✅ | Cloudinary API key |
-| `CLOUDINARY_API_SECRET` | ✅ | Cloudinary API secret |
-| `MAIL_PORT` | ❌ | SMTP port (default: 587) |
-| `SERVER_PORT` | ❌ | Port ứng dụng (default: 8080) |
+## Environment Variables (Production)
 
----
+Required:
 
-## Cấu trúc dự án
+- `DB_URL` - PostgreSQL JDBC URL
+- `DB_USERNAME` - Database username
+- `DB_PASSWORD` - Database password
+- `REDIS_URL` - Redis URL
+- `MAIL_HOST` - SMTP host
+- `MAIL_USERNAME` - SMTP username
+- `MAIL_PASSWORD` - SMTP password
+- `MAIL_FROM` - Sender email address
+- `FRONTEND_URL` - Frontend URL for email links
+- `CORS_ALLOWED_ORIGINS` - Comma-separated frontend domains
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
+
+Optional:
+
+- `MAIL_PORT` - SMTP port (default: 587)
+- `SERVER_PORT` - Application port (default: 8080)
+
+## Project Structure
 
 ```
 src/main/java/com/nitrotech/api/
-├── domain/           # Business logic (Java thuần, không có Spring annotation)
-│   └── {module}/     # address, auth, banner, brand, cart, category,
-│       │             # inventory, order, product, promotion, review, wishlist
-│       ├── dto/          # Records — Commands, Results
-│       ├── usecase/      # Business logic
-│       ├── repository/   # Interfaces
-│       └── exception/    # Domain exceptions (nếu có)
-├── infrastructure/   # Framework/Database layer
-│   ├── persistence/
-│   │   ├── entity/       # JPA Entities
-│   │   ├── repository/   # Spring Data JPA repos + Repository implementations
-│   │   └── spec/         # JPA Specifications (dynamic queries)
-│   ├── mail/         # SMTP email sender
-│   ├── storage/      # Cloudinary integration
-│   └── security/     # Security implementations
-├── application/      # HTTP layer
-│   └── {module}/
-│       ├── controller/   # REST Controllers
-│       └── request/      # Request DTOs
-└── shared/           # Shared kernel
-    ├── config/       # Spring configs (Security, Redis, CORS, Async)
-    ├── exception/    # Global exception handler + Domain exceptions
-    ├── response/     # ApiResponse wrapper
-    └── util/         # Utilities
+├── application/      # HTTP layer (Controllers, Request DTOs)
+├── domain/           # Business logic (Use Cases, Domain DTOs, Repository Interfaces)
+├── infrastructure/   # Technical implementation (JPA Entities, Repository Implementations)
+└── shared/           # Cross-cutting concerns (Config, Exception Handler, Utilities)
 ```
-
-Xem chi tiết kiến trúc: [.docs/ARCHITECTURE.md](.docs/ARCHITECTURE.md)
-
-Xem coding standards: [.docs/CODING-STANDARDS.md](.docs/CODING-STANDARDS.md)
-
-Xem database design: [.docs/DATABASE-DESIGN.md](.docs/DATABASE-DESIGN.md)
-
-Xem API docs: [.docs/api/](.docs/api/)
-
----
 
 ## API Documentation
 
-Swagger UI: `http://localhost:8080/swagger-ui.html`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
+- OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 
-OpenAPI spec: `http://localhost:8080/v3/api-docs`
+## Documentation
 
-Capture API docs từ server đang chạy:
+- [ARCHITECTURE.md](.docs/ARCHITECTURE.md) - System architecture and design patterns
+- [CODING-STANDARDS.md](.docs/CODING-STANDARDS.md) - Coding conventions and best practices
+- [DATABASE-DESIGN.md](.docs/DATABASE-DESIGN.md) - Database schema and design
 
-```bash
-# Capture tất cả modules
-python scripts/run.py
+## License
 
-# Chỉ capture một số module
-python scripts/run.py auth products
-```
-
-Seed data để test:
-
-```bash
-# Tạo 10 brands + 10 categories + 30 sản phẩm (mặc định)
-python scripts/seed.py
-
-# Tùy chỉnh số lượng
-python scripts/seed.py --brands 5 --categories 8 --products 100
-
-# Chỉ tạo thêm sản phẩm, dùng brands/categories có sẵn
-python scripts/seed.py --skip-brands --skip-categories --products 50
-```
-
----
-
-## Database Migrations
-
-Dùng **Flyway**, migration files tại `src/main/resources/db/migration/`.
-
-Naming: `V{version}__{description}.sql` — Flyway tự chạy khi app khởi động.
-
-Reset DB (dev only):
-
-```bash
-docker compose down -v && docker compose up -d
-```
-
----
-
-## Troubleshooting
-
-**Lỗi kết nối database**
-```bash
-docker compose ps
-docker compose logs postgres
-```
-
-**Trùng port (5432 hoặc 6379 đã bị dùng)**
-
-Tạo file `.env` ở root project:
-```env
-POSTGRES_PORT=5433
-REDIS_PORT=6380
-```
-Sau đó cập nhật `application-dev.yaml`:
-```yaml
-spring:
-  datasource:
-    url: jdbc:postgresql://localhost:5433/nitrotech
-  data:
-    redis:
-      url: redis://localhost:6380
-```
-
-**Lỗi Flyway migration checksum mismatch**
-```sql
-DELETE FROM flyway_schema_history WHERE version = '<version>';
-```
-Sau đó restart app.
-
-**Email không gửi được**
-- Kiểm tra `spring.mail.username` và `password` trong `application-dev.yaml`
-- Dùng Mailtrap sandbox để test local — không gửi email thật ra ngoài
-
-**Java version không đúng**
-```bash
-java -version  # phải là 21+
-```
+This project is licensed under the MIT License.
