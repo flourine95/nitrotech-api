@@ -81,7 +81,7 @@ public class PromotionController {
             @PathVariable Long id
     ) {
         managePromotionUseCase.delete(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Promotion deleted"));
+        return ResponseEntity.ok(ApiResult.ok("Promotion deleted"));
     }
 
     private CreatePromotionCommand toCommand(CreatePromotionRequest req) {

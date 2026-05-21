@@ -1,5 +1,6 @@
 package com.nitrotech.api.shared.util;
 
+import com.nitrotech.api.shared.exception.BadRequestException;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -20,7 +21,7 @@ public final class SortUtils {
     public static Pageable toPageable(int page, int size, List<String> sortParams,
                                       Set<String> allowedFields, String defaultField) {
         int safePage = Math.max(0, page);
-        int safeSize = Math.min(Math.max(1, size), 100);
+        int safeSize = Math.min(Math.max(size, 1), 100);
         return PageRequest.of(safePage, safeSize, parseSort(sortParams, allowedFields, defaultField));
     }
 
@@ -32,7 +33,10 @@ public final class SortUtils {
         for (String param : sortParams) {
             String[] parts = param.split(",", 2);
             String field = parts[0].trim();
-            if (!allowedFields.contains(field)) continue;
+            if (!allowedFields.contains(field)) {
+                throw new BadRequestException("INVALID_SORT_FIELD", 
+                        "Sort field not allowed: " + field);
+            }
             Sort.Direction dir = parts.length > 1 && parts[1].trim().equalsIgnoreCase("asc")
                     ? Sort.Direction.ASC : Sort.Direction.DESC;
             orders.add(new Sort.Order(dir, field));

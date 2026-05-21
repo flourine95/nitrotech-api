@@ -60,6 +60,6 @@ public class BannerController {
     @DeleteMapping("/{id}")
     public ResponseEntity<ApiResult<Void>> delete(@PathVariable Long id) {
         deleteBannerUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Banner deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Banner deleted successfully"));
     }
 }

@@ -1,11 +1,13 @@
 package com.nitrotech.api.application.brand.controller;
 
+import com.nitrotech.api.application.brand.request.BrandListRequest;
 import com.nitrotech.api.application.brand.request.BulkDeleteBrandRequest;
 import com.nitrotech.api.application.brand.request.BulkRestoreBrandRequest;
 import com.nitrotech.api.application.brand.request.CreateBrandRequest;
 import com.nitrotech.api.application.brand.request.UpdateBrandRequest;
 import com.nitrotech.api.domain.brand.dto.*;
 import com.nitrotech.api.domain.brand.usecase.*;
+import com.nitrotech.api.shared.request.PaginationRequest;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.util.SortUtils;
 import jakarta.validation.Valid;
@@ -39,15 +41,17 @@ public class BrandController {
 
     @GetMapping
     public ResponseEntity<ApiResult<List<BrandData>>> list(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Boolean deleted,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) List<String> sort
+            @Valid @ModelAttribute BrandListRequest filter,
+            @Valid @ModelAttribute PaginationRequest pagination
     ) {
-        Pageable pageable = SortUtils.toPageable(page, size, sort, SORTABLE_FIELDS, "createdAt");
-        var result = getBrandsUseCase.execute(new BrandFilter(search, active, deleted), pageable);
+        Pageable pageable = SortUtils.toPageable(
+                pagination.getPage(),
+                pagination.getSize(),
+                pagination.getSort(),
+                SORTABLE_FIELDS,
+                "createdAt"
+        );
+        var result = getBrandsUseCase.execute(filter.toFilter(), pageable);
         return ResponseEntity.ok(ApiResult.paged(result.page(), result.facets()));
     }
 
@@ -82,7 +86,7 @@ public class BrandController {
             @PathVariable Long id
     ) {
         deleteBrandUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Brand deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Brand deleted successfully"));
     }
 
     @PatchMapping("/{id}/restore")
@@ -90,7 +94,7 @@ public class BrandController {
             @PathVariable Long id
     ) {
         restoreBrandUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Brand restored successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Brand restored successfully"));
     }
 
     @DeleteMapping("/{id}/permanent")
@@ -98,7 +102,7 @@ public class BrandController {
             @PathVariable Long id
     ) {
         hardDeleteBrandUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Brand permanently deleted"));
+        return ResponseEntity.ok(ApiResult.ok("Brand permanently deleted"));
     }
 
     @DeleteMapping("/bulk")

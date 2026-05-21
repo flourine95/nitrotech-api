@@ -82,7 +82,7 @@ public class CategoryController {
             @PathVariable Long id
     ) {
         deleteCategoryUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Category deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Category deleted successfully"));
     }
 
     @PatchMapping("/{id}/restore")
@@ -90,7 +90,7 @@ public class CategoryController {
             @PathVariable Long id
     ) {
         restoreCategoryUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Category restored successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Category restored successfully"));
     }
 
     @DeleteMapping("/{id}/permanent")
@@ -98,7 +98,7 @@ public class CategoryController {
             @PathVariable Long id
     ) {
         hardDeleteCategoryUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Category permanently deleted"));
+        return ResponseEntity.ok(ApiResult.ok("Category permanently deleted"));
     }
 
     @PatchMapping("/move")

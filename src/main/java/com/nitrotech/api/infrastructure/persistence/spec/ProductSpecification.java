@@ -16,8 +16,6 @@ public class ProductSpecification {
         return Specification
                 .where(deleted(filter.deleted()))
                 .and(active(filter.active()))
-                .and(categoryId(filter.categoryId()))
-                .and(brandId(filter.brandId()))
                 .and(categoryIds(filter.categoryIds()))
                 .and(brandIds(filter.brandIds()))
                 .and(priceRange(filter.minPrice(), filter.maxPrice()))
@@ -36,20 +34,6 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             if (active == null) return cb.conjunction();
             return cb.equal(root.get("active"), active);
-        };
-    }
-
-    private static Specification<ProductEntity> categoryId(Long categoryId) {
-        return (root, query, cb) -> {
-            if (categoryId == null) return cb.conjunction();
-            return cb.equal(root.get("categoryId"), categoryId);
-        };
-    }
-
-    private static Specification<ProductEntity> brandId(Long brandId) {
-        return (root, query, cb) -> {
-            if (brandId == null) return cb.conjunction();
-            return cb.equal(root.get("brandId"), brandId);
         };
     }
 

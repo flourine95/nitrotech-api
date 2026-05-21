@@ -54,12 +54,12 @@ public class CartController {
             @PathVariable Long variantId
     ) {
         removeFromCartUseCase.execute(principal.id(), variantId);
-        return ResponseEntity.ok(ApiResult.ok(null, "Item removed from cart"));
+        return ResponseEntity.ok(ApiResult.ok("Item removed from cart"));
     }
 
     @DeleteMapping
     public ResponseEntity<ApiResult<Void>> clear(@AuthenticationPrincipal UserPrincipal principal) {
         clearCartUseCase.execute(principal.id());
-        return ResponseEntity.ok(ApiResult.ok(null, "Cart cleared"));
+        return ResponseEntity.ok(ApiResult.ok("Cart cleared"));
     }
 }

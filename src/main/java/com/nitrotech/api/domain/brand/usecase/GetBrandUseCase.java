@@ -16,16 +16,12 @@ public class GetBrandUseCase {
         try {
             Long id = Long.parseLong(idOrSlug);
             return brandRepository.findById(id)
-                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
+                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", 
+                            "Brand with ID " + id + " not found"));
         } catch (NumberFormatException e) {
             return brandRepository.findBySlug(idOrSlug)
-                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
+                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", 
+                            "Brand with slug '" + idOrSlug + "' not found"));
         }
-    }
-
-    @Deprecated
-    public BrandData execute(Long id) {
-        return brandRepository.findById(id)
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
     }
 }

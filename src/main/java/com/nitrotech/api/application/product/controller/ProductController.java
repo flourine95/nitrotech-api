@@ -1,11 +1,9 @@
 package com.nitrotech.api.application.product.controller;
 
-import com.nitrotech.api.application.product.request.CreateProductRequest;
-import com.nitrotech.api.application.product.request.CreateVariantRequest;
-import com.nitrotech.api.application.product.request.UpdateProductRequest;
-import com.nitrotech.api.application.product.request.UpdateVariantRequest;
+import com.nitrotech.api.application.product.request.*;
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.usecase.*;
+import com.nitrotech.api.shared.request.PaginationRequest;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.util.SortUtils;
 import jakarta.validation.Valid;
@@ -13,11 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Set;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -44,23 +37,19 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<ApiResult<List<ProductData>>> list(
-            @RequestParam(required = false) String search,
-            @RequestParam(required = false) Boolean active,
-            @RequestParam(required = false) Boolean deleted,
-            @RequestParam(required = false) Long categoryId,
-            @RequestParam(required = false) Long brandId,
-            @RequestParam(required = false) List<Long> categoryIds,
-            @RequestParam(required = false) List<Long> brandIds,
-            @RequestParam(required = false) BigDecimal minPrice,
-            @RequestParam(required = false) BigDecimal maxPrice,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "20") int size,
-            @RequestParam(required = false) List<String> sort
+            @Valid @ModelAttribute ProductListRequest filter,
+            @Valid @ModelAttribute PaginationRequest pagination
     ) {
-        Pageable pageable = SortUtils.toPageable(page, size, sort, SORTABLE_FIELDS, "createdAt");
+        Pageable pageable = SortUtils.toPageable(
+                pagination.getPage(),
+                pagination.getSize(),
+                pagination.getSort(),
+                SORTABLE_FIELDS,
+                "createdAt"
+        );
         return ResponseEntity.ok(ApiResult.paged(
-                getProductsUseCase.execute(new ProductFilter(search, active, deleted, categoryId, brandId,
-                        categoryIds, brandIds, minPrice, maxPrice), pageable)));
+                getProductsUseCase.execute(filter.toFilter(), pageable)
+        ));
     }
 
     @GetMapping("/{idOrSlug}")
@@ -99,7 +88,7 @@ public class ProductController {
             @PathVariable Long id
     ) {
         deleteProductUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Product deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Product deleted successfully"));
     }
 
     @PatchMapping("/{id}/restore")
@@ -107,7 +96,7 @@ public class ProductController {
             @PathVariable Long id
     ) {
         restoreProductUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Product restored successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Product restored successfully"));
     }
 
     @DeleteMapping("/{id}/permanent")
@@ -115,7 +104,7 @@ public class ProductController {
             @PathVariable Long id
     ) {
         hardDeleteProductUseCase.execute(id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Product permanently deleted"));
+        return ResponseEntity.ok(ApiResult.ok("Product permanently deleted"));
     }
 
     @PostMapping("/{productId}/variants")
@@ -145,6 +134,6 @@ public class ProductController {
             @PathVariable Long variantId
     ) {
         deleteVariantUseCase.execute(variantId);
-        return ResponseEntity.ok(ApiResult.ok(null, "Variant deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Variant deleted successfully"));
     }
 }

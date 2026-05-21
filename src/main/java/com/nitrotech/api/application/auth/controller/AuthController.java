@@ -68,7 +68,7 @@ public class AuthController {
     @PostMapping("/logout")
     public ResponseEntity<ApiResult<Void>> logout(HttpServletRequest request) {
         logoutUseCase.execute(request);
-        return ResponseEntity.ok(ApiResult.ok(null, "Logged out successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Logged out successfully"));
     }
 
     @PostMapping("/logout-all")
@@ -77,37 +77,37 @@ public class AuthController {
             HttpServletRequest request
     ) {
         logoutUseCase.executeAll(principal.email(), request);
-        return ResponseEntity.ok(ApiResult.ok(null, "Logged out from all devices"));
+        return ResponseEntity.ok(ApiResult.ok("Logged out from all devices"));
     }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<ApiResult<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         forgotPasswordUseCase.execute(request.email());
-        return ResponseEntity.ok(ApiResult.ok(null, "If the email exists, a reset link has been sent"));
+        return ResponseEntity.ok(ApiResult.ok("If the email exists, a reset link has been sent"));
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<ApiResult<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         resetPasswordUseCase.execute(request.token(), request.newPassword());
-        return ResponseEntity.ok(ApiResult.ok(null, "Password reset successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Password reset successfully"));
     }
 
     @PostMapping("/verify-email")
     public ResponseEntity<ApiResult<Void>> verifyEmail(@Valid @RequestBody VerifyEmailRequest request) {
         verifyEmailUseCase.execute(request.token());
-        return ResponseEntity.ok(ApiResult.ok(null, "Email verified successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Email verified successfully"));
     }
 
     @PostMapping("/resend-verification")
     public ResponseEntity<ApiResult<Void>> resendVerification(@Valid @RequestBody ResendVerificationRequest request) {
         resendVerificationUseCase.execute(request.email());
-        return ResponseEntity.ok(ApiResult.ok(null, "Verification email sent"));
+        return ResponseEntity.ok(ApiResult.ok("Verification email sent"));
     }
 
     @GetMapping("/me")
     public ResponseEntity<ApiResult<UserProfileData>> me(@AuthenticationPrincipal UserPrincipal principal) {
         if (principal == null) {
-            return ResponseEntity.ok(ApiResult.ok(null));
+            return ResponseEntity.ok(ApiResult.ok(null, null));
         }
         return ResponseEntity.ok(ApiResult.ok(getProfileUseCase.execute(principal.id())));
     }
@@ -128,6 +128,6 @@ public class AuthController {
     ) {
         changePasswordUseCase.execute(
                 new ChangePasswordCommand(principal.id(), request.currentPassword(), request.newPassword()));
-        return ResponseEntity.ok(ApiResult.ok(null, "Password changed successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Password changed successfully"));
     }
 }

@@ -69,6 +69,12 @@ public class GlobalExceptionHandler {
                 .body(ErrorResponse.of(409, ex.getCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponse> handleBadRequest(BadRequestException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(ErrorResponse.of(400, ex.getCode(), ex.getMessage()));
+    }
+
     @ExceptionHandler(DomainException.class)
     public ResponseEntity<ErrorResponse> handleDomain(DomainException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY)

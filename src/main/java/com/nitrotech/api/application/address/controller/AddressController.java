@@ -72,7 +72,7 @@ public class AddressController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         deleteAddressUseCase.execute(principal.id(), id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Address deleted successfully"));
+        return ResponseEntity.ok(ApiResult.ok("Address deleted successfully"));
     }
 
     @PatchMapping("/{id}/set-default")
@@ -81,6 +81,6 @@ public class AddressController {
             @AuthenticationPrincipal UserPrincipal principal
     ) {
         setDefaultAddressUseCase.execute(principal.id(), id);
-        return ResponseEntity.ok(ApiResult.ok(null, "Default address updated"));
+        return ResponseEntity.ok(ApiResult.ok("Default address updated"));
     }
 }
