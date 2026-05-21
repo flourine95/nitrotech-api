@@ -10,6 +10,7 @@ import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -42,9 +43,8 @@ public class PromotionController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
-        List<PromotionData> data = managePromotionUseCase.findAll(status, page, size);
-        long total = managePromotionUseCase.countAll(status);
-        return ResponseEntity.ok(ApiResult.paginated(data, page, size, total));
+        Page<PromotionData> result = managePromotionUseCase.findAll(status, page, size);
+        return ResponseEntity.ok(ApiResult.paged(result));
     }
 
     @GetMapping("/admin/promotions/{id}")

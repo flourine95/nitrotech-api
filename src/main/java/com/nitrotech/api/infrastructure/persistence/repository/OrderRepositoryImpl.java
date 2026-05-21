@@ -6,6 +6,7 @@ import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -63,16 +64,10 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public List<OrderData> findAll(OrderListQuery query) {
+    public Page<OrderData> findAll(OrderListQuery query) {
         return orderJpa.findAllFiltered(query.userId(), query.status(),
-                PageRequest.of(query.page(), query.size()))
-                .getContent().stream().map(this::toData).toList();
-    }
-
-    @Override
-    public long countAll(OrderListQuery query) {
-        return orderJpa.findAllFiltered(query.userId(), query.status(),
-                PageRequest.of(query.page(), query.size())).getTotalElements();
+                        PageRequest.of(query.page(), query.size()))
+                .map(this::toData);
     }
 
     @Override

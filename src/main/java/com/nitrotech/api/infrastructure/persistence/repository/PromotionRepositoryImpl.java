@@ -7,12 +7,12 @@ import com.nitrotech.api.infrastructure.persistence.entity.PromotionEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.PromotionUsageEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -45,14 +45,8 @@ public class PromotionRepositoryImpl implements PromotionRepository {
     }
 
     @Override
-    public List<PromotionData> findAll(String status, int page, int size) {
-        return jpa.findAllFiltered(status, PageRequest.of(page, size))
-                .getContent().stream().map(this::toData).toList();
-    }
-
-    @Override
-    public long countAll(String status) {
-        return jpa.findAllFiltered(status, PageRequest.of(0, Integer.MAX_VALUE)).getTotalElements();
+    public Page<PromotionData> findAll(String status, Pageable pageable) {
+        return jpa.findAllFiltered(status, pageable).map(this::toData);
     }
 
     @Override

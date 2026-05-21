@@ -14,8 +14,4 @@ public record ProductFilter(
         BigDecimal minPrice,       // Minimum price filter
         BigDecimal maxPrice        // Maximum price filter
 ) {
-    // Constructor for backward compatibility
-    public ProductFilter(String search, Boolean active, Boolean deleted, Long categoryId, Long brandId) {
-        this(search, active, deleted, categoryId, brandId, null, null, null, null);
-    }
 }
