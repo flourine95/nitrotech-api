@@ -77,8 +77,6 @@ public class CartRepositoryImpl implements CartRepository {
                 .orElse(false);
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────────
-
     private CartEntity getOrCreateCartEntity(Long userId) {
         return cartJpa.findByUserId(userId).orElseGet(() -> {
             CartEntity c = new CartEntity();

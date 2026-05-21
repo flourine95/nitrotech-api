@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,15 +16,11 @@ import java.util.Map;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class OrderRepositoryImpl implements OrderRepository {
 
     private final OrderJpaRepository orderJpa;
     private final OrderItemJpaRepository itemJpa;
-
-    public OrderRepositoryImpl(OrderJpaRepository orderJpa, OrderItemJpaRepository itemJpa) {
-        this.orderJpa = orderJpa;
-        this.itemJpa = itemJpa;
-    }
 
     @Override
     @Transactional
@@ -92,8 +89,6 @@ public class OrderRepositoryImpl implements OrderRepository {
     public boolean existsByIdAndUserId(Long id, Long userId) {
         return orderJpa.existsByIdAndUserId(id, userId);
     }
-
-    // ── helpers ───────────────────────────────────────────────────────────────
 
     private Map<String, Object> snapshotToMap(ShippingAddressSnapshot s) {
         return Map.of(

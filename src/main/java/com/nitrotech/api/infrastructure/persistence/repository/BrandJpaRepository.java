@@ -48,7 +48,10 @@ public interface BrandJpaRepository extends JpaRepository<BrandEntity, Long>,
     @Query("SELECT b.id FROM BrandEntity b WHERE b.id IN :ids AND b.deletedAt IS NOT NULL")
     List<Long> findDeletedIdsByIds(@Param("ids") List<Long> ids);
 
-    // Đếm 3 nhóm trong 1 query, filter theo search context
+    /**
+     * Count brands by status in one query, filtered by search
+     * Returns: [activeCount (Long), inactiveCount (Long), deletedCount (Long)]
+     */
     @Query("""
             SELECT
               SUM(CASE WHEN b.deletedAt IS NULL AND b.active = true  THEN 1 ELSE 0 END),

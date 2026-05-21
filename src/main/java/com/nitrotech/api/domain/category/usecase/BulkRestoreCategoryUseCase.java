@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public class BulkRestoreCategoryUseCase {
         List<Long> restored = categoryRepository.bulkRestore(ids);
         Set<Long> restoredSet = Set.copyOf(restored);
 
-        Map<Long, String> failedReasons = new java.util.LinkedHashMap<>();
+        Map<Long, String> failedReasons = new LinkedHashMap<>();
         for (Long id : ids) {
             if (!restoredSet.contains(id)) {
                 failedReasons.put(id, "Category not found or not deleted");

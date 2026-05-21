@@ -16,7 +16,7 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
 
     /**
      * Get review statistics for a single product
-     * Returns: [avgRating, reviewCount]
+     * Returns: [avgRating (Double), reviewCount (Long)]
      */
     @Query("""
         SELECT COALESCE(AVG(r.rating), 0.0), COUNT(r.id)

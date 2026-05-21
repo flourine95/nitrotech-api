@@ -5,17 +5,23 @@ import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.*;
 import com.nitrotech.api.infrastructure.persistence.spec.ProductSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
+@RequiredArgsConstructor
 public class ProductRepositoryImpl implements ProductRepository {
 
     private final ProductJpaRepository productJpa;
@@ -24,20 +30,6 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final CategoryJpaRepository categoryJpa;
     private final BrandJpaRepository brandJpa;
     private final ReviewJpaRepository reviewJpa;
-
-    public ProductRepositoryImpl(ProductJpaRepository productJpa,
-                                  ProductImageJpaRepository imageJpa,
-                                  ProductVariantJpaRepository variantJpa,
-                                  CategoryJpaRepository categoryJpa,
-                                  BrandJpaRepository brandJpa,
-                                  ReviewJpaRepository reviewJpa) {
-        this.productJpa = productJpa;
-        this.imageJpa = imageJpa;
-        this.variantJpa = variantJpa;
-        this.categoryJpa = categoryJpa;
-        this.brandJpa = brandJpa;
-        this.reviewJpa = reviewJpa;
-    }
 
     @Override
     @Transactional
@@ -107,10 +99,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         Page<ProductEntity> page = productJpa.findAll(ProductSpecification.from(filter), pageable);
         
         if (page.isEmpty()) {
-            return page.map(this::toListData); // fallback nếu rỗng
+            return page.map(this::toListData);
         }
         
-        // Batch query tất cả data cần thiết
         List<Long> productIds = page.getContent().stream().map(ProductEntity::getId).toList();
         var imagesMap = batchLoadImages(productIds);
         var statsMap = batchLoadProductStats(productIds);
@@ -122,7 +113,6 @@ public class ProductRepositoryImpl implements ProductRepository {
                 page.getContent().stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
         );
         
-        // Map nhanh từ cache
         return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames));
     }
 
@@ -202,12 +192,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         });
     }
 
-    // ── helpers ───────────────────────────────────────────────────────────────
-
-    /**
-     * Round rating to 1 decimal place for cleaner display
-     * Example: 3.66666666666667 → 3.7
-     */
     private Double roundRating(Double rating) {
         if (rating == null) return null;
         return Math.round(rating * 10.0) / 10.0;
@@ -242,10 +226,8 @@ public class ProductRepositoryImpl implements ProductRepository {
                 .stream().map(ProductImageEntity::getUrl).toList();
         int variantCount = productJpa.countActiveVariants(e.getId());
         
-        // Compute badge
         String badge = computeBadge(e, variantCount);
         
-        // Get review stats (safe handling)
         Object[] reviewStats = reviewJpa.getReviewStats(e.getId());
         Double rating = null;
         Integer reviewCount = null;
@@ -266,7 +248,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 e.getBrandId(), resolveBrandName(e.getBrandId()),
                 e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
-                null,                                        // variants — không load trong list
+                null,
                 variantCount,
                 productJpa.findMinPrice(e.getId()),
                 productJpa.findMaxPrice(e.getId()),
@@ -284,11 +266,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<ProductVariantData> variants = variantJpa.findActiveByProductId(e.getId())
                 .stream().map(this::toVariantData).toList();
         
-        // Compute badge
         String badge = computeBadge(e, variants.size());
         
-        // Get review stats - TEMPORARY: Use batch query for single product
-        java.util.Map<Long, ReviewStats> reviewStatsMap = batchLoadReviewStats(List.of(e.getId()));
+        Map<Long, ReviewStats> reviewStatsMap = batchLoadReviewStats(List.of(e.getId()));
         ReviewStats reviewStats = reviewStatsMap.get(e.getId());
         
         Double rating = reviewStats != null ? reviewStats.rating() : null;
@@ -303,10 +283,10 @@ public class ProductRepositoryImpl implements ProductRepository {
                 variants.size(),
                 variants.stream().map(ProductVariantData::price)
                         .filter(p -> p != null)
-                        .min(java.math.BigDecimal::compareTo).orElse(null),
+                        .min(BigDecimal::compareTo).orElse(null),
                 variants.stream().map(ProductVariantData::price)
                         .filter(p -> p != null)
-                        .max(java.math.BigDecimal::compareTo).orElse(null),
+                        .max(BigDecimal::compareTo).orElse(null),
                 badge,
                 rating,
                 reviewCount,
@@ -340,42 +320,20 @@ public class ProductRepositoryImpl implements ProductRepository {
         );
     }
 
-    // ── Badge computation ─────────────────────────────────────────────────────
-
-    /**
-     * Compute badge for product with priority system:
-     * 1. Manual badge (if set and not expired) - highest priority
-     * 2. Auto-computed badges - fallback
-     *    - lowstock: variantCount <= 5
-     *    - bestseller: TODO (requires order_items data)
-     *    - new: created < 30 days ago
-     */
     private String computeBadge(ProductEntity product, int variantCount) {
         LocalDateTime now = LocalDateTime.now();
         
-        // 1️⃣ Manual badge (highest priority)
         if (product.getManualBadge() != null) {
-            // Check if expired
             if (product.getManualBadgeExpiresAt() == null || 
                 product.getManualBadgeExpiresAt().isAfter(now)) {
                 return product.getManualBadge();
             }
-            // Expired → fallback to auto badge
         }
         
-        // 2️⃣ Auto-computed badges (fallback)
-        
-        // Low stock (sắp hết) - Priority 1
         if (variantCount > 0 && variantCount <= 5) {
             return "lowstock";
         }
         
-        // Best seller (bán chạy) - Priority 2
-        // TODO: Implement when order_items data available
-        // int sold30Days = getSoldLast30Days(product.getId());
-        // if (sold30Days >= 100) return "bestseller";
-        
-        // New (mới) - Priority 3
         if (product.getCreatedAt().isAfter(now.minusDays(30))) {
             return "new";
         }
@@ -383,23 +341,20 @@ public class ProductRepositoryImpl implements ProductRepository {
         return null;
     }
 
-    // ── Batch loading helpers ─────────────────────────────────────────────────
-
-    private java.util.Map<Long, List<String>> batchLoadImages(List<Long> productIds) {
+    private Map<Long, List<String>> batchLoadImages(List<Long> productIds) {
         return imageJpa.findByProductIdInOrderBySortOrderAsc(productIds).stream()
-                .collect(java.util.stream.Collectors.groupingBy(
+                .collect(Collectors.groupingBy(
                         ProductImageEntity::getProductId,
-                        java.util.stream.Collectors.mapping(ProductImageEntity::getUrl, java.util.stream.Collectors.toList())
+                        Collectors.mapping(ProductImageEntity::getUrl, Collectors.toList())
                 ));
     }
 
-    private java.util.Map<Long, ProductStats> batchLoadProductStats(List<Long> productIds) {
-        // Query 1 lần cho tất cả products
+    private Map<Long, ProductStats> batchLoadProductStats(List<Long> productIds) {
         var variantCounts = productJpa.countActiveVariantsBatch(productIds);
         var minPrices = productJpa.findMinPricesBatch(productIds);
         var maxPrices = productJpa.findMaxPricesBatch(productIds);
         
-        java.util.Map<Long, ProductStats> result = new java.util.HashMap<>();
+        Map<Long, ProductStats> result = new HashMap<>();
         for (Long id : productIds) {
             result.put(id, new ProductStats(
                     variantCounts.getOrDefault(id, 0),
@@ -410,9 +365,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         return result;
     }
 
-    private java.util.Map<Long, ReviewStats> batchLoadReviewStats(List<Long> productIds) {
+    private Map<Long, ReviewStats> batchLoadReviewStats(List<Long> productIds) {
         List<Object[]> results = reviewJpa.getReviewStatsBatch(productIds);
-        java.util.Map<Long, ReviewStats> map = new java.util.HashMap<>();
+        Map<Long, ReviewStats> map = new HashMap<>();
         
         for (Object[] row : results) {
             if (row != null && row.length >= 3) {
@@ -438,19 +393,19 @@ public class ProductRepositoryImpl implements ProductRepository {
         return map;
     }
 
-    private java.util.Map<Long, String> batchLoadCategoryNames(List<Long> categoryIds) {
-        if (categoryIds.isEmpty()) return java.util.Map.of();
+    private Map<Long, String> batchLoadCategoryNames(List<Long> categoryIds) {
+        if (categoryIds.isEmpty()) return Map.of();
         return categoryJpa.findAllById(categoryIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         CategoryEntity::getId,
                         CategoryEntity::getName
                 ));
     }
 
-    private java.util.Map<Long, String> batchLoadBrandNames(List<Long> brandIds) {
-        if (brandIds.isEmpty()) return java.util.Map.of();
+    private Map<Long, String> batchLoadBrandNames(List<Long> brandIds) {
+        if (brandIds.isEmpty()) return Map.of();
         return brandJpa.findAllById(brandIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         BrandEntity::getId,
                         BrandEntity::getName
                 ));
@@ -458,17 +413,16 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private ProductData toListDataBatched(
             ProductEntity e,
-            java.util.Map<Long, List<String>> imagesMap,
-            java.util.Map<Long, ProductStats> statsMap,
-            java.util.Map<Long, ReviewStats> reviewStatsMap,
-            java.util.Map<Long, String> categoryNames,
-            java.util.Map<Long, String> brandNames
+            Map<Long, List<String>> imagesMap,
+            Map<Long, ProductStats> statsMap,
+            Map<Long, ReviewStats> reviewStatsMap,
+            Map<Long, String> categoryNames,
+            Map<Long, String> brandNames
     ) {
         List<String> images = imagesMap.getOrDefault(e.getId(), List.of());
         ProductStats stats = statsMap.getOrDefault(e.getId(), new ProductStats(0, null, null));
         ReviewStats reviewStats = reviewStatsMap.getOrDefault(e.getId(), new ReviewStats(null, null));
         
-        // Compute badge
         String badge = computeBadge(e, stats.variantCount);
         
         return new ProductData(
@@ -476,7 +430,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 e.getBrandId(), brandNames.get(e.getBrandId()),
                 e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
-                null, // variants — không load trong list
+                null,
                 stats.variantCount,
                 stats.minPrice,
                 stats.maxPrice,
@@ -487,6 +441,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         );
     }
 
-    private record ProductStats(int variantCount, java.math.BigDecimal minPrice, java.math.BigDecimal maxPrice) {}
+    private record ProductStats(int variantCount, BigDecimal minPrice, BigDecimal maxPrice) {}
     private record ReviewStats(Double rating, Integer reviewCount) {}
 }

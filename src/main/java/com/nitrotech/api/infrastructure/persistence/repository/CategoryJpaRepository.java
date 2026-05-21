@@ -68,7 +68,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     @Query("UPDATE CategoryEntity c SET c.active = false WHERE c.id IN :ids AND c.deletedAt IS NULL")
     int bulkDeactivate(@Param("ids") List<Long> ids);
     
-    // Breadcrumb query
+    /**
+     * Get breadcrumb path for a category (recursive parent lookup)
+     * Returns: [id (Long), name (String), slug (String), active (Boolean)]
+     */
     @Query(value = """
         WITH RECURSIVE category_path AS (
             SELECT id, name, slug, active, parent_id, 0 as depth
@@ -88,7 +91,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
         """, nativeQuery = true)
     List<Object[]> findPath(@Param("categoryId") Long categoryId);
     
-    // Facets query
+    /**
+     * Get category statistics in one query
+     * Returns: [activeCount (Long), inactiveCount (Long), deletedCount (Long), rootCount (Long), withChildrenCount (Long)]
+     */
     @Query(value = """
         SELECT 
             COUNT(*) FILTER (WHERE active = true AND deleted_at IS NULL) as active,
@@ -100,7 +106,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
         """, nativeQuery = true)
     List<Object[]> getFacets();
     
-    // Get product counts for all categories in one query
+    /**
+     * Batch get product counts for all categories
+     * Returns: [categoryId (Long), productCount (Long)]
+     */
     @Query(value = """
         SELECT c.id, COUNT(p.id)
         FROM categories c

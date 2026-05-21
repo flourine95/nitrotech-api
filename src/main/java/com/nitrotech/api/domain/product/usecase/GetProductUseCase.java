@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.product.usecase;
 import com.nitrotech.api.domain.product.dto.ProductData;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class GetProductUseCase {
 
     private final ProductRepository productRepository;
-
-    public GetProductUseCase(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
 
     /**
      * Get product by ID or slug (auto-detect)

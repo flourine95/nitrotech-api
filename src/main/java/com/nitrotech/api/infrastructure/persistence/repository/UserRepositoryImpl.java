@@ -28,7 +28,6 @@ public class UserRepositoryImpl implements UserRepository {
         entity.setName(name);
         entity.setEmail(email);
         entity.setPassword(hashedPassword);
-        // status defaults to inactive — activated after email verification
         UserEntity saved = jpa.save(entity);
         return new AuthResult.UserData(saved.getId(), saved.getName(), saved.getEmail());
     }

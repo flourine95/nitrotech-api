@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public class BulkDeactivateCategoryUseCase {
         List<Long> deactivated = categoryRepository.bulkDeactivate(ids);
         Set<Long> deactivatedSet = Set.copyOf(deactivated);
 
-        Map<Long, String> failedReasons = new java.util.LinkedHashMap<>();
+        Map<Long, String> failedReasons = new LinkedHashMap<>();
         for (Long id : ids) {
             if (!deactivatedSet.contains(id)) {
                 failedReasons.put(id, "Category not found or already deleted");

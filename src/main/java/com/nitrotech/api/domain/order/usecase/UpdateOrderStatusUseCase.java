@@ -4,15 +4,16 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class UpdateOrderStatusUseCase {
 
-    // Các transition hợp lệ
     private static final Map<String, Set<String>> TRANSITIONS = Map.of(
             "pending",    Set.of("confirmed", "cancelled"),
             "confirmed",  Set.of("processing", "cancelled"),
@@ -22,10 +23,6 @@ public class UpdateOrderStatusUseCase {
     );
 
     private final OrderRepository orderRepository;
-
-    public UpdateOrderStatusUseCase(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
 
     public OrderData execute(Long id, String newStatus) {
         OrderData order = orderRepository.findById(id)

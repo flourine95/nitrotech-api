@@ -6,18 +6,16 @@ import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class ManagePromotionUseCase {
 
     private final PromotionRepository promotionRepository;
-
-    public ManagePromotionUseCase(PromotionRepository promotionRepository) {
-        this.promotionRepository = promotionRepository;
-    }
 
     public PromotionData create(CreatePromotionCommand command) {
         if (command.code() != null && promotionRepository.existsByCode(command.code())) {

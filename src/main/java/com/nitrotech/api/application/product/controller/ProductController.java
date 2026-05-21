@@ -15,6 +15,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Set;
+import org.springframework.web.bind.annotation.*;
+
 import java.util.List;
 import java.util.Set;
 
@@ -46,8 +51,8 @@ public class ProductController {
             @RequestParam(required = false) Long brandId,
             @RequestParam(required = false) List<Long> categoryIds,
             @RequestParam(required = false) List<Long> brandIds,
-            @RequestParam(required = false) java.math.BigDecimal minPrice,
-            @RequestParam(required = false) java.math.BigDecimal maxPrice,
+            @RequestParam(required = false) BigDecimal minPrice,
+            @RequestParam(required = false) BigDecimal maxPrice,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size,
             @RequestParam(required = false) List<String> sort

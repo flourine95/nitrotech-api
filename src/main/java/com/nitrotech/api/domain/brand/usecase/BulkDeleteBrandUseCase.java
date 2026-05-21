@@ -6,6 +6,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -19,7 +20,7 @@ public class BulkDeleteBrandUseCase {
         List<Long> deleted = brandRepository.bulkSoftDelete(ids);
         Set<Long> deletedSet = Set.copyOf(deleted);
 
-        Map<Long, String> failedReasons = new java.util.LinkedHashMap<>();
+        Map<Long, String> failedReasons = new LinkedHashMap<>();
         for (Long id : ids) {
             if (!deletedSet.contains(id)) {
                 failedReasons.put(id, "Brand not found or already deleted");

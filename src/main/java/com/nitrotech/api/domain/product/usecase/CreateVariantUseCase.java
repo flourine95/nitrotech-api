@@ -5,16 +5,14 @@ import com.nitrotech.api.domain.product.dto.ProductVariantData;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class CreateVariantUseCase {
 
     private final ProductRepository productRepository;
-
-    public CreateVariantUseCase(ProductRepository productRepository) {
-        this.productRepository = productRepository;
-    }
 
     public ProductVariantData execute(Long productId, CreateVariantCommand command) {
         if (!productRepository.existsById(productId)) {

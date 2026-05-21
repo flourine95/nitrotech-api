@@ -8,7 +8,9 @@ import org.springframework.data.repository.query.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>,
         JpaSpecificationExecutor<ProductEntity> {
@@ -45,36 +47,46 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     @Query("SELECT MAX(v.price) FROM ProductVariantEntity v WHERE v.productId = :productId AND v.deletedAt IS NULL AND v.active = true")
     BigDecimal findMaxPrice(@Param("productId") Long productId);
 
-    // ── Batch queries ─────────────────────────────────────────────────────────
-
+    /**
+     * Batch count active variants for multiple products
+     * Returns: [productId (Long), variantCount (Long)]
+     */
     @Query("SELECT v.productId, COUNT(v) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
     List<Object[]> countActiveVariantsBatchRaw(@Param("productIds") List<Long> productIds);
 
-    default java.util.Map<Long, Integer> countActiveVariantsBatch(List<Long> productIds) {
+    default Map<Long, Integer> countActiveVariantsBatch(List<Long> productIds) {
         return countActiveVariantsBatchRaw(productIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> ((Number) row[1]).intValue()
                 ));
     }
 
+    /**
+     * Batch find minimum prices for multiple products
+     * Returns: [productId (Long), minPrice (BigDecimal)]
+     */
     @Query("SELECT v.productId, MIN(v.price) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
     List<Object[]> findMinPricesBatchRaw(@Param("productIds") List<Long> productIds);
 
-    default java.util.Map<Long, BigDecimal> findMinPricesBatch(List<Long> productIds) {
+    default Map<Long, BigDecimal> findMinPricesBatch(List<Long> productIds) {
         return findMinPricesBatchRaw(productIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (BigDecimal) row[1]
                 ));
     }
 
+    /**
+     * Batch find maximum prices for multiple products
+     * Returns: [productId (Long), maxPrice (BigDecimal)]
+     */
     @Query("SELECT v.productId, MAX(v.price) FROM ProductVariantEntity v WHERE v.productId IN :productIds AND v.deletedAt IS NULL AND v.active = true GROUP BY v.productId")
     List<Object[]> findMaxPricesBatchRaw(@Param("productIds") List<Long> productIds);
 
-    default java.util.Map<Long, BigDecimal> findMaxPricesBatch(List<Long> productIds) {
+    default Map<Long, BigDecimal> findMaxPricesBatch(List<Long> productIds) {
         return findMaxPricesBatchRaw(productIds).stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (BigDecimal) row[1]
                 ));

@@ -4,18 +4,16 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListQuery;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.response.ApiResult;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class GetOrdersUseCase {
 
     private final OrderRepository orderRepository;
-
-    public GetOrdersUseCase(OrderRepository orderRepository) {
-        this.orderRepository = orderRepository;
-    }
 
     public ApiResult<List<OrderData>> execute(OrderListQuery query) {
         List<OrderData> data = orderRepository.findAll(query);

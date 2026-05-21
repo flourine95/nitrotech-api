@@ -34,7 +34,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setParentId(command.parentId());
         entity.setActive(command.active());
         
-        // Set sortOrder to end of siblings list
         List<CategoryEntity> siblings = jpa.findAllActive(null, command.parentId());
         int maxOrder = siblings.stream()
                 .mapToInt(CategoryEntity::getSortOrder)
@@ -85,7 +84,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public List<CategoryData> findTree(Boolean active) {
         List<CategoryEntity> all = jpa.findAllForTree(active);
 
-        // Load product counts for all categories in one query
         Map<Long, Integer> productCounts = jpa.getProductCountsForAllCategories().stream()
                 .collect(Collectors.toMap(
                         row -> ((Number) row[0]).longValue(),
@@ -141,9 +139,8 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     @Override
     public boolean isDescendantOf(Long potentialDescendantId, Long ancestorId) {
-        // Traverse up the tree from potentialDescendantId
         Long current = potentialDescendantId;
-        int maxDepth = 20; // guard against infinite loop
+        int maxDepth = 20;
         while (current != null && maxDepth-- > 0) {
             if (current.equals(ancestorId)) return true;
             current = jpa.findActiveById(current).map(CategoryEntity::getParentId).orElse(null);
@@ -158,11 +155,9 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             Long parentId = e.getParentId();
             int deletedSortOrder = e.getSortOrder();
             
-            // Soft delete the category
             e.setDeletedAt(LocalDateTime.now());
             jpa.save(e);
             
-            // Reindex siblings after the deleted category
             List<CategoryEntity> siblings = jpa.findAllActive(null, parentId);
             siblings.stream()
                     .filter(sibling -> sibling.getSortOrder() > deletedSortOrder)
@@ -179,7 +174,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         jpa.findDeletedById(id).ifPresent(e -> {
             e.setDeletedAt(null);
             
-            // Set sortOrder to end of siblings list
             List<CategoryEntity> siblings = jpa.findAllActive(null, e.getParentId());
             int maxOrder = siblings.stream()
                     .mapToInt(CategoryEntity::getSortOrder)
@@ -238,7 +232,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public CategoryFacets getFacets() {
         List<Object[]> results = jpa.getFacets();
 
-        // Handle case where result might be null or empty
         if (results == null || results.isEmpty()) {
             return new CategoryFacets(0L, 0L, 0L, 0L, 0L);
         }
@@ -246,11 +239,11 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         Object[] result = results.getFirst();
 
         return new CategoryFacets(
-                result[0] != null ? ((Number) result[0]).longValue() : 0L,  // active
-                result[1] != null ? ((Number) result[1]).longValue() : 0L,  // inactive
-                result[2] != null ? ((Number) result[2]).longValue() : 0L,  // deleted
-                result[3] != null ? ((Number) result[3]).longValue() : 0L,  // root
-                result[4] != null ? ((Number) result[4]).longValue() : 0L   // withChildren
+                result[0] != null ? ((Number) result[0]).longValue() : 0L,
+                result[1] != null ? ((Number) result[1]).longValue() : 0L,
+                result[2] != null ? ((Number) result[2]).longValue() : 0L,
+                result[3] != null ? ((Number) result[3]).longValue() : 0L,
+                result[4] != null ? ((Number) result[4]).longValue() : 0L
         );
     }
 
@@ -345,7 +338,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public List<Long> bulkSoftDelete(List<Long> ids) {
-        // Only delete categories that have no children
         List<Long> deletableIds = new ArrayList<>();
         for (Long id : ids) {
             if (jpa.existsActiveById(id) && !jpa.existsAnyChildrenByParentId(id)) {
@@ -372,7 +364,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public List<Long> bulkHardDelete(List<Long> ids) {
-        // Only hard delete categories that are already soft deleted and have no children
         List<Long> deletableIds = new ArrayList<>();
         for (Long id : ids) {
             Optional<CategoryEntity> entity = jpa.findDeletedById(id);
@@ -477,9 +468,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + id + " not found"));
 
-        // Validate circular reference if changing parent
         if (!Objects.equals(newParentId, entity.getParentId())) {
-            // Validate circular reference only if newParentId is not null
             if (newParentId != null && isDescendantOf(newParentId, id)) {
                 throw new ConflictException(
                         "CATEGORY_CIRCULAR_REF", "Cannot move category into its own descendant");
@@ -487,16 +476,13 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             entity.setParentId(newParentId);
         }
 
-        // Calculate sortOrder
         if (afterId != null) {
-            // Place after specific category
             CategoryEntity afterCategory = jpa.findActiveById(afterId)
                     .orElseThrow(() -> new ConflictException(
                             "INVALID_AFTER_ID", "afterId category not found"));
 
             entity.setSortOrder(afterCategory.getSortOrder() + 1);
 
-            // Shift categories after
             List<CategoryEntity> toShift = jpa.findAllActive(null, entity.getParentId()).stream()
                     .filter(c -> !c.getId().equals(id) && c.getSortOrder() > afterCategory.getSortOrder())
                     .toList();
@@ -505,7 +491,6 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 jpa.save(c);
             }
         } else {
-            // Place at the end
             List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
             int maxOrder = siblings.stream()
                     .filter(c -> !c.getId().equals(id))

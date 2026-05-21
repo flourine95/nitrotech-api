@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.PromotionEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.PromotionUsageEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 
@@ -15,15 +16,11 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
+@RequiredArgsConstructor
 public class PromotionRepositoryImpl implements PromotionRepository {
 
     private final PromotionJpaRepository jpa;
     private final PromotionUsageJpaRepository usageJpa;
-
-    public PromotionRepositoryImpl(PromotionJpaRepository jpa, PromotionUsageJpaRepository usageJpa) {
-        this.jpa = jpa;
-        this.usageJpa = usageJpa;
-    }
 
     @Override
     public PromotionData create(CreatePromotionCommand command) {
