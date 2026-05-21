@@ -6,6 +6,7 @@ import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -17,13 +18,10 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 @Repository
+@RequiredArgsConstructor
 public class CategoryRepositoryImpl implements CategoryRepository {
 
     private final CategoryJpaRepository jpa;
-
-    public CategoryRepositoryImpl(CategoryJpaRepository jpa) {
-        this.jpa = jpa;
-    }
 
     @Override
     @Transactional

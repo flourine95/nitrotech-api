@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.category.usecase;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class GetCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public GetCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     /**
      * Get category by ID or slug (auto-detect)

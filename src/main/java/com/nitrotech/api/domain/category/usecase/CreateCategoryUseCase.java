@@ -5,16 +5,14 @@ import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class CreateCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public CreateCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public CategoryData execute(CreateCategoryCommand command) {
         if (categoryRepository.existsBySlug(command.slug())) {

@@ -2,6 +2,7 @@ package com.nitrotech.api.domain.category.usecase;
 
 import com.nitrotech.api.domain.category.dto.ValidateDeleteResult;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -10,13 +11,10 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class ValidateBulkDeleteCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public ValidateBulkDeleteCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public ValidateDeleteResult execute(List<Long> ids) {
         List<Long> canDelete = new ArrayList<>();

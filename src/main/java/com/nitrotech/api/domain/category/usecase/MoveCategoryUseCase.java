@@ -5,16 +5,14 @@ import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class MoveCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public MoveCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public MoveCategoryResult execute(MoveCategoryCommand command) {
         if (!categoryRepository.existsById(command.movedId())) {

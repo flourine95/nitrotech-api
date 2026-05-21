@@ -6,6 +6,7 @@ import com.nitrotech.api.domain.category.dto.CategoryPageResult;
 import com.nitrotech.api.domain.category.dto.CategoryFacets;
 import com.nitrotech.api.domain.category.dto.CategoryTreeResult;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -13,13 +14,10 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 
 @Service
+@RequiredArgsConstructor
 public class GetCategoriesUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public GetCategoriesUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public CategoryPageResult execute(CategoryFilter filter, Pageable pageable) {
         Page<CategoryData> page = categoryRepository.findAll(filter, pageable);

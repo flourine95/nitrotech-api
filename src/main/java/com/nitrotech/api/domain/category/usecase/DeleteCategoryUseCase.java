@@ -3,16 +3,14 @@ package com.nitrotech.api.domain.category.usecase;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class DeleteCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public DeleteCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public void execute(Long id) {
         if (!categoryRepository.existsById(id)) {

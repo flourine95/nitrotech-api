@@ -5,19 +5,15 @@ import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AdjustInventoryUseCase {
 
     private final InventoryRepository inventoryRepository;
     private final ProductRepository productRepository;
-
-    public AdjustInventoryUseCase(InventoryRepository inventoryRepository,
-                                   ProductRepository productRepository) {
-        this.inventoryRepository = inventoryRepository;
-        this.productRepository = productRepository;
-    }
 
     public InventoryData adjust(Long variantId, int delta) {
         if (!productRepository.existsVariantById(variantId)) {

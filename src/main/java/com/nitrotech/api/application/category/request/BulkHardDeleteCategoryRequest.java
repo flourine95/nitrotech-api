@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import java.util.List;
 
 public record BulkHardDeleteCategoryRequest(
-        @NotEmpty(message = "ids must not be empty")
+        @NotEmpty(message = "IDs must not be empty")
         @Size(max = 100, message = "Cannot hard delete more than 100 categories at once")
         List<Long> ids
 ) {}

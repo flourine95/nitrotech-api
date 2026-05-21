@@ -2,6 +2,7 @@ package com.nitrotech.api.domain.category.usecase;
 
 import com.nitrotech.api.domain.category.dto.BulkResult;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -9,13 +10,10 @@ import java.util.Map;
 import java.util.Set;
 
 @Service
+@RequiredArgsConstructor
 public class BulkActivateCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
-
-    public BulkActivateCategoryUseCase(CategoryRepository categoryRepository) {
-        this.categoryRepository = categoryRepository;
-    }
 
     public BulkResult execute(List<Long> ids) {
         List<Long> activated = categoryRepository.bulkActivate(ids);
