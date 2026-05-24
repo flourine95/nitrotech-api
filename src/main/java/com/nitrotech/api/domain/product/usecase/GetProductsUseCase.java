@@ -15,6 +15,13 @@ public class GetProductsUseCase {
     private final ProductRepository productRepository;
 
     public Page<ProductData> execute(ProductFilter filter, Pageable pageable) {
+        boolean isPriceSort = pageable.getSort().stream()
+                .anyMatch(order -> "price".equals(order.getProperty()));
+        
+        if (isPriceSort) {
+            return productRepository.findAllSortedByPrice(filter, pageable);
+        }
+        
         return productRepository.findAll(filter, pageable);
     }
 }

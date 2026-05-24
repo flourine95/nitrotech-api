@@ -13,6 +13,7 @@ public interface ProductRepository {
     Optional<ProductData> findById(Long id);
     Optional<ProductData> findBySlug(String slug);
     Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
+    Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);

@@ -336,4 +336,99 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             @Param("minPrice") BigDecimal minPrice,
             @Param("maxPrice") BigDecimal maxPrice
     );
+
+    @Query(value = """
+        SELECT p.id
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN (
+            SELECT product_id, MIN(price) as min_price
+            FROM product_variants
+            WHERE deleted_at IS NULL AND active = true
+            GROUP BY product_id
+        ) v ON v.product_id = p.id
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.min_price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        ORDER BY v.min_price ASC NULLS LAST
+        LIMIT :limit OFFSET :offset
+        """, nativeQuery = true)
+    List<Long> findProductIdsSortedByPriceAsc(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+        SELECT p.id
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN (
+            SELECT product_id, MIN(price) as min_price
+            FROM product_variants
+            WHERE deleted_at IS NULL AND active = true
+            GROUP BY product_id
+        ) v ON v.product_id = p.id
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.min_price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        ORDER BY v.min_price DESC NULLS LAST
+        LIMIT :limit OFFSET :offset
+        """, nativeQuery = true)
+    List<Long> findProductIdsSortedByPriceDesc(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        """, nativeQuery = true)
+    long countProductsWithFilters(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge
+    );
 }

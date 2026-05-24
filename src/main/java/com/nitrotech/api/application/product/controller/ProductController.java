@@ -3,26 +3,25 @@ package com.nitrotech.api.application.product.controller;
 import com.nitrotech.api.application.product.request.*;
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.usecase.*;
-import com.nitrotech.api.shared.request.PaginationRequest;
 import com.nitrotech.api.shared.response.ApiResult;
-import com.nitrotech.api.shared.util.SortUtils;
+import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Validated
 public class ProductController {
-
-    private static final Set<String> SORTABLE_FIELDS =
-            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetProductsUseCase getProductsUseCase;
     private final GetProductUseCase getProductUseCase;
@@ -48,7 +47,8 @@ public class ProductController {
                 request.getCategory(),
                 request.getBrand(),
                 request.getMinPrice(),
-                request.getMaxPrice()
+                request.getMaxPrice(),
+                request.getBadge()
         );
         ProductFacets facets = getProductFacetsUseCase.execute(filter);
         return ResponseEntity.ok(ApiResult.ok(facets));
@@ -71,17 +71,14 @@ public class ProductController {
     @GetMapping
     public ResponseEntity<ApiResult<List<ProductData>>> list(
             @Valid @ModelAttribute ProductListRequest filter,
-            @Valid @ModelAttribute PaginationRequest pagination
+            @ValidSortFields({"id", "name", "slug", "active", "price", "createdAt", "updatedAt"})
+            Pageable pageable
     ) {
-        Pageable pageable = SortUtils.toPageable(
-                pagination.getPage(),
-                pagination.getSize(),
-                pagination.getSort(),
-                SORTABLE_FIELDS,
-                "createdAt"
-        );
+        Pageable pageableWithDefaults = pageable.isPaged() ? pageable 
+                : PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+        
         return ResponseEntity.ok(ApiResult.paged(
-                getProductsUseCase.execute(filter.toFilter(), pageable)
+                getProductsUseCase.execute(filter.toFilter(), pageableWithDefaults)
         ));
     }
 

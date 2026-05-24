@@ -23,7 +23,8 @@ public class ProductSpecification {
                 .and(categorySlug(filter.categorySlug()))
                 .and(brandSlugs(filter.brandSlugs()))
                 .and(priceRange(filter.minPrice(), filter.maxPrice()))
-                .and(search(filter.search()));
+                .and(search(filter.search()))
+                .and(badge(filter.badge()));
     }
 
     private static Specification<ProductEntity> deleted(Boolean deleted) {
@@ -101,6 +102,13 @@ public class ProductSpecification {
                     cb.like(cb.lower(root.get("name")), pattern),
                     cb.like(cb.lower(root.get("slug")), pattern)
             );
+        };
+    }
+
+    private static Specification<ProductEntity> badge(String badge) {
+        return (root, query, cb) -> {
+            if (badge == null || badge.isBlank()) return cb.conjunction();
+            return cb.equal(root.get("manualBadge"), badge);
         };
     }
 }

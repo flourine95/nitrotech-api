@@ -119,6 +119,78 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable) {
+        boolean isAscending = pageable.getSort().stream()
+                .anyMatch(order -> "price".equals(order.getProperty()) && order.isAscending());
+        
+        int limit = pageable.getPageSize();
+        int offset = pageable.getPageNumber() * pageable.getPageSize();
+        
+        List<Long> productIds = isAscending
+                ? productJpa.findProductIdsSortedByPriceAsc(
+                        filter.active(),
+                        filter.search(),
+                        filter.categorySlug(),
+                        filter.brandSlugs(),
+                        filter.minPrice(),
+                        filter.maxPrice(),
+                        filter.badge(),
+                        limit,
+                        offset
+                  )
+                : productJpa.findProductIdsSortedByPriceDesc(
+                        filter.active(),
+                        filter.search(),
+                        filter.categorySlug(),
+                        filter.brandSlugs(),
+                        filter.minPrice(),
+                        filter.maxPrice(),
+                        filter.badge(),
+                        limit,
+                        offset
+                  );
+        
+        if (productIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        long total = productJpa.countProductsWithFilters(
+                filter.active(),
+                filter.search(),
+                filter.categorySlug(),
+                filter.brandSlugs(),
+                filter.minPrice(),
+                filter.maxPrice(),
+                filter.badge()
+        );
+        
+        List<ProductEntity> products = productJpa.findAllById(productIds);
+        Map<Long, ProductEntity> productMap = products.stream()
+                .collect(Collectors.toMap(ProductEntity::getId, p -> p));
+        
+        List<ProductEntity> orderedProducts = productIds.stream()
+                .map(productMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+        
+        var imagesMap = batchLoadImages(productIds);
+        var statsMap = batchLoadProductStats(productIds);
+        var reviewStatsMap = batchLoadReviewStats(productIds);
+        var categoryNames = batchLoadCategoryNames(
+                orderedProducts.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
+        var brandNames = batchLoadBrandNames(
+                orderedProducts.stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
+        );
+        
+        List<ProductData> content = orderedProducts.stream()
+                .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames))
+                .toList();
+        
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+    }
+
+    @Override
     public boolean existsById(Long id) { return productJpa.existsActiveById(id); }
 
     @Override

@@ -21,4 +21,6 @@ public class ProductFacetsRequest {
     private BigDecimal maxPrice;
 
     private Boolean active;
+
+    private String badge;
 }

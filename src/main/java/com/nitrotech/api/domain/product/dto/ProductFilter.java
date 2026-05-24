@@ -10,5 +10,6 @@ public record ProductFilter(
         String categorySlug,
         List<String> brandSlugs,
         BigDecimal minPrice,
-        BigDecimal maxPrice
+        BigDecimal maxPrice,
+        String badge
 ) {}

@@ -23,6 +23,8 @@ public class ProductListRequest {
 
     private List<String> brand;
 
+    private String badge;
+
     @PositiveOrZero(message = "Min price must be greater than or equal to 0")
     private BigDecimal minPrice;
 
@@ -43,7 +45,8 @@ public class ProductListRequest {
                 category,
                 brand,
                 minPrice,
-                maxPrice
+                maxPrice,
+                badge
         );
     }
 }
