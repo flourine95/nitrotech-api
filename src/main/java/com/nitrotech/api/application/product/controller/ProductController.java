@@ -35,6 +35,24 @@ public class ProductController {
     private final UpdateVariantUseCase updateVariantUseCase;
     private final DeleteVariantUseCase deleteVariantUseCase;
     private final SearchProductsUseCase searchProductsUseCase;
+    private final GetProductFacetsUseCase getProductFacetsUseCase;
+
+    @GetMapping("/facets")
+    public ResponseEntity<ApiResult<ProductFacets>> getFacets(
+            @Valid @ModelAttribute ProductFacetsRequest request
+    ) {
+        ProductFilter filter = new ProductFilter(
+                request.getSearch(),
+                request.getActive(),
+                null,
+                request.getCategory(),
+                request.getBrand(),
+                request.getMinPrice(),
+                request.getMaxPrice()
+        );
+        ProductFacets facets = getProductFacetsUseCase.execute(filter);
+        return ResponseEntity.ok(ApiResult.ok(facets));
+    }
 
     @GetMapping("/search")
     public ResponseEntity<ApiResult<List<ProductPickerItem>>> search(

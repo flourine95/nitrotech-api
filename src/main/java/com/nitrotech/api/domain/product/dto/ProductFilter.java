@@ -7,9 +7,8 @@ public record ProductFilter(
         String search,
         Boolean active,
         Boolean deleted,
-        List<Long> categoryIds,
-        List<Long> brandIds,
+        String categorySlug,
+        List<String> brandSlugs,
         BigDecimal minPrice,
         BigDecimal maxPrice
-) {
-}
+) {}

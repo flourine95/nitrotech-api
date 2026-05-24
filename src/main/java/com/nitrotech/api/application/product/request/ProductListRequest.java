@@ -11,28 +11,39 @@ import java.util.List;
 
 @Data
 public class ProductListRequest {
+
     @Size(max = 100, message = "Search query must not exceed 100 characters")
     private String search;
-    
+
     private Boolean active;
+
     private Boolean deleted;
-    private List<Long> categoryIds;
-    private List<Long> brandIds;
-    
-    @PositiveOrZero(message = "Min price must be >= 0")
+
+    private String category;
+
+    private List<String> brand;
+
+    @PositiveOrZero(message = "Min price must be greater than or equal to 0")
     private BigDecimal minPrice;
-    
-    @PositiveOrZero(message = "Max price must be >= 0")
+
+    @PositiveOrZero(message = "Max price must be greater than or equal to 0")
     private BigDecimal maxPrice;
-    
-    @AssertTrue(message = "minPrice must be <= maxPrice")
+
+    @AssertTrue(message = "Min price must be less than or equal to max price")
     public boolean isPriceRangeValid() {
         if (minPrice == null || maxPrice == null) return true;
         return minPrice.compareTo(maxPrice) <= 0;
     }
-    
+
     public ProductFilter toFilter() {
-        return new ProductFilter(search, active, deleted,
-                categoryIds, brandIds, minPrice, maxPrice);
+        return new ProductFilter(
+                search,
+                active,
+                deleted,
+                category,
+                brand,
+                minPrice,
+                maxPrice
+        );
     }
 }

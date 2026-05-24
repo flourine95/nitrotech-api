@@ -1,8 +1,11 @@
 package com.nitrotech.api.infrastructure.persistence.spec;
 
 import com.nitrotech.api.domain.product.dto.ProductFilter;
+import com.nitrotech.api.infrastructure.persistence.entity.BrandEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
+import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
@@ -17,8 +20,8 @@ public class ProductSpecification {
         return Specification
                 .where(deleted(filter.deleted()))
                 .and(active(filter.active()))
-                .and(categoryIds(filter.categoryIds()))
-                .and(brandIds(filter.brandIds()))
+                .and(categorySlug(filter.categorySlug()))
+                .and(brandSlugs(filter.brandSlugs()))
                 .and(priceRange(filter.minPrice(), filter.maxPrice()))
                 .and(search(filter.search()));
     }
@@ -38,17 +41,27 @@ public class ProductSpecification {
         };
     }
 
-    private static Specification<ProductEntity> categoryIds(List<Long> categoryIds) {
+    private static Specification<ProductEntity> categorySlug(String categorySlug) {
         return (root, query, cb) -> {
-            if (categoryIds == null || categoryIds.isEmpty()) return cb.conjunction();
-            return root.get("categoryId").in(categoryIds);
+            if (categorySlug == null) return cb.conjunction();
+            
+            Join<ProductEntity, CategoryEntity> categoryJoin = root.join("category");
+            return cb.and(
+                    cb.equal(categoryJoin.get("slug"), categorySlug),
+                    cb.isNull(categoryJoin.get("deletedAt"))
+            );
         };
     }
 
-    private static Specification<ProductEntity> brandIds(List<Long> brandIds) {
+    private static Specification<ProductEntity> brandSlugs(List<String> brandSlugs) {
         return (root, query, cb) -> {
-            if (brandIds == null || brandIds.isEmpty()) return cb.conjunction();
-            return root.get("brandId").in(brandIds);
+            if (brandSlugs == null || brandSlugs.isEmpty()) return cb.conjunction();
+            
+            Join<ProductEntity, BrandEntity> brandJoin = root.join("brand");
+            return cb.and(
+                    brandJoin.get("slug").in(brandSlugs),
+                    cb.isNull(brandJoin.get("deletedAt"))
+            );
         };
     }
 
@@ -56,7 +69,6 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             if (minPrice == null && maxPrice == null) return cb.conjunction();
 
-            // Subquery to check if product has any variant within price range
             Subquery<Long> subquery = query.subquery(Long.class);
             var variantRoot = subquery.from(ProductVariantEntity.class);
 

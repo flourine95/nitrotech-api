@@ -6,6 +6,7 @@ import com.nitrotech.api.infrastructure.persistence.entity.*;
 import com.nitrotech.api.infrastructure.persistence.spec.ProductSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -20,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class ProductRepositoryImpl implements ProductRepository {
@@ -205,6 +207,144 @@ public class ProductRepositoryImpl implements ProductRepository {
         return results.stream()
                 .map(this::toPickerItem)
                 .toList();
+    }
+
+    @Override
+    public ProductFacets getFacets(ProductFilter filter) {
+        String categorySlug = filter.categorySlug();
+        List<String> brandSlugs = filter.brandSlugs() != null && !filter.brandSlugs().isEmpty() 
+                ? filter.brandSlugs() : null;
+
+        List<CategoryFacet> categories = categorySlug == null 
+                ? (brandSlugs == null 
+                    ? productJpa.findCategoryFacetsWithoutBrands(
+                            filter.search(), 
+                            filter.minPrice(), 
+                            filter.maxPrice()
+                      )
+                    : productJpa.findCategoryFacetsWithBrands(
+                            filter.search(), 
+                            brandSlugs, 
+                            filter.minPrice(), 
+                            filter.maxPrice()
+                      )
+                  ).stream().map(this::toCategoryFacet).toList()
+                : List.of();
+
+        List<BrandFacet> brands = productJpa.findBrandFacets(
+                filter.search(), 
+                categorySlug, 
+                filter.minPrice(), 
+                filter.maxPrice()
+        ).stream().map(this::toBrandFacet).toList();
+
+        List<PriceRangeFacet> priceRanges = buildPriceRanges(
+                filter.search(), 
+                categorySlug, 
+                brandSlugs
+        );
+
+        return new ProductFacets(categories, brands, priceRanges);
+    }
+
+    private CategoryFacet toCategoryFacet(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String name = (String) row[1];
+        String slug = (String) row[2];
+        Integer count = row[3] instanceof Number number ? number.intValue() : 0;
+        return new CategoryFacet(id, name, slug, count);
+    }
+
+    private BrandFacet toBrandFacet(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String name = (String) row[1];
+        String slug = (String) row[2];
+        Integer count = row[3] instanceof Number number ? number.intValue() : 0;
+        return new BrandFacet(id, name, slug, count);
+    }
+
+    private List<PriceRangeFacet> buildPriceRanges(String search, String categorySlug, List<String> brandSlugs) {
+        List<Object[]> results;
+        try {
+            results = brandSlugs == null
+                    ? productJpa.findPriceRangeWithoutBrands(search, categorySlug)
+                    : productJpa.findPriceRangeWithBrands(search, categorySlug, brandSlugs);
+        } catch (Exception e) {
+            log.error("Error fetching price range", e);
+            return List.of();
+        }
+        
+        if (results == null || results.isEmpty()) {
+            log.warn("Price range query returned empty");
+            return List.of();
+        }
+        
+        Object[] priceRange = results.get(0);
+        
+        if (priceRange == null || priceRange.length < 2) {
+            log.warn("Price range row is invalid: length={}", priceRange == null ? "null" : priceRange.length);
+            return List.of();
+        }
+        
+        if (priceRange[0] == null || priceRange[1] == null) {
+            log.warn("Price range contains null values: min={}, max={}", priceRange[0], priceRange[1]);
+            return List.of();
+        }
+
+        BigDecimal minPrice = new BigDecimal(priceRange[0].toString());
+        BigDecimal maxPrice = new BigDecimal(priceRange[1].toString());
+
+        BigDecimal[] ranges = {
+                BigDecimal.ZERO,
+                new BigDecimal("1000000"),
+                new BigDecimal("3000000"),
+                new BigDecimal("5000000"),
+                new BigDecimal("10000000")
+        };
+
+        List<PriceRangeFacet> facets = new java.util.ArrayList<>();
+        
+        for (int i = 0; i < ranges.length; i++) {
+            BigDecimal rangeMin = ranges[i];
+            BigDecimal rangeMax = i < ranges.length - 1 ? ranges[i + 1] : null;
+            
+            int count = countProductsInPriceRange(
+                    search, 
+                    categorySlug, 
+                    brandSlugs, 
+                    rangeMin, 
+                    rangeMax
+            );
+            
+            if (count > 0) {
+                facets.add(new PriceRangeFacet(rangeMin, rangeMax, count));
+            }
+        }
+        
+        return facets;
+    }
+
+    private int countProductsInPriceRange(
+            String search, 
+            String categorySlug, 
+            List<String> brandSlugs,
+            BigDecimal minPrice,
+            BigDecimal maxPrice
+    ) {
+        List<Object[]> countResults = brandSlugs == null
+                ? productJpa.countProductsInPriceRangeWithoutBrands(search, categorySlug, minPrice, maxPrice)
+                : productJpa.countProductsInPriceRangeWithBrands(search, categorySlug, brandSlugs, minPrice, maxPrice);
+        
+        if (countResults == null || countResults.isEmpty()) {
+            return 0;
+        }
+        
+        Object[] row = countResults.get(0);
+        if (row == null || row[0] == null) {
+            return 0;
+        }
+        
+        return ((Number) row[0]).intValue();
     }
 
     private ProductPickerItem toPickerItem(Object[] row) {

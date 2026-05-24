@@ -21,6 +21,8 @@ public interface ProductRepository {
     void restore(Long id);
     void hardDelete(Long id);
     List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable);
+
+    ProductFacets getFacets(ProductFilter filter);
     ProductVariantData createVariant(Long productId, CreateVariantCommand command);
     ProductVariantData updateVariant(UpdateVariantCommand command);
     Optional<ProductVariantData> findVariantById(Long id);
