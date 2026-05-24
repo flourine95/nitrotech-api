@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -91,4 +92,72 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
                         row -> (BigDecimal) row[1]
                 ));
     }
+
+    /**
+     * Search products for picker (lightweight query)
+     * Returns: [id, slug, name, categoryName, priceMin, priceMax, thumbnail, manualBadge]
+     */
+    @Query(value = """
+        SELECT 
+            p.id,
+            p.slug,
+            p.name,
+            c.name as category_name,
+            MIN(v.price) as price_min,
+            MAX(v.price) as price_max,
+            p.thumbnail,
+            p.manual_badge
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:brandSlug IS NULL OR b.slug = :brandSlug)
+        GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
+        ORDER BY p.name ASC
+        """, nativeQuery = true)
+    List<Object[]> searchWithoutExclude(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlug") String brandSlug,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT 
+            p.id,
+            p.slug,
+            p.name,
+            c.name as category_name,
+            MIN(v.price) as price_min,
+            MAX(v.price) as price_max,
+            p.thumbnail,
+            p.manual_badge
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:brandSlug IS NULL OR b.slug = :brandSlug)
+        AND p.id NOT IN :excludeIds
+        GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
+        ORDER BY p.name ASC
+        """, nativeQuery = true)
+    List<Object[]> searchWithExclude(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlug") String brandSlug,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
 }

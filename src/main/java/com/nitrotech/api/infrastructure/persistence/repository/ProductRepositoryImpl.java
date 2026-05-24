@@ -192,6 +192,34 @@ public class ProductRepositoryImpl implements ProductRepository {
         });
     }
 
+    @Override
+    public List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable) {
+        List<Object[]> results;
+        
+        if (excludeIds != null && !excludeIds.isEmpty()) {
+            results = productJpa.searchWithExclude(search, categorySlug, brandSlug, excludeIds, pageable);
+        } else {
+            results = productJpa.searchWithoutExclude(search, categorySlug, brandSlug, pageable);
+        }
+        
+        return results.stream()
+                .map(this::toPickerItem)
+                .toList();
+    }
+
+    private ProductPickerItem toPickerItem(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String slug = (String) row[1];
+        String name = (String) row[2];
+        String categoryName = (String) row[3];
+        BigDecimal priceMin = row[4] != null ? new BigDecimal(row[4].toString()) : null;
+        BigDecimal priceMax = row[5] != null ? new BigDecimal(row[5].toString()) : null;
+        String thumbnail = (String) row[6];
+        String badge = (String) row[7];
+        
+        return new ProductPickerItem(id, slug, name, categoryName, priceMin, priceMax, thumbnail, badge);
+    }
+
     private Double roundRating(Double rating) {
         if (rating == null) return null;
         return Math.round(rating * 10.0) / 10.0;

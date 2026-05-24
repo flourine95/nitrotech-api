@@ -34,6 +34,21 @@ public class ProductController {
     private final CreateVariantUseCase createVariantUseCase;
     private final UpdateVariantUseCase updateVariantUseCase;
     private final DeleteVariantUseCase deleteVariantUseCase;
+    private final SearchProductsUseCase searchProductsUseCase;
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResult<List<ProductPickerItem>>> search(
+            @Valid @ModelAttribute ProductSearchRequest request
+    ) {
+        List<ProductPickerItem> results = searchProductsUseCase.execute(
+                request.getSearch(),
+                request.getCategory(),
+                request.getBrand(),
+                request.getExcludeId(),
+                request.getLimit()
+        );
+        return ResponseEntity.ok(ApiResult.ok(results));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResult<List<ProductData>>> list(

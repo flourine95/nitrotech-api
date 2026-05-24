@@ -3,6 +3,7 @@ package com.nitrotech.api.infrastructure.persistence.spec;
 import com.nitrotech.api.domain.product.dto.ProductFilter;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -59,7 +60,7 @@ public class ProductSpecification {
             Subquery<Long> subquery = query.subquery(Long.class);
             var variantRoot = subquery.from(ProductVariantEntity.class);
 
-            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(variantRoot.get("productId"), root.get("id")));
             predicates.add(cb.isTrue(variantRoot.get("active")));
             predicates.add(cb.isNull(variantRoot.get("deletedAt")));
@@ -72,7 +73,7 @@ public class ProductSpecification {
             }
 
             subquery.select(variantRoot.get("id"))
-                    .where(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+                    .where(predicates.toArray(new Predicate[0]));
 
             return cb.exists(subquery);
         };
