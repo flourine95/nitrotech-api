@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,7 +113,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 page.getContent().stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
         var brandNames = batchLoadBrandNames(
-                page.getContent().stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
+                page.getContent().stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
         );
         
         return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames));
@@ -180,7 +181,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 orderedProducts.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
         var brandNames = batchLoadBrandNames(
-                orderedProducts.stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
+                orderedProducts.stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
         );
         
         List<ProductData> content = orderedProducts.stream()
@@ -351,7 +352,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             return List.of();
         }
         
-        Object[] priceRange = results.get(0);
+        Object[] priceRange = results.getFirst();
         
         if (priceRange == null || priceRange.length < 2) {
             log.warn("Price range row is invalid: length={}", priceRange == null ? "null" : priceRange.length);
@@ -363,9 +364,6 @@ public class ProductRepositoryImpl implements ProductRepository {
             return List.of();
         }
 
-        BigDecimal minPrice = new BigDecimal(priceRange[0].toString());
-        BigDecimal maxPrice = new BigDecimal(priceRange[1].toString());
-
         BigDecimal[] ranges = {
                 BigDecimal.ZERO,
                 new BigDecimal("1000000"),
@@ -374,7 +372,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 new BigDecimal("10000000")
         };
 
-        List<PriceRangeFacet> facets = new java.util.ArrayList<>();
+        List<PriceRangeFacet> facets = new ArrayList<>();
         
         for (int i = 0; i < ranges.length; i++) {
             BigDecimal rangeMin = ranges[i];
@@ -411,7 +409,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             return 0;
         }
         
-        Object[] row = countResults.get(0);
+        Object[] row = countResults.getFirst();
         if (row == null || row[0] == null) {
             return 0;
         }
@@ -522,10 +520,10 @@ public class ProductRepositoryImpl implements ProductRepository {
                 variants,
                 variants.size(),
                 variants.stream().map(ProductVariantData::price)
-                        .filter(p -> p != null)
+                        .filter(Objects::nonNull)
                         .min(BigDecimal::compareTo).orElse(null),
                 variants.stream().map(ProductVariantData::price)
-                        .filter(p -> p != null)
+                        .filter(Objects::nonNull)
                         .max(BigDecimal::compareTo).orElse(null),
                 badge,
                 rating,
@@ -536,12 +534,12 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private String resolveCategoryName(Long categoryId) {
         if (categoryId == null) return null;
-        return categoryJpa.findById(categoryId).map(c -> c.getName()).orElse(null);
+        return categoryJpa.findById(categoryId).map(CategoryEntity::getName).orElse(null);
     }
 
     private String resolveBrandName(Long brandId) {
         if (brandId == null) return null;
-        return brandJpa.findById(brandId).map(b -> b.getName()).orElse(null);
+        return brandJpa.findById(brandId).map(BrandEntity::getName).orElse(null);
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {

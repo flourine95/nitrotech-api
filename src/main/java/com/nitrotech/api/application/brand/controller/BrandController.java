@@ -11,9 +11,9 @@ import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -41,13 +41,11 @@ public class BrandController {
     @GetMapping
     public ResponseEntity<ApiResult<List<BrandData>>> list(
             @Valid @ModelAttribute BrandListRequest filter,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             @ValidSortFields({"id", "name", "slug", "active", "createdAt", "updatedAt"})
             Pageable pageable
     ) {
-        Pageable pageableWithDefaults = pageable.isPaged() ? pageable
-                : PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
-        var result = getBrandsUseCase.execute(filter.toFilter(), pageableWithDefaults);
+        var result = getBrandsUseCase.execute(filter.toFilter(), pageable);
         return ResponseEntity.ok(ApiResult.paged(result.page(), result.facets()));
     }
 

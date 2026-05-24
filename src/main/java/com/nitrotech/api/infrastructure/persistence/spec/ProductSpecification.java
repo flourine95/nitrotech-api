@@ -46,11 +46,16 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             if (categorySlug == null) return cb.conjunction();
             
-            Join<ProductEntity, CategoryEntity> categoryJoin = root.join("category");
-            return cb.and(
-                    cb.equal(categoryJoin.get("slug"), categorySlug),
-                    cb.isNull(categoryJoin.get("deletedAt"))
-            );
+            Subquery<Long> subquery = query.subquery(Long.class);
+            var categoryRoot = subquery.from(CategoryEntity.class);
+            
+            subquery.select(categoryRoot.get("id"))
+                    .where(cb.and(
+                            cb.equal(categoryRoot.get("slug"), categorySlug),
+                            cb.isNull(categoryRoot.get("deletedAt"))
+                    ));
+            
+            return root.get("categoryId").in(subquery);
         };
     }
 
@@ -58,11 +63,16 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             if (brandSlugs == null || brandSlugs.isEmpty()) return cb.conjunction();
             
-            Join<ProductEntity, BrandEntity> brandJoin = root.join("brand");
-            return cb.and(
-                    brandJoin.get("slug").in(brandSlugs),
-                    cb.isNull(brandJoin.get("deletedAt"))
-            );
+            Subquery<Long> subquery = query.subquery(Long.class);
+            var brandRoot = subquery.from(BrandEntity.class);
+            
+            subquery.select(brandRoot.get("id"))
+                    .where(cb.and(
+                            brandRoot.get("slug").in(brandSlugs),
+                            cb.isNull(brandRoot.get("deletedAt"))
+                    ));
+            
+            return root.get("brandId").in(subquery);
         };
     }
 

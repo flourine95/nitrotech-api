@@ -6,15 +6,18 @@ import com.nitrotech.api.domain.product.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -70,15 +73,21 @@ public class ProductController {
 
     @GetMapping
     public ResponseEntity<ApiResult<List<ProductData>>> list(
-            @Valid @ModelAttribute ProductListRequest filter,
+            @RequestParam(name = "search", required = false) @Size(max = 100, message = "Search query must not exceed 100 characters") String search,
+            @RequestParam(name = "active", required = false) Boolean active,
+            @RequestParam(name = "deleted", required = false) Boolean deleted,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "brand", required = false) List<String> brand,
+            @RequestParam(name = "badge", required = false) String badge,
+            @RequestParam(name = "minPrice", required = false) @PositiveOrZero(message = "Min price must be greater than or equal to 0") BigDecimal minPrice,
+            @RequestParam(name = "maxPrice", required = false) @PositiveOrZero(message = "Max price must be greater than or equal to 0") BigDecimal maxPrice,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
             @ValidSortFields({"id", "name", "slug", "active", "price", "createdAt", "updatedAt"})
             Pageable pageable
     ) {
-        Pageable pageableWithDefaults = pageable.isPaged() ? pageable 
-                : PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
-        
+        ProductFilter filter = new ProductFilter(search, active, deleted, category, brand, minPrice, maxPrice, badge);
         return ResponseEntity.ok(ApiResult.paged(
-                getProductsUseCase.execute(filter.toFilter(), pageableWithDefaults)
+                getProductsUseCase.execute(filter, pageable)
         ));
     }
 
