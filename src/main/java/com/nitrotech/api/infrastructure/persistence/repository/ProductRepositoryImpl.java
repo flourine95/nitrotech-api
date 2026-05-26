@@ -6,6 +6,7 @@ import com.nitrotech.api.infrastructure.persistence.entity.*;
 import com.nitrotech.api.infrastructure.persistence.spec.ProductSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
@@ -13,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Repository
 @RequiredArgsConstructor
 public class ProductRepositoryImpl implements ProductRepository {
@@ -110,10 +113,82 @@ public class ProductRepositoryImpl implements ProductRepository {
                 page.getContent().stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
         var brandNames = batchLoadBrandNames(
-                page.getContent().stream().map(ProductEntity::getBrandId).filter(id -> id != null).distinct().toList()
+                page.getContent().stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
         );
         
         return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames));
+    }
+
+    @Override
+    public Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable) {
+        boolean isAscending = pageable.getSort().stream()
+                .anyMatch(order -> "price".equals(order.getProperty()) && order.isAscending());
+        
+        int limit = pageable.getPageSize();
+        int offset = pageable.getPageNumber() * pageable.getPageSize();
+        
+        List<Long> productIds = isAscending
+                ? productJpa.findProductIdsSortedByPriceAsc(
+                        filter.active(),
+                        filter.search(),
+                        filter.categorySlug(),
+                        filter.brandSlugs(),
+                        filter.minPrice(),
+                        filter.maxPrice(),
+                        filter.badge(),
+                        limit,
+                        offset
+                  )
+                : productJpa.findProductIdsSortedByPriceDesc(
+                        filter.active(),
+                        filter.search(),
+                        filter.categorySlug(),
+                        filter.brandSlugs(),
+                        filter.minPrice(),
+                        filter.maxPrice(),
+                        filter.badge(),
+                        limit,
+                        offset
+                  );
+        
+        if (productIds.isEmpty()) {
+            return Page.empty(pageable);
+        }
+        
+        long total = productJpa.countProductsWithFilters(
+                filter.active(),
+                filter.search(),
+                filter.categorySlug(),
+                filter.brandSlugs(),
+                filter.minPrice(),
+                filter.maxPrice(),
+                filter.badge()
+        );
+        
+        List<ProductEntity> products = productJpa.findAllById(productIds);
+        Map<Long, ProductEntity> productMap = products.stream()
+                .collect(Collectors.toMap(ProductEntity::getId, p -> p));
+        
+        List<ProductEntity> orderedProducts = productIds.stream()
+                .map(productMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+        
+        var imagesMap = batchLoadImages(productIds);
+        var statsMap = batchLoadProductStats(productIds);
+        var reviewStatsMap = batchLoadReviewStats(productIds);
+        var categoryNames = batchLoadCategoryNames(
+                orderedProducts.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
+        var brandNames = batchLoadBrandNames(
+                orderedProducts.stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
+        );
+        
+        List<ProductData> content = orderedProducts.stream()
+                .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames))
+                .toList();
+        
+        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
     }
 
     @Override
@@ -190,6 +265,169 @@ public class ProductRepositoryImpl implements ProductRepository {
             e.setDeletedAt(LocalDateTime.now());
             variantJpa.save(e);
         });
+    }
+
+    @Override
+    public List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable) {
+        List<Object[]> results;
+        
+        if (excludeIds != null && !excludeIds.isEmpty()) {
+            results = productJpa.searchWithExclude(search, categorySlug, brandSlug, excludeIds, pageable);
+        } else {
+            results = productJpa.searchWithoutExclude(search, categorySlug, brandSlug, pageable);
+        }
+        
+        return results.stream()
+                .map(this::toPickerItem)
+                .toList();
+    }
+
+    @Override
+    public ProductFacets getFacets(ProductFilter filter) {
+        String categorySlug = filter.categorySlug();
+        List<String> brandSlugs = filter.brandSlugs() != null && !filter.brandSlugs().isEmpty() 
+                ? filter.brandSlugs() : null;
+
+        List<CategoryFacet> categories = categorySlug == null 
+                ? (brandSlugs == null 
+                    ? productJpa.findCategoryFacetsWithoutBrands(
+                            filter.search(), 
+                            filter.minPrice(), 
+                            filter.maxPrice()
+                      )
+                    : productJpa.findCategoryFacetsWithBrands(
+                            filter.search(), 
+                            brandSlugs, 
+                            filter.minPrice(), 
+                            filter.maxPrice()
+                      )
+                  ).stream().map(this::toCategoryFacet).toList()
+                : List.of();
+
+        List<BrandFacet> brands = productJpa.findBrandFacets(
+                filter.search(), 
+                categorySlug, 
+                filter.minPrice(), 
+                filter.maxPrice()
+        ).stream().map(this::toBrandFacet).toList();
+
+        List<PriceRangeFacet> priceRanges = buildPriceRanges(
+                filter.search(), 
+                categorySlug, 
+                brandSlugs
+        );
+
+        return new ProductFacets(categories, brands, priceRanges);
+    }
+
+    private CategoryFacet toCategoryFacet(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String name = (String) row[1];
+        String slug = (String) row[2];
+        Integer count = row[3] instanceof Number number ? number.intValue() : 0;
+        return new CategoryFacet(id, name, slug, count);
+    }
+
+    private BrandFacet toBrandFacet(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String name = (String) row[1];
+        String slug = (String) row[2];
+        Integer count = row[3] instanceof Number number ? number.intValue() : 0;
+        return new BrandFacet(id, name, slug, count);
+    }
+
+    private List<PriceRangeFacet> buildPriceRanges(String search, String categorySlug, List<String> brandSlugs) {
+        List<Object[]> results;
+        try {
+            results = brandSlugs == null
+                    ? productJpa.findPriceRangeWithoutBrands(search, categorySlug)
+                    : productJpa.findPriceRangeWithBrands(search, categorySlug, brandSlugs);
+        } catch (Exception e) {
+            log.error("Error fetching price range", e);
+            return List.of();
+        }
+        
+        if (results == null || results.isEmpty()) {
+            log.warn("Price range query returned empty");
+            return List.of();
+        }
+        
+        Object[] priceRange = results.getFirst();
+        
+        if (priceRange == null || priceRange.length < 2) {
+            log.warn("Price range row is invalid: length={}", priceRange == null ? "null" : priceRange.length);
+            return List.of();
+        }
+        
+        if (priceRange[0] == null || priceRange[1] == null) {
+            log.warn("Price range contains null values: min={}, max={}", priceRange[0], priceRange[1]);
+            return List.of();
+        }
+
+        BigDecimal[] ranges = {
+                BigDecimal.ZERO,
+                new BigDecimal("1000000"),
+                new BigDecimal("3000000"),
+                new BigDecimal("5000000"),
+                new BigDecimal("10000000")
+        };
+
+        List<PriceRangeFacet> facets = new ArrayList<>();
+        
+        for (int i = 0; i < ranges.length; i++) {
+            BigDecimal rangeMin = ranges[i];
+            BigDecimal rangeMax = i < ranges.length - 1 ? ranges[i + 1] : null;
+            
+            int count = countProductsInPriceRange(
+                    search, 
+                    categorySlug, 
+                    brandSlugs, 
+                    rangeMin, 
+                    rangeMax
+            );
+            
+            if (count > 0) {
+                facets.add(new PriceRangeFacet(rangeMin, rangeMax, count));
+            }
+        }
+        
+        return facets;
+    }
+
+    private int countProductsInPriceRange(
+            String search, 
+            String categorySlug, 
+            List<String> brandSlugs,
+            BigDecimal minPrice,
+            BigDecimal maxPrice
+    ) {
+        List<Object[]> countResults = brandSlugs == null
+                ? productJpa.countProductsInPriceRangeWithoutBrands(search, categorySlug, minPrice, maxPrice)
+                : productJpa.countProductsInPriceRangeWithBrands(search, categorySlug, brandSlugs, minPrice, maxPrice);
+        
+        if (countResults == null || countResults.isEmpty()) {
+            return 0;
+        }
+        
+        Object[] row = countResults.getFirst();
+        if (row == null || row[0] == null) {
+            return 0;
+        }
+        
+        return ((Number) row[0]).intValue();
+    }
+
+    private ProductPickerItem toPickerItem(Object[] row) {
+        Long id = row[0] instanceof Number number ? number.longValue() : null;
+        String slug = (String) row[1];
+        String name = (String) row[2];
+        String categoryName = (String) row[3];
+        BigDecimal priceMin = row[4] != null ? new BigDecimal(row[4].toString()) : null;
+        BigDecimal priceMax = row[5] != null ? new BigDecimal(row[5].toString()) : null;
+        String thumbnail = (String) row[6];
+        String badge = (String) row[7];
+        
+        return new ProductPickerItem(id, slug, name, categoryName, priceMin, priceMax, thumbnail, badge);
     }
 
     private Double roundRating(Double rating) {
@@ -282,10 +520,10 @@ public class ProductRepositoryImpl implements ProductRepository {
                 variants,
                 variants.size(),
                 variants.stream().map(ProductVariantData::price)
-                        .filter(p -> p != null)
+                        .filter(Objects::nonNull)
                         .min(BigDecimal::compareTo).orElse(null),
                 variants.stream().map(ProductVariantData::price)
-                        .filter(p -> p != null)
+                        .filter(Objects::nonNull)
                         .max(BigDecimal::compareTo).orElse(null),
                 badge,
                 rating,
@@ -296,12 +534,12 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     private String resolveCategoryName(Long categoryId) {
         if (categoryId == null) return null;
-        return categoryJpa.findById(categoryId).map(c -> c.getName()).orElse(null);
+        return categoryJpa.findById(categoryId).map(CategoryEntity::getName).orElse(null);
     }
 
     private String resolveBrandName(Long brandId) {
         if (brandId == null) return null;
-        return brandJpa.findById(brandId).map(b -> b.getName()).orElse(null);
+        return brandJpa.findById(brandId).map(BrandEntity::getName).orElse(null);
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {

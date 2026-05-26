@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -91,4 +92,343 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
                         row -> (BigDecimal) row[1]
                 ));
     }
+
+    /**
+     * Search products for picker (lightweight query)
+     * Returns: [id, slug, name, categoryName, priceMin, priceMax, thumbnail, manualBadge]
+     */
+    @Query(value = """
+        SELECT 
+            p.id,
+            p.slug,
+            p.name,
+            c.name as category_name,
+            MIN(v.price) as price_min,
+            MAX(v.price) as price_max,
+            p.thumbnail,
+            p.manual_badge
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:brandSlug IS NULL OR b.slug = :brandSlug)
+        GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
+        ORDER BY p.name ASC
+        """, nativeQuery = true)
+    List<Object[]> searchWithoutExclude(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlug") String brandSlug,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT 
+            p.id,
+            p.slug,
+            p.name,
+            c.name as category_name,
+            MIN(v.price) as price_min,
+            MAX(v.price) as price_max,
+            p.thumbnail,
+            p.manual_badge
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:brandSlug IS NULL OR b.slug = :brandSlug)
+        AND p.id NOT IN :excludeIds
+        GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
+        ORDER BY p.name ASC
+        """, nativeQuery = true)
+    List<Object[]> searchWithExclude(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlug") String brandSlug,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    @Query(value = """
+        SELECT 
+            c.id,
+            c.name,
+            c.slug,
+            COUNT(DISTINCT p.id) as product_count
+        FROM categories c
+        INNER JOIN products p ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE c.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:minPrice IS NULL OR v.price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
+        GROUP BY c.id, c.name, c.slug
+        HAVING COUNT(DISTINCT p.id) > 0
+        ORDER BY c.name ASC
+        """, nativeQuery = true)
+    List<Object[]> findCategoryFacetsWithoutBrands(
+            @Param("search") String search,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
+
+    @Query(value = """
+        SELECT 
+            c.id,
+            c.name,
+            c.slug,
+            COUNT(DISTINCT p.id) as product_count
+        FROM categories c
+        INNER JOIN products p ON p.category_id = c.id
+        INNER JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE c.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND b.slug IN :brandSlugs
+        AND (:minPrice IS NULL OR v.price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
+        GROUP BY c.id, c.name, c.slug
+        HAVING COUNT(DISTINCT p.id) > 0
+        ORDER BY c.name ASC
+        """, nativeQuery = true)
+    List<Object[]> findCategoryFacetsWithBrands(
+            @Param("search") String search,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
+
+    @Query(value = """
+        SELECT 
+            b.id,
+            b.name,
+            b.slug,
+            COUNT(DISTINCT p.id) as product_count
+        FROM brands b
+        INNER JOIN products p ON p.brand_id = b.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE b.deleted_at IS NULL
+        AND p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:minPrice IS NULL OR v.price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
+        GROUP BY b.id, b.name, b.slug
+        HAVING COUNT(DISTINCT p.id) > 0
+        ORDER BY b.name ASC
+        """, nativeQuery = true)
+    List<Object[]> findBrandFacets(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
+
+    @Query(value = """
+        SELECT 
+            MIN(v.price) as min_price,
+            MAX(v.price) as max_price
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        INNER JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        """, nativeQuery = true)
+    List<Object[]> findPriceRangeWithoutBrands(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug
+    );
+
+    @Query(value = """
+        SELECT 
+            MIN(v.price) as min_price,
+            MAX(v.price) as max_price
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        INNER JOIN brands b ON p.brand_id = b.id
+        INNER JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND b.slug IN :brandSlugs
+        """, nativeQuery = true)
+    List<Object[]> findPriceRangeWithBrands(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs
+    );
+
+    @Query(value = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        INNER JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND v.price >= :minPrice
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
+        """, nativeQuery = true)
+    List<Object[]> countProductsInPriceRangeWithoutBrands(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
+
+    @Query(value = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        INNER JOIN brands b ON p.brand_id = b.id
+        INNER JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND p.active = true
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND b.slug IN :brandSlugs
+        AND v.price >= :minPrice
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
+        """, nativeQuery = true)
+    List<Object[]> countProductsInPriceRangeWithBrands(
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice
+    );
+
+    @Query(value = """
+        SELECT p.id
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN (
+            SELECT product_id, MIN(price) as min_price
+            FROM product_variants
+            WHERE deleted_at IS NULL AND active = true
+            GROUP BY product_id
+        ) v ON v.product_id = p.id
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.min_price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        ORDER BY v.min_price ASC NULLS LAST
+        LIMIT :limit OFFSET :offset
+        """, nativeQuery = true)
+    List<Long> findProductIdsSortedByPriceAsc(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+        SELECT p.id
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN (
+            SELECT product_id, MIN(price) as min_price
+            FROM product_variants
+            WHERE deleted_at IS NULL AND active = true
+            GROUP BY product_id
+        ) v ON v.product_id = p.id
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.min_price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        ORDER BY v.min_price DESC NULLS LAST
+        LIMIT :limit OFFSET :offset
+        """, nativeQuery = true)
+    List<Long> findProductIdsSortedByPriceDesc(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    @Query(value = """
+        SELECT COUNT(DISTINCT p.id)
+        FROM products p
+        LEFT JOIN categories c ON p.category_id = c.id
+        LEFT JOIN brands b ON p.brand_id = b.id
+        LEFT JOIN product_variants v ON v.product_id = p.id 
+            AND v.deleted_at IS NULL 
+            AND v.active = true
+        WHERE p.deleted_at IS NULL
+        AND (:active IS NULL OR p.active = :active)
+        AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
+        AND (:minPrice IS NULL OR v.price >= :minPrice)
+        AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:badge IS NULL OR p.manual_badge = :badge)
+        """, nativeQuery = true)
+    long countProductsWithFilters(
+            @Param("active") Boolean active,
+            @Param("search") String search,
+            @Param("categorySlug") String categorySlug,
+            @Param("brandSlugs") List<String> brandSlugs,
+            @Param("minPrice") BigDecimal minPrice,
+            @Param("maxPrice") BigDecimal maxPrice,
+            @Param("badge") String badge
+    );
 }

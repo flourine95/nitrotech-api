@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.product.dto.*;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
+import java.util.List;
 import java.util.Optional;
 
 public interface ProductRepository {
@@ -12,6 +13,7 @@ public interface ProductRepository {
     Optional<ProductData> findById(Long id);
     Optional<ProductData> findBySlug(String slug);
     Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
+    Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
@@ -19,8 +21,9 @@ public interface ProductRepository {
     void softDelete(Long id);
     void restore(Long id);
     void hardDelete(Long id);
+    List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable);
 
-    // variants
+    ProductFacets getFacets(ProductFilter filter);
     ProductVariantData createVariant(Long productId, CreateVariantCommand command);
     ProductVariantData updateVariant(UpdateVariantCommand command);
     Optional<ProductVariantData> findVariantById(Long id);

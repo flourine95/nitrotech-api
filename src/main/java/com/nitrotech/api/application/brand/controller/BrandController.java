@@ -7,26 +7,25 @@ import com.nitrotech.api.application.brand.request.CreateBrandRequest;
 import com.nitrotech.api.application.brand.request.UpdateBrandRequest;
 import com.nitrotech.api.domain.brand.dto.*;
 import com.nitrotech.api.domain.brand.usecase.*;
-import com.nitrotech.api.shared.request.PaginationRequest;
 import com.nitrotech.api.shared.response.ApiResult;
-import com.nitrotech.api.shared.util.SortUtils;
+import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/brands")
 @RequiredArgsConstructor
+@Validated
 public class BrandController {
-
-    private static final Set<String> SORTABLE_FIELDS =
-            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetBrandsUseCase getBrandsUseCase;
     private final GetBrandUseCase getBrandUseCase;
@@ -42,15 +41,10 @@ public class BrandController {
     @GetMapping
     public ResponseEntity<ApiResult<List<BrandData>>> list(
             @Valid @ModelAttribute BrandListRequest filter,
-            @Valid @ModelAttribute PaginationRequest pagination
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ValidSortFields({"id", "name", "slug", "active", "createdAt", "updatedAt"})
+            Pageable pageable
     ) {
-        Pageable pageable = SortUtils.toPageable(
-                pagination.getPage(),
-                pagination.getSize(),
-                pagination.getSort(),
-                SORTABLE_FIELDS,
-                "createdAt"
-        );
         var result = getBrandsUseCase.execute(filter.toFilter(), pageable);
         return ResponseEntity.ok(ApiResult.paged(result.page(), result.facets()));
     }

@@ -3,26 +3,28 @@ package com.nitrotech.api.application.product.controller;
 import com.nitrotech.api.application.product.request.*;
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.usecase.*;
-import com.nitrotech.api.shared.request.PaginationRequest;
 import com.nitrotech.api.shared.response.ApiResult;
-import com.nitrotech.api.shared.util.SortUtils;
+import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/api/products")
 @RequiredArgsConstructor
+@Validated
 public class ProductController {
-
-    private static final Set<String> SORTABLE_FIELDS =
-            Set.of("id", "name", "slug", "active", "createdAt", "updatedAt");
 
     private final GetProductsUseCase getProductsUseCase;
     private final GetProductUseCase getProductUseCase;
@@ -34,21 +36,58 @@ public class ProductController {
     private final CreateVariantUseCase createVariantUseCase;
     private final UpdateVariantUseCase updateVariantUseCase;
     private final DeleteVariantUseCase deleteVariantUseCase;
+    private final SearchProductsUseCase searchProductsUseCase;
+    private final GetProductFacetsUseCase getProductFacetsUseCase;
+
+    @GetMapping("/facets")
+    public ResponseEntity<ApiResult<ProductFacets>> getFacets(
+            @Valid @ModelAttribute ProductFacetsRequest request
+    ) {
+        ProductFilter filter = new ProductFilter(
+                request.getSearch(),
+                request.getActive(),
+                null,
+                request.getCategory(),
+                request.getBrand(),
+                request.getMinPrice(),
+                request.getMaxPrice(),
+                request.getBadge()
+        );
+        ProductFacets facets = getProductFacetsUseCase.execute(filter);
+        return ResponseEntity.ok(ApiResult.ok(facets));
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<ApiResult<List<ProductPickerItem>>> search(
+            @Valid @ModelAttribute ProductSearchRequest request
+    ) {
+        List<ProductPickerItem> results = searchProductsUseCase.execute(
+                request.getSearch(),
+                request.getCategory(),
+                request.getBrand(),
+                request.getExcludeId(),
+                request.getLimit()
+        );
+        return ResponseEntity.ok(ApiResult.ok(results));
+    }
 
     @GetMapping
     public ResponseEntity<ApiResult<List<ProductData>>> list(
-            @Valid @ModelAttribute ProductListRequest filter,
-            @Valid @ModelAttribute PaginationRequest pagination
+            @RequestParam(name = "search", required = false) @Size(max = 100, message = "Search query must not exceed 100 characters") String search,
+            @RequestParam(name = "active", required = false) Boolean active,
+            @RequestParam(name = "deleted", required = false) Boolean deleted,
+            @RequestParam(name = "category", required = false) String category,
+            @RequestParam(name = "brand", required = false) List<String> brand,
+            @RequestParam(name = "badge", required = false) String badge,
+            @RequestParam(name = "minPrice", required = false) @PositiveOrZero(message = "Min price must be greater than or equal to 0") BigDecimal minPrice,
+            @RequestParam(name = "maxPrice", required = false) @PositiveOrZero(message = "Max price must be greater than or equal to 0") BigDecimal maxPrice,
+            @PageableDefault(size = 20, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ValidSortFields({"id", "name", "slug", "active", "price", "createdAt", "updatedAt"})
+            Pageable pageable
     ) {
-        Pageable pageable = SortUtils.toPageable(
-                pagination.getPage(),
-                pagination.getSize(),
-                pagination.getSort(),
-                SORTABLE_FIELDS,
-                "createdAt"
-        );
+        ProductFilter filter = new ProductFilter(search, active, deleted, category, brand, minPrice, maxPrice, badge);
         return ResponseEntity.ok(ApiResult.paged(
-                getProductsUseCase.execute(filter.toFilter(), pageable)
+                getProductsUseCase.execute(filter, pageable)
         ));
     }
 

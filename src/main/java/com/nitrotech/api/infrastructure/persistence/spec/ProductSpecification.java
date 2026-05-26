@@ -1,8 +1,12 @@
 package com.nitrotech.api.infrastructure.persistence.spec;
 
 import com.nitrotech.api.domain.product.dto.ProductFilter;
+import com.nitrotech.api.infrastructure.persistence.entity.BrandEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
 import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -16,10 +20,11 @@ public class ProductSpecification {
         return Specification
                 .where(deleted(filter.deleted()))
                 .and(active(filter.active()))
-                .and(categoryIds(filter.categoryIds()))
-                .and(brandIds(filter.brandIds()))
+                .and(categorySlug(filter.categorySlug()))
+                .and(brandSlugs(filter.brandSlugs()))
                 .and(priceRange(filter.minPrice(), filter.maxPrice()))
-                .and(search(filter.search()));
+                .and(search(filter.search()))
+                .and(badge(filter.badge()));
     }
 
     private static Specification<ProductEntity> deleted(Boolean deleted) {
@@ -37,17 +42,37 @@ public class ProductSpecification {
         };
     }
 
-    private static Specification<ProductEntity> categoryIds(List<Long> categoryIds) {
+    private static Specification<ProductEntity> categorySlug(String categorySlug) {
         return (root, query, cb) -> {
-            if (categoryIds == null || categoryIds.isEmpty()) return cb.conjunction();
-            return root.get("categoryId").in(categoryIds);
+            if (categorySlug == null) return cb.conjunction();
+            
+            Subquery<Long> subquery = query.subquery(Long.class);
+            var categoryRoot = subquery.from(CategoryEntity.class);
+            
+            subquery.select(categoryRoot.get("id"))
+                    .where(cb.and(
+                            cb.equal(categoryRoot.get("slug"), categorySlug),
+                            cb.isNull(categoryRoot.get("deletedAt"))
+                    ));
+            
+            return root.get("categoryId").in(subquery);
         };
     }
 
-    private static Specification<ProductEntity> brandIds(List<Long> brandIds) {
+    private static Specification<ProductEntity> brandSlugs(List<String> brandSlugs) {
         return (root, query, cb) -> {
-            if (brandIds == null || brandIds.isEmpty()) return cb.conjunction();
-            return root.get("brandId").in(brandIds);
+            if (brandSlugs == null || brandSlugs.isEmpty()) return cb.conjunction();
+            
+            Subquery<Long> subquery = query.subquery(Long.class);
+            var brandRoot = subquery.from(BrandEntity.class);
+            
+            subquery.select(brandRoot.get("id"))
+                    .where(cb.and(
+                            brandRoot.get("slug").in(brandSlugs),
+                            cb.isNull(brandRoot.get("deletedAt"))
+                    ));
+            
+            return root.get("brandId").in(subquery);
         };
     }
 
@@ -55,11 +80,10 @@ public class ProductSpecification {
         return (root, query, cb) -> {
             if (minPrice == null && maxPrice == null) return cb.conjunction();
 
-            // Subquery to check if product has any variant within price range
             Subquery<Long> subquery = query.subquery(Long.class);
             var variantRoot = subquery.from(ProductVariantEntity.class);
 
-            List<jakarta.persistence.criteria.Predicate> predicates = new ArrayList<>();
+            List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.equal(variantRoot.get("productId"), root.get("id")));
             predicates.add(cb.isTrue(variantRoot.get("active")));
             predicates.add(cb.isNull(variantRoot.get("deletedAt")));
@@ -68,11 +92,11 @@ public class ProductSpecification {
                 predicates.add(cb.greaterThanOrEqualTo(variantRoot.get("price"), minPrice));
             }
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(variantRoot.get("price"), maxPrice));
+                predicates.add(cb.lessThan(variantRoot.get("price"), maxPrice));
             }
 
             subquery.select(variantRoot.get("id"))
-                    .where(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
+                    .where(predicates.toArray(new Predicate[0]));
 
             return cb.exists(subquery);
         };
@@ -88,6 +112,13 @@ public class ProductSpecification {
                     cb.like(cb.lower(root.get("name")), pattern),
                     cb.like(cb.lower(root.get("slug")), pattern)
             );
+        };
+    }
+
+    private static Specification<ProductEntity> badge(String badge) {
+        return (root, query, cb) -> {
+            if (badge == null || badge.isBlank()) return cb.conjunction();
+            return cb.equal(root.get("manualBadge"), badge);
         };
     }
 }
