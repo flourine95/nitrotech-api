@@ -92,7 +92,7 @@ public class ProductSpecification {
                 predicates.add(cb.greaterThanOrEqualTo(variantRoot.get("price"), minPrice));
             }
             if (maxPrice != null) {
-                predicates.add(cb.lessThanOrEqualTo(variantRoot.get("price"), maxPrice));
+                predicates.add(cb.lessThan(variantRoot.get("price"), maxPrice));
             }
 
             subquery.select(variantRoot.get("id"))

@@ -178,7 +178,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND p.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:minPrice IS NULL OR v.price >= :minPrice)
-        AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
         GROUP BY c.id, c.name, c.slug
         HAVING COUNT(DISTINCT p.id) > 0
         ORDER BY c.name ASC
@@ -207,7 +207,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND b.slug IN :brandSlugs
         AND (:minPrice IS NULL OR v.price >= :minPrice)
-        AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
         GROUP BY c.id, c.name, c.slug
         HAVING COUNT(DISTINCT p.id) > 0
         ORDER BY c.name ASC
@@ -237,7 +237,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (:minPrice IS NULL OR v.price >= :minPrice)
-        AND (:maxPrice IS NULL OR v.price <= :maxPrice)
+        AND (:maxPrice IS NULL OR v.price < :maxPrice)
         GROUP BY b.id, b.name, b.slug
         HAVING COUNT(DISTINCT p.id) > 0
         ORDER BY b.name ASC
