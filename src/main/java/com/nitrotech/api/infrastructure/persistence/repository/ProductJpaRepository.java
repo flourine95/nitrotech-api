@@ -24,6 +24,13 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NULL AND p.id = :id")
     Optional<ProductEntity> findActiveById(@Param("id") Long id);
 
+    // JOIN FETCH for single product with relationships
+    @Query("SELECT p FROM ProductEntity p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE p.id = :id AND p.deletedAt IS NULL")
+    Optional<ProductEntity> findActiveByIdWithRelations(@Param("id") Long id);
+
+    @Query("SELECT p FROM ProductEntity p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE p.slug = :slug AND p.deletedAt IS NULL")
+    Optional<ProductEntity> findBySlugWithRelations(@Param("slug") String slug);
+
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NOT NULL AND p.id = :id")
     Optional<ProductEntity> findDeletedById(@Param("id") Long id);
 

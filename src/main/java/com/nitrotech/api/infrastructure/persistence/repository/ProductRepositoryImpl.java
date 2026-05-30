@@ -8,6 +8,7 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -89,12 +90,12 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<ProductData> findById(Long id) {
-        return productJpa.findActiveById(id).map(this::toDetailData);
+        return productJpa.findActiveByIdWithRelations(id).map(this::toDetailData);
     }
 
     @Override
     public Optional<ProductData> findBySlug(String slug) {
-        return productJpa.findBySlugAndDeletedAtIsNull(slug).map(this::toDetailData);
+        return productJpa.findBySlugWithRelations(slug).map(this::toDetailData);
     }
 
     @Override
@@ -188,7 +189,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames))
                 .toList();
         
-        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Override
@@ -512,9 +513,13 @@ public class ProductRepositoryImpl implements ProductRepository {
         Double rating = reviewStats != null ? reviewStats.rating() : null;
         Integer reviewCount = reviewStats != null ? reviewStats.reviewCount() : null;
         
+        // Use relationships for category/brand
+        String categoryName = e.getCategory() != null ? e.getCategory().getName() : null;
+        String brandName = e.getBrand() != null ? e.getBrand().getName() : null;
+        
         return new ProductData(
-                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
-                e.getBrandId(), resolveBrandName(e.getBrandId()),
+                e.getId(), e.getCategoryId(), categoryName,
+                e.getBrandId(), brandName,
                 e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
                 variants,
