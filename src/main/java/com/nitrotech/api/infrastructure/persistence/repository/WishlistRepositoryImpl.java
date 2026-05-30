@@ -4,21 +4,17 @@ import com.nitrotech.api.domain.wishlist.dto.WishlistItemData;
 import com.nitrotech.api.domain.wishlist.repository.WishlistRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.WishlistEntity;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Repository
+@RequiredArgsConstructor
 public class WishlistRepositoryImpl implements WishlistRepository {
 
     private final WishlistJpaRepository jpa;
-    private final ProductJpaRepository productJpa;
-
-    public WishlistRepositoryImpl(WishlistJpaRepository jpa, ProductJpaRepository productJpa) {
-        this.jpa = jpa;
-        this.productJpa = productJpa;
-    }
 
     @Override
     public void add(Long userId, Long productId) {
@@ -36,16 +32,20 @@ public class WishlistRepositoryImpl implements WishlistRepository {
 
     @Override
     public List<WishlistItemData> findByUserId(Long userId) {
-        return jpa.findByUserId(userId).stream().map(w -> {
-            ProductEntity product = productJpa.findById(w.getProductId()).orElse(null);
-            return new WishlistItemData(
-                    w.getProductId(),
-                    product != null ? product.getName() : null,
-                    product != null ? product.getSlug() : null,
-                    product != null ? product.getThumbnail() : null,
-                    w.getCreatedAt()
-            );
-        }).toList();
+        return jpa.findByUserId(userId).stream()
+                .map(this::toWishlistItemData)
+                .toList();
+    }
+    
+    private WishlistItemData toWishlistItemData(WishlistEntity entity) {
+        ProductEntity product = entity.getProduct();
+        return new WishlistItemData(
+                entity.getProductId(),
+                product != null ? product.getName() : null,
+                product != null ? product.getSlug() : null,
+                product != null ? product.getThumbnail() : null,
+                entity.getCreatedAt()
+        );
     }
 
     @Override
