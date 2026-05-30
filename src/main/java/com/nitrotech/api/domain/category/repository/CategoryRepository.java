@@ -18,6 +18,8 @@ public interface CategoryRepository {
     CategoryData update(UpdateCategoryCommand command);
     Optional<CategoryData> findById(Long id);
     Optional<CategoryData> findBySlug(String slug);
+    Optional<CategoryData> findVisibleById(Long id);
+    Optional<CategoryData> findVisibleBySlug(String slug);
     Optional<CategoryData> findDeletedById(Long id);
     Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable);
     List<CategoryData> findTree(Boolean active);

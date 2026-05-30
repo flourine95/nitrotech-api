@@ -27,6 +27,11 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 
     Optional<CategoryEntity> findBySlugAndDeletedAtIsNull(String slug);
 
+    @Query("SELECT c FROM CategoryEntity c WHERE c.id = :id AND c.active = true AND c.deletedAt IS NULL")
+    Optional<CategoryEntity> findVisibleById(@Param("id") Long id);
+
+    Optional<CategoryEntity> findBySlugAndActiveTrueAndDeletedAtIsNull(String slug);
+
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")
     boolean existsActiveById(@Param("id") Long id);
 

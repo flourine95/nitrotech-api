@@ -69,6 +69,16 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
+    public Optional<CategoryData> findVisibleById(Long id) {
+        return jpa.findVisibleById(id).map(this::toDataForDetail);
+    }
+
+    @Override
+    public Optional<CategoryData> findVisibleBySlug(String slug) {
+        return jpa.findBySlugAndActiveTrueAndDeletedAtIsNull(slug).map(this::toDataForDetail);
+    }
+
+    @Override
     public Optional<CategoryData> findDeletedById(Long id) {
         int productCount = jpa.countProductsByCategoryId(id);
         return jpa.findDeletedById(id).map(e -> toDataForDeleted(e, productCount));
