@@ -97,7 +97,7 @@ public class OrderDataSeeder implements CommandLineRunner {
             BigDecimal subtotal = unitPrice.multiply(BigDecimal.valueOf(quantity));
 
             OrderItemEntity item = new OrderItemEntity();
-            item.setOrderId(savedOrder.getId());
+            item.setOrder(savedOrder);
             item.setVariantId(variantId);
             item.setName("Product Item " + i);
             item.setSku("SKU-" + index + "-" + i);

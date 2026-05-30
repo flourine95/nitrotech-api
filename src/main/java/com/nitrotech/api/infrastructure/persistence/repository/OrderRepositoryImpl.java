@@ -40,7 +40,7 @@ public class OrderRepositoryImpl implements OrderRepository {
 
         data.items().forEach(item -> {
             OrderItemEntity itemEntity = new OrderItemEntity();
-            itemEntity.setOrderId(saved.getId());
+            itemEntity.setOrder(saved);
             itemEntity.setVariantId(item.variantId());
             itemEntity.setName(item.name());
             itemEntity.setSku(item.sku());
@@ -107,7 +107,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     private OrderData toData(OrderEntity e) {
-        List<OrderItemData> items = itemJpa.findByOrderId(e.getId()).stream()
+        List<OrderItemData> items = itemJpa.findByOrder_Id(e.getId()).stream()
                 .map(i -> new OrderItemData(i.getId(), i.getVariantId(), i.getName(),
                         i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal()))
                 .toList();
