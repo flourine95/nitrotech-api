@@ -59,6 +59,16 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
+    public Optional<BrandData> findVisibleById(Long id) {
+        return jpa.findVisibleById(id).map(this::toData);
+    }
+
+    @Override
+    public Optional<BrandData> findVisibleBySlug(String slug) {
+        return jpa.findBySlugAndActiveTrueAndDeletedAtIsNull(slug).map(this::toData);
+    }
+
+    @Override
     public Optional<BrandData> findDeletedById(Long id) {
         return jpa.findDeletedById(id).map(this::toData);
     }
