@@ -18,10 +18,10 @@ public class RestoreCategoryUseCase {
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
                         "Deleted category not found"));
 
-        // Check slug conflict với active records
-        if (categoryRepository.existsActiveBySlugAndIdNot(category.slug(), id)) {
+        // Check slug conflict với records chưa bị xóa
+        if (categoryRepository.existsNotDeletedBySlugAndIdNot(category.slug(), id)) {
             throw new ConflictException("CATEGORY_SLUG_CONFLICT",
-                    "Cannot restore: slug '" + category.slug() + "' is already used by another active category");
+                    "Cannot restore: slug '" + category.slug() + "' is already used by another category");
         }
 
         categoryRepository.restore(id);

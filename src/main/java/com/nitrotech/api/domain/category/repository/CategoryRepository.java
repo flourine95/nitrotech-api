@@ -25,9 +25,9 @@ public interface CategoryRepository {
     List<CategoryData> findTree(Boolean active);
     List<CategoryData> findDeleted();
     boolean existsById(Long id);
-    boolean hasActiveChildren(Long id);
+    boolean hasNotDeletedChildren(Long id);
     boolean hasAnyChildren(Long id);
-    boolean existsActiveBySlugAndIdNot(String slug, Long excludeId);
+    boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
     boolean isDescendantOf(Long potentialDescendantId, Long ancestorId);

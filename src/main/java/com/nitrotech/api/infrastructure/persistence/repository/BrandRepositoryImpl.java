@@ -38,7 +38,7 @@ public class BrandRepositoryImpl implements BrandRepository {
 
     @Override
     public BrandData update(UpdateBrandCommand command) {
-        BrandEntity entity = jpa.findActiveById(command.id())
+        BrandEntity entity = jpa.findNotDeletedById(command.id())
                 .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
         if (command.name() != null) entity.setName(command.name());
         if (command.slug() != null) entity.setSlug(command.slug());
@@ -50,7 +50,7 @@ public class BrandRepositoryImpl implements BrandRepository {
 
     @Override
     public Optional<BrandData> findById(Long id) {
-        return jpa.findActiveById(id).map(this::toData);
+        return jpa.findNotDeletedById(id).map(this::toData);
     }
 
     @Override
@@ -96,22 +96,22 @@ public class BrandRepositoryImpl implements BrandRepository {
 
     @Override
     public boolean existsById(Long id) {
-        return jpa.existsActiveById(id);
+        return jpa.existsNotDeletedById(id);
     }
 
     @Override
     public boolean existsBySlug(String slug) {
-        return jpa.existsActiveBySlug(slug);
+        return jpa.existsNotDeletedBySlug(slug);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, Long id) {
-        return jpa.existsActiveBySlugAndIdNot(slug, id);
+        return jpa.existsNotDeletedBySlugAndIdNot(slug, id);
     }
 
     @Override
     public void softDelete(Long id) {
-        BrandEntity entity = jpa.findActiveById(id)
+        BrandEntity entity = jpa.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
         entity.setDeletedAt(LocalDateTime.now());
         jpa.save(entity);
@@ -133,12 +133,12 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     @Transactional
     public List<Long> bulkSoftDelete(List<Long> ids) {
-        List<Long> activeIds = jpa.findAllActiveByIds(ids).stream()
+        List<Long> notDeletedIds = jpa.findAllNotDeletedByIds(ids).stream()
                 .map(BrandEntity::getId).toList();
-        if (!activeIds.isEmpty()) {
-            jpa.bulkSoftDelete(activeIds, LocalDateTime.now());
+        if (!notDeletedIds.isEmpty()) {
+            jpa.bulkSoftDelete(notDeletedIds, LocalDateTime.now());
         }
-        return activeIds;
+        return notDeletedIds;
     }
 
     @Override

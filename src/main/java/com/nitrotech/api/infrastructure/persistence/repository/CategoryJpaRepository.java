@@ -15,15 +15,15 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
         JpaSpecificationExecutor<CategoryEntity> {
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.slug = :slug AND c.deletedAt IS NULL")
-    boolean existsActiveBySlug(@Param("slug") String slug);
+    boolean existsNotDeletedBySlug(@Param("slug") String slug);
     @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) AND ((:parentId IS NULL AND c.parentId IS NULL) OR c.parentId = :parentId) ORDER BY c.sortOrder ASC, c.id ASC")
-    List<CategoryEntity> findAllActive(@Param("active") Boolean active, @Param("parentId") Long parentId);
+    List<CategoryEntity> findAllNotDeleted(@Param("active") Boolean active, @Param("parentId") Long parentId);
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.deletedAt IS NULL AND (:active IS NULL OR c.active = :active) ORDER BY c.parentId NULLS FIRST, c.sortOrder ASC, c.name ASC")
     List<CategoryEntity> findAllForTree(@Param("active") Boolean active);
 
     @Query("SELECT c FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")
-    Optional<CategoryEntity> findActiveById(@Param("id") Long id);
+    Optional<CategoryEntity> findNotDeletedById(@Param("id") Long id);
 
     Optional<CategoryEntity> findBySlugAndDeletedAtIsNull(String slug);
 
@@ -33,10 +33,10 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     Optional<CategoryEntity> findBySlugAndActiveTrueAndDeletedAtIsNull(String slug);
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")
-    boolean existsActiveById(@Param("id") Long id);
+    boolean existsNotDeletedById(@Param("id") Long id);
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.parentId = :parentId AND c.deletedAt IS NULL")
-    boolean existsActiveChildrenByParentId(@Param("parentId") Long parentId);
+    boolean existsNotDeletedChildrenByParentId(@Param("parentId") Long parentId);
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.parentId = :parentId")
     boolean existsAnyChildrenByParentId(@Param("parentId") Long parentId);
@@ -48,11 +48,11 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     List<CategoryEntity> findAllDeleted();
 
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.slug = :slug AND c.deletedAt IS NULL AND c.id != :excludeId")
-    boolean existsActiveBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
+    boolean existsNotDeletedBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
     
     // Bulk operations
     @Query("SELECT c FROM CategoryEntity c WHERE c.id IN :ids AND c.deletedAt IS NULL")
-    List<CategoryEntity> findAllActiveByIds(@Param("ids") List<Long> ids);
+    List<CategoryEntity> findAllNotDeletedByIds(@Param("ids") List<Long> ids);
     
     @Query("SELECT c FROM CategoryEntity c WHERE c.id IN :ids AND c.deletedAt IS NOT NULL")
     List<CategoryEntity> findAllDeletedByIds(@Param("ids") List<Long> ids);
@@ -82,9 +82,7 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
             SELECT id, name, slug, active, parent_id, 0 as depth
             FROM categories
             WHERE id = :categoryId
-            
             UNION ALL
-            
             SELECT c.id, c.name, c.slug, c.active, c.parent_id, cp.depth + 1
             FROM categories c
             INNER JOIN category_path cp ON c.id = cp.parent_id
@@ -101,7 +99,7 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
      * Returns: [activeCount (Long), inactiveCount (Long), deletedCount (Long), rootCount (Long), withChildrenCount (Long)]
      */
     @Query(value = """
-        SELECT 
+        SELECT
             COUNT(*) FILTER (WHERE active = true AND deleted_at IS NULL) as active,
             COUNT(*) FILTER (WHERE active = false AND deleted_at IS NULL) as inactive,
             COUNT(*) FILTER (WHERE deleted_at IS NOT NULL) as deleted,
