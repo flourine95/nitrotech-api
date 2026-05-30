@@ -4,7 +4,9 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.UpdateTimestamp;
 import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
@@ -20,7 +22,7 @@ public class ProductVariantEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "product_id", nullable = false)
     private Long productId;
 
     @Column(nullable = false, unique = true)
@@ -36,16 +38,20 @@ public class ProductVariantEntity {
     @Column(columnDefinition = "jsonb")
     private Map<String, Object> attributes;
 
+    @Column(name = "image_id")
     private Long imageId;
 
     @Column(nullable = false)
     private boolean active = true;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 
-    @Column(nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    @UpdateTimestamp
+    @Column(name = "updated_at", nullable = false)
+    private LocalDateTime updatedAt;
 
+    @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 }

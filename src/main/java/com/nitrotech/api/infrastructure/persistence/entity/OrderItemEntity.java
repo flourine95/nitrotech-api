@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -17,10 +18,11 @@ public class OrderItemEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private Long orderId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "order_id", nullable = false)
+    private OrderEntity order;
 
-    @Column(nullable = false)
+    @Column(name = "variant_id", nullable = false)
     private Long variantId;
 
     @Column(nullable = false)
@@ -32,12 +34,13 @@ public class OrderItemEntity {
     @Column(nullable = false)
     private int quantity;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "unit_price", nullable = false, precision = 15, scale = 2)
     private BigDecimal unitPrice;
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
 
-    @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @CreationTimestamp
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private LocalDateTime createdAt;
 }
