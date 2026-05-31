@@ -152,7 +152,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND c.active = true
         AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (:brandSlug IS NULL OR b.slug = :brandSlug)
         GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
         ORDER BY p.name ASC
@@ -186,7 +195,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND c.active = true
         AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (:brandSlug IS NULL OR b.slug = :brandSlug)
         AND p.id NOT IN :excludeIds
         GROUP BY p.id, p.slug, p.name, c.name, p.thumbnail, p.manual_badge
@@ -201,27 +219,63 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     );
 
     @Query(value = """
+        WITH RECURSIVE category_order AS (
+            SELECT
+                id,
+                name,
+                slug,
+                parent_id,
+                sort_order,
+                LPAD(sort_order::text, 6, '0') || '-' || LPAD(id::text, 12, '0') AS order_path
+            FROM categories
+            WHERE parent_id IS NULL
+              AND deleted_at IS NULL
+              AND active = true
+            UNION ALL
+            SELECT
+                c.id,
+                c.name,
+                c.slug,
+                c.parent_id,
+                c.sort_order,
+                co.order_path || '/' || LPAD(c.sort_order::text, 6, '0') || '-' || LPAD(c.id::text, 12, '0')
+            FROM categories c
+            INNER JOIN category_order co ON c.parent_id = co.id
+            WHERE c.deleted_at IS NULL
+              AND c.active = true
+        ),
+        category_descendants AS (
+            SELECT id AS ancestor_id, id AS descendant_id
+            FROM categories
+            WHERE deleted_at IS NULL
+              AND active = true
+            UNION ALL
+            SELECT cd.ancestor_id, c.id
+            FROM category_descendants cd
+            INNER JOIN categories c ON c.parent_id = cd.descendant_id
+            WHERE c.deleted_at IS NULL
+              AND c.active = true
+        )
         SELECT 
-            c.id,
-            c.name,
-            c.slug,
+            co.id,
+            co.name,
+            co.slug,
             COUNT(DISTINCT p.id) as product_count
-        FROM categories c
-        INNER JOIN products p ON p.category_id = c.id
+        FROM category_order co
+        INNER JOIN category_descendants cd ON cd.ancestor_id = co.id
+        INNER JOIN products p ON p.category_id = cd.descendant_id
         LEFT JOIN brands b ON p.brand_id = b.id
         LEFT JOIN product_variants v ON v.product_id = p.id 
             AND v.deleted_at IS NULL 
             AND v.active = true
-        WHERE c.deleted_at IS NULL
-        AND c.active = true
-        AND p.deleted_at IS NULL
+        WHERE p.deleted_at IS NULL
         AND p.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price < :maxPrice)
-        GROUP BY c.id, c.name, c.slug
+        GROUP BY co.id, co.name, co.slug, co.order_path
         HAVING COUNT(DISTINCT p.id) > 0
-        ORDER BY c.name ASC
+        ORDER BY co.order_path ASC
         """, nativeQuery = true)
     List<Object[]> findCategoryFacetsWithoutBrands(
             @Param("search") String search,
@@ -230,20 +284,56 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     );
 
     @Query(value = """
+        WITH RECURSIVE category_order AS (
+            SELECT
+                id,
+                name,
+                slug,
+                parent_id,
+                sort_order,
+                LPAD(sort_order::text, 6, '0') || '-' || LPAD(id::text, 12, '0') AS order_path
+            FROM categories
+            WHERE parent_id IS NULL
+              AND deleted_at IS NULL
+              AND active = true
+            UNION ALL
+            SELECT
+                c.id,
+                c.name,
+                c.slug,
+                c.parent_id,
+                c.sort_order,
+                co.order_path || '/' || LPAD(c.sort_order::text, 6, '0') || '-' || LPAD(c.id::text, 12, '0')
+            FROM categories c
+            INNER JOIN category_order co ON c.parent_id = co.id
+            WHERE c.deleted_at IS NULL
+              AND c.active = true
+        ),
+        category_descendants AS (
+            SELECT id AS ancestor_id, id AS descendant_id
+            FROM categories
+            WHERE deleted_at IS NULL
+              AND active = true
+            UNION ALL
+            SELECT cd.ancestor_id, c.id
+            FROM category_descendants cd
+            INNER JOIN categories c ON c.parent_id = cd.descendant_id
+            WHERE c.deleted_at IS NULL
+              AND c.active = true
+        )
         SELECT 
-            c.id,
-            c.name,
-            c.slug,
+            co.id,
+            co.name,
+            co.slug,
             COUNT(DISTINCT p.id) as product_count
-        FROM categories c
-        INNER JOIN products p ON p.category_id = c.id
+        FROM category_order co
+        INNER JOIN category_descendants cd ON cd.ancestor_id = co.id
+        INNER JOIN products p ON p.category_id = cd.descendant_id
         INNER JOIN brands b ON p.brand_id = b.id
         LEFT JOIN product_variants v ON v.product_id = p.id 
             AND v.deleted_at IS NULL 
             AND v.active = true
-        WHERE c.deleted_at IS NULL
-        AND c.active = true
-        AND p.deleted_at IS NULL
+        WHERE p.deleted_at IS NULL
         AND p.active = true
         AND b.deleted_at IS NULL
         AND b.active = true
@@ -251,9 +341,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND b.slug IN :brandSlugs
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price < :maxPrice)
-        GROUP BY c.id, c.name, c.slug
+        GROUP BY co.id, co.name, co.slug, co.order_path
         HAVING COUNT(DISTINCT p.id) > 0
-        ORDER BY c.name ASC
+        ORDER BY co.order_path ASC
         """, nativeQuery = true)
     List<Object[]> findCategoryFacetsWithBrands(
             @Param("search") String search,
@@ -281,7 +371,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND c.deleted_at IS NULL
         AND c.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price < :maxPrice)
         GROUP BY b.id, b.name, b.slug
@@ -311,7 +410,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND c.active = true
         AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         """, nativeQuery = true)
     List<Object[]> findPriceRangeWithoutBrands(
             @Param("search") String search,
@@ -335,7 +443,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND b.deleted_at IS NULL
         AND b.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND b.slug IN :brandSlugs
         """, nativeQuery = true)
     List<Object[]> findPriceRangeWithBrands(
@@ -358,7 +475,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND c.active = true
         AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND v.price >= :minPrice
         AND (:maxPrice IS NULL OR v.price < :maxPrice)
         """, nativeQuery = true)
@@ -384,7 +510,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND b.deleted_at IS NULL
         AND b.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND b.slug IN :brandSlugs
         AND v.price >= :minPrice
         AND (:maxPrice IS NULL OR v.price < :maxPrice)
@@ -412,7 +547,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND (:active IS NULL OR p.active = :active)
         AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
         AND (:minPrice IS NULL OR v.min_price >= :minPrice)
         AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
@@ -448,7 +592,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND (:active IS NULL OR p.active = :active)
         AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
         AND (:minPrice IS NULL OR v.min_price >= :minPrice)
         AND (:maxPrice IS NULL OR v.min_price <= :maxPrice)
@@ -481,7 +634,16 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         AND (:active IS NULL OR p.active = :active)
         AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
-        AND (:categorySlug IS NULL OR c.slug = :categorySlug)
+        AND (:categorySlug IS NULL OR c.id IN (
+            WITH RECURSIVE category_tree AS (
+                SELECT id FROM categories WHERE slug = :categorySlug AND deleted_at IS NULL
+                UNION ALL
+                SELECT child.id FROM categories child
+                INNER JOIN category_tree parent ON child.parent_id = parent.id
+                WHERE child.deleted_at IS NULL
+            )
+            SELECT id FROM category_tree
+        ))
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
         AND (:minPrice IS NULL OR v.price >= :minPrice)
         AND (:maxPrice IS NULL OR v.price <= :maxPrice)

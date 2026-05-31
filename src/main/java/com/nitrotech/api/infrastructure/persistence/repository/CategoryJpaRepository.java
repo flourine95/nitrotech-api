@@ -32,6 +32,21 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
 
     Optional<CategoryEntity> findBySlugAndActiveTrueAndDeletedAtIsNull(String slug);
 
+    @Query(value = """
+        WITH RECURSIVE category_tree AS (
+            SELECT id
+            FROM categories
+            WHERE slug = :slug AND deleted_at IS NULL
+            UNION ALL
+            SELECT c.id
+            FROM categories c
+            INNER JOIN category_tree ct ON c.parent_id = ct.id
+            WHERE c.deleted_at IS NULL
+        )
+        SELECT id FROM category_tree
+        """, nativeQuery = true)
+    List<Long> findDescendantIdsBySlug(@Param("slug") String slug);
+
     @Query("SELECT CASE WHEN COUNT(c) > 0 THEN TRUE ELSE FALSE END FROM CategoryEntity c WHERE c.id = :id AND c.deletedAt IS NULL")
     boolean existsNotDeletedById(@Param("id") Long id);
 

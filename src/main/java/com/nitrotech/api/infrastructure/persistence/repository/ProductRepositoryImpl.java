@@ -110,7 +110,10 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
-        Page<ProductEntity> page = productJpa.findAll(ProductSpecification.from(filter), pageable);
+        Page<ProductEntity> page = productJpa.findAll(
+                ProductSpecification.from(filter, resolveCategoryIds(filter.categorySlug())),
+                pageable
+        );
         
         if (page.isEmpty()) {
             return page.map(this::toListData);
@@ -279,6 +282,11 @@ public class ProductRepositoryImpl implements ProductRepository {
             e.setDeletedAt(LocalDateTime.now());
             variantJpa.save(e);
         });
+    }
+
+    private List<Long> resolveCategoryIds(String categorySlug) {
+        if (categorySlug == null) return null;
+        return categoryJpa.findDescendantIdsBySlug(categorySlug);
     }
 
     @Override

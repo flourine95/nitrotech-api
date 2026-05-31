@@ -17,10 +17,14 @@ import java.util.List;
 public class ProductSpecification {
 
     public static Specification<ProductEntity> from(ProductFilter filter) {
+        return from(filter, null);
+    }
+
+    public static Specification<ProductEntity> from(ProductFilter filter, List<Long> categoryIds) {
         return Specification
                 .where(deleted(filter.deleted()))
                 .and(active(filter.active()))
-                .and(categorySlug(filter.categorySlug()))
+                .and(categoryIds(filter.categorySlug(), categoryIds))
                 .and(brandSlugs(filter.brandSlugs()))
                 .and(priceRange(filter.minPrice(), filter.maxPrice()))
                 .and(search(filter.search()))
@@ -43,20 +47,11 @@ public class ProductSpecification {
         };
     }
 
-    private static Specification<ProductEntity> categorySlug(String categorySlug) {
+    private static Specification<ProductEntity> categoryIds(String categorySlug, List<Long> categoryIds) {
         return (root, query, cb) -> {
             if (categorySlug == null) return cb.conjunction();
-            
-            Subquery<Long> subquery = query.subquery(Long.class);
-            var categoryRoot = subquery.from(CategoryEntity.class);
-            
-            subquery.select(categoryRoot.get("id"))
-                    .where(cb.and(
-                            cb.equal(categoryRoot.get("slug"), categorySlug),
-                            cb.isNull(categoryRoot.get("deletedAt"))
-                    ));
-            
-            return root.get("categoryId").in(subquery);
+            if (categoryIds == null || categoryIds.isEmpty()) return cb.disjunction();
+            return root.get("categoryId").in(categoryIds);
         };
     }
 
