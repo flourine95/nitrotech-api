@@ -31,6 +31,32 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
     @Query("SELECT p FROM ProductEntity p LEFT JOIN FETCH p.category LEFT JOIN FETCH p.brand WHERE p.slug = :slug AND p.deletedAt IS NULL")
     Optional<ProductEntity> findBySlugWithRelations(@Param("slug") String slug);
 
+    @Query("""
+            SELECT p FROM ProductEntity p
+            LEFT JOIN FETCH p.category c
+            LEFT JOIN FETCH p.brand b
+            WHERE p.id = :id
+              AND p.active = true
+              AND p.deletedAt IS NULL
+              AND c.active = true
+              AND c.deletedAt IS NULL
+              AND (b IS NULL OR (b.active = true AND b.deletedAt IS NULL))
+            """)
+    Optional<ProductEntity> findVisibleByIdWithRelations(@Param("id") Long id);
+
+    @Query("""
+            SELECT p FROM ProductEntity p
+            LEFT JOIN FETCH p.category c
+            LEFT JOIN FETCH p.brand b
+            WHERE p.slug = :slug
+              AND p.active = true
+              AND p.deletedAt IS NULL
+              AND c.active = true
+              AND c.deletedAt IS NULL
+              AND (b IS NULL OR (b.active = true AND b.deletedAt IS NULL))
+            """)
+    Optional<ProductEntity> findVisibleBySlugWithRelations(@Param("slug") String slug);
+
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NOT NULL AND p.id = :id")
     Optional<ProductEntity> findDeletedById(@Param("id") Long id);
 
@@ -122,6 +148,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (:brandSlug IS NULL OR b.slug = :brandSlug)
@@ -153,6 +182,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (:brandSlug IS NULL OR b.slug = :brandSlug)
@@ -181,6 +213,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.deleted_at IS NULL 
             AND v.active = true
         WHERE c.deleted_at IS NULL
+        AND c.active = true
         AND p.deleted_at IS NULL
         AND p.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
@@ -209,8 +242,11 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.deleted_at IS NULL 
             AND v.active = true
         WHERE c.deleted_at IS NULL
+        AND c.active = true
         AND p.deleted_at IS NULL
         AND p.active = true
+        AND b.deleted_at IS NULL
+        AND b.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND b.slug IN :brandSlugs
         AND (:minPrice IS NULL OR v.price >= :minPrice)
@@ -239,8 +275,11 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.deleted_at IS NULL 
             AND v.active = true
         WHERE b.deleted_at IS NULL
+        AND b.active = true
         AND p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (:minPrice IS NULL OR v.price >= :minPrice)
@@ -268,6 +307,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         """, nativeQuery = true)
@@ -288,6 +330,10 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND b.deleted_at IS NULL
+        AND b.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND b.slug IN :brandSlugs
@@ -308,6 +354,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND v.price >= :minPrice
@@ -330,6 +379,10 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND p.active = true
+        AND c.deleted_at IS NULL
+        AND c.active = true
+        AND b.deleted_at IS NULL
+        AND b.active = true
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND b.slug IN :brandSlugs
@@ -357,6 +410,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         ) v ON v.product_id = p.id
         WHERE p.deleted_at IS NULL
         AND (:active IS NULL OR p.active = :active)
+        AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
@@ -368,6 +422,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         """, nativeQuery = true)
     List<Long> findProductIdsSortedByPriceAsc(
             @Param("active") Boolean active,
+            @Param("visibleRelations") boolean visibleRelations,
             @Param("search") String search,
             @Param("categorySlug") String categorySlug,
             @Param("brandSlugs") List<String> brandSlugs,
@@ -391,6 +446,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         ) v ON v.product_id = p.id
         WHERE p.deleted_at IS NULL
         AND (:active IS NULL OR p.active = :active)
+        AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
@@ -402,6 +458,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         """, nativeQuery = true)
     List<Long> findProductIdsSortedByPriceDesc(
             @Param("active") Boolean active,
+            @Param("visibleRelations") boolean visibleRelations,
             @Param("search") String search,
             @Param("categorySlug") String categorySlug,
             @Param("brandSlugs") List<String> brandSlugs,
@@ -422,6 +479,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             AND v.active = true
         WHERE p.deleted_at IS NULL
         AND (:active IS NULL OR p.active = :active)
+        AND (:visibleRelations = false OR (c.deleted_at IS NULL AND c.active = true AND (b.id IS NULL OR (b.deleted_at IS NULL AND b.active = true))))
         AND (:search IS NULL OR LOWER(p.name) LIKE LOWER(CONCAT('%', :search, '%')))
         AND (:categorySlug IS NULL OR c.slug = :categorySlug)
         AND (COALESCE(:brandSlugs) IS NULL OR b.slug IN (:brandSlugs))
@@ -431,6 +489,7 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
         """, nativeQuery = true)
     long countProductsWithFilters(
             @Param("active") Boolean active,
+            @Param("visibleRelations") boolean visibleRelations,
             @Param("search") String search,
             @Param("categorySlug") String categorySlug,
             @Param("brandSlugs") List<String> brandSlugs,

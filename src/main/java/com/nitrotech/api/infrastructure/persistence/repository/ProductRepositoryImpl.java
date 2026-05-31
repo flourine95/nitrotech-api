@@ -99,6 +99,16 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
+    public Optional<ProductData> findVisibleById(Long id) {
+        return productJpa.findVisibleByIdWithRelations(id).map(this::toDetailData);
+    }
+
+    @Override
+    public Optional<ProductData> findVisibleBySlug(String slug) {
+        return productJpa.findVisibleBySlugWithRelations(slug).map(this::toDetailData);
+    }
+
+    @Override
     public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
         Page<ProductEntity> page = productJpa.findAll(ProductSpecification.from(filter), pageable);
         
@@ -131,6 +141,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<Long> productIds = isAscending
                 ? productJpa.findProductIdsSortedByPriceAsc(
                         filter.active(),
+                        filter.visibleRelations(),
                         filter.search(),
                         filter.categorySlug(),
                         filter.brandSlugs(),
@@ -142,6 +153,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                   )
                 : productJpa.findProductIdsSortedByPriceDesc(
                         filter.active(),
+                        filter.visibleRelations(),
                         filter.search(),
                         filter.categorySlug(),
                         filter.brandSlugs(),
@@ -158,6 +170,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         
         long total = productJpa.countProductsWithFilters(
                 filter.active(),
+                filter.visibleRelations(),
                 filter.search(),
                 filter.categorySlug(),
                 filter.brandSlugs(),

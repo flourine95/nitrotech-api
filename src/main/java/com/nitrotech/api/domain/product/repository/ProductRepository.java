@@ -12,6 +12,8 @@ public interface ProductRepository {
     ProductData update(UpdateProductCommand command);
     Optional<ProductData> findById(Long id);
     Optional<ProductData> findBySlug(String slug);
+    Optional<ProductData> findVisibleById(Long id);
+    Optional<ProductData> findVisibleBySlug(String slug);
     Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
     Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
