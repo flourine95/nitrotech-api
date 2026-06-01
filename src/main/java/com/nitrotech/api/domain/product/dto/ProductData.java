@@ -9,6 +9,7 @@ public record ProductData(
         Long id,
         Long categoryId,
         String categoryName,
+        String categorySlug,
         Long brandId,
         String brandName,
         String name,
