@@ -34,6 +34,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final CategoryJpaRepository categoryJpa;
     private final BrandJpaRepository brandJpa;
     private final ReviewJpaRepository reviewJpa;
+    private final InventoryJpaRepository inventoryJpa;
 
     @Override
     @Transactional
@@ -529,8 +530,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     private ProductData toDetailData(ProductEntity e) {
         List<String> images = imageJpa.findByProductIdOrderBySortOrderAsc(e.getId())
                 .stream().map(ProductImageEntity::getUrl).toList();
-        List<ProductVariantData> variants = variantJpa.findActiveByProductId(e.getId())
-                .stream().map(this::toVariantData).toList();
+        List<ProductVariantEntity> variantEntities = variantJpa.findActiveByProductId(e.getId());
+        Map<Long, InventoryEntity> inventoryByVariantId = batchLoadInventories(variantEntities);
+        List<ProductVariantData> variants = variantEntities.stream()
+                .map(v -> toVariantData(v, inventoryByVariantId.get(v.getId())))
+                .toList();
         
         String badge = computeBadge(e, variants.size());
         
@@ -581,19 +585,37 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {
+        return toVariantData(e, inventoryJpa.findByVariantId(e.getId()).orElse(null));
+    }
+
+    private ProductVariantData toVariantData(ProductVariantEntity e, InventoryEntity inventory) {
         String imageUrl = null;
         if (e.getImageId() != null) {
             imageUrl = imageJpa.findById(e.getImageId())
                     .map(ProductImageEntity::getUrl)
                     .orElse(null);
         }
+
+        Integer stockQuantity = inventory != null ? inventory.getQuantity() : null;
+        Integer lowStockThreshold = inventory != null ? inventory.getLowStockThreshold() : null;
         
         return new ProductVariantData(
                 e.getId(), e.getProductId(), e.getSku(), e.getName(),
                 e.getPrice(), e.getAttributes(), e.isActive(),
                 e.getImageId(), imageUrl,
+                stockQuantity,
+                lowStockThreshold,
+                stockQuantity != null ? stockQuantity > 0 : null,
+                stockQuantity != null && lowStockThreshold != null ? stockQuantity <= lowStockThreshold : null,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
+    }
+
+    private Map<Long, InventoryEntity> batchLoadInventories(List<ProductVariantEntity> variants) {
+        List<Long> variantIds = variants.stream().map(ProductVariantEntity::getId).toList();
+        if (variantIds.isEmpty()) return Map.of();
+        return inventoryJpa.findByVariantIdIn(variantIds).stream()
+                .collect(Collectors.toMap(InventoryEntity::getVariantId, inventory -> inventory));
     }
 
     private String computeBadge(ProductEntity product, int variantCount) {

@@ -14,6 +14,10 @@ public record ProductVariantData(
         boolean active,
         Long imageId,
         String imageUrl,
+        Integer stockQuantity,
+        Integer lowStockThreshold,
+        Boolean inStock,
+        Boolean lowStock,
         LocalDateTime createdAt,
         LocalDateTime updatedAt
 ) {}

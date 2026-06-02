@@ -11,6 +11,8 @@ public interface InventoryJpaRepository extends JpaRepository<InventoryEntity, L
 
     Optional<InventoryEntity> findByVariantId(Long variantId);
 
+    List<InventoryEntity> findByVariantIdIn(List<Long> variantIds);
+
     @Query("SELECT i FROM InventoryEntity i WHERE i.quantity <= i.lowStockThreshold ORDER BY i.quantity ASC")
     List<InventoryEntity> findLowStock();
 }

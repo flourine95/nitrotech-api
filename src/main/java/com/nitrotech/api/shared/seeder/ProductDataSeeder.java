@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -50,12 +51,6 @@ public class ProductDataSeeder implements CommandLineRunner {
             "Cao Cấp", "Chuyên Nghiệp", "Siêu Mạnh", "Hiệu Năng Cao", "Tối Ưu",
             "Đỉnh Cao", "Thế Hệ Mới", "Nâng Cấp", "Tiên Tiến", "Mạnh Mẽ"
     };
-
-    private static final String[] COLORS = {
-            "Đen", "Trắng", "Xám", "Bạc", "Đỏ", "Xanh Navy", "Xanh Lá", "Vàng"
-    };
-
-    private static final String[] SIZES = { "Mini", "Standard", "XL", "Pro" };
 
     private static final Map<String, long[]> PRICE_RANGES = Map.ofEntries(
             Map.entry("cpu", new long[]{3_000_000, 20_000_000}),
@@ -289,27 +284,149 @@ public class ProductDataSeeder implements CommandLineRunner {
     }
 
     private List<VariantSeed> buildVariants(List<ProductSeed> products, Map<String, Long> productIds) {
-        List<VariantSeed> variants = new ArrayList<>(products.size() * 4);
+        List<VariantSeed> variants = new ArrayList<>(products.size() * 6);
         for (ProductSeed product : products) {
-            int variantCount = 3 + random.nextInt(3);
+            List<VariantOptionGroup> optionGroups = optionGroupsFor(product.categorySlug(), product.index());
+            List<Map<String, String>> combinations = buildOptionCombinations(optionGroups);
             long[] priceRange = getPriceRange(product.categorySlug());
 
-            for (int v = 0; v < variantCount; v++) {
-                String color = COLORS[random.nextInt(COLORS.length)];
-                String size = SIZES[v % SIZES.length];
-                long price = priceRange[0] + (long) (random.nextDouble() * (priceRange[1] - priceRange[0]));
-                price = (price / 10_000) * 10_000;
+            for (int v = 0; v < combinations.size(); v++) {
+                Map<String, String> attributes = combinations.get(v);
 
                 variants.add(new VariantSeed(
                         productIds.get(product.slug()),
                         "SEED-SKU-" + product.index() + "-V" + v,
-                        size + " / " + color,
-                        price,
-                        "{\"size\":\"" + size + "\",\"color\":\"" + color + "\"}"
+                        variantName(attributes),
+                        variantPrice(priceRange, v, combinations.size(), product.index()),
+                        json(attributes),
+                        stockQuantity(product.index(), v),
+                        lowStockThreshold(product.categorySlug())
                 ));
             }
         }
         return variants;
+    }
+
+    private List<VariantOptionGroup> optionGroupsFor(String categorySlug, int productIndex) {
+        return switch (categorySlug) {
+            case "laptop-gaming" -> List.of(
+                    new VariantOptionGroup("configuration", List.of("RTX 4060 / 16GB", "RTX 4070 / 32GB", "RTX 4080 / 32GB")),
+                    new VariantOptionGroup("color", pickTwo(productIndex, "Đen", "Xám", "Xanh Navy"))
+            );
+            case "laptop-van-phong" -> List.of(
+                    new VariantOptionGroup("configuration", List.of("8GB / 512GB", "16GB / 512GB", "16GB / 1TB")),
+                    new VariantOptionGroup("color", pickTwo(productIndex, "Bạc", "Xám", "Trắng"))
+            );
+            case "ram-ddr4" -> List.of(
+                    new VariantOptionGroup("capacity", List.of("16GB", "32GB", "64GB")),
+                    new VariantOptionGroup("speed", List.of("3200MHz", "3600MHz"))
+            );
+            case "ram-ddr5" -> List.of(
+                    new VariantOptionGroup("capacity", List.of("16GB", "32GB", "64GB")),
+                    new VariantOptionGroup("speed", List.of("5600MHz", "6000MHz"))
+            );
+            case "ssd-o-cung-the-ran" -> List.of(
+                    new VariantOptionGroup("capacity", List.of("500GB", "1TB", "2TB")),
+                    new VariantOptionGroup("interface", List.of("PCIe Gen3", "PCIe Gen4"))
+            );
+            case "man-hinh-gaming" -> List.of(
+                    new VariantOptionGroup("size", List.of("24 inch", "27 inch", "32 inch")),
+                    new VariantOptionGroup("refreshRate", List.of("144Hz", "240Hz"))
+            );
+            case "man-hinh-van-phong" -> List.of(
+                    new VariantOptionGroup("size", List.of("24 inch", "27 inch")),
+                    new VariantOptionGroup("resolution", List.of("FHD", "QHD", "4K"))
+            );
+            case "ban-phim-co" -> List.of(
+                    new VariantOptionGroup("layout", List.of("75%", "TKL", "Full-size")),
+                    new VariantOptionGroup("switch", List.of("Red", "Brown"))
+            );
+            case "ban-phim-mang" -> List.of(
+                    new VariantOptionGroup("layout", List.of("Full-size", "TKL")),
+                    new VariantOptionGroup("connection", List.of("USB", "Wireless"))
+            );
+            case "chuot-may-tinh" -> List.of(
+                    new VariantOptionGroup("connection", List.of("Wired", "Wireless")),
+                    new VariantOptionGroup("color", pickTwo(productIndex, "Đen", "Trắng", "Xám"))
+            );
+            case "tai-nghe" -> List.of(
+                    new VariantOptionGroup("connection", List.of("3.5mm", "USB", "Bluetooth")),
+                    new VariantOptionGroup("color", pickTwo(productIndex, "Đen", "Trắng", "Xanh Navy"))
+            );
+            case "vga-nvidia", "vga-amd" -> List.of(
+                    new VariantOptionGroup("memory", List.of("8GB", "12GB", "16GB")),
+                    new VariantOptionGroup("cooling", List.of("Dual Fan", "Triple Fan"))
+            );
+            case "cpu-intel", "cpu-amd" -> List.of(
+                    new VariantOptionGroup("edition", List.of("Box", "Tray")),
+                    new VariantOptionGroup("warranty", List.of("12 tháng", "36 tháng"))
+            );
+            default -> List.of(
+                    new VariantOptionGroup("option", List.of("Standard", "Pro")),
+                    new VariantOptionGroup("color", pickTwo(productIndex, "Đen", "Trắng", "Xám"))
+            );
+        };
+    }
+
+    private List<String> pickTwo(int index, String first, String second, String third) {
+        List<String> values = List.of(first, second, third);
+        return List.of(values.get(index % values.size()), values.get((index + 1) % values.size()));
+    }
+
+    private List<Map<String, String>> buildOptionCombinations(List<VariantOptionGroup> groups) {
+        List<Map<String, String>> combinations = new ArrayList<>();
+        appendOptionCombinations(groups, 0, new LinkedHashMap<>(), combinations);
+        return combinations;
+    }
+
+    private void appendOptionCombinations(
+            List<VariantOptionGroup> groups,
+            int index,
+            LinkedHashMap<String, String> current,
+            List<Map<String, String>> combinations
+    ) {
+        if (index == groups.size()) {
+            combinations.add(new LinkedHashMap<>(current));
+            return;
+        }
+
+        VariantOptionGroup group = groups.get(index);
+        for (String value : group.values()) {
+            current.put(group.key(), value);
+            appendOptionCombinations(groups, index + 1, current, combinations);
+        }
+        current.remove(group.key());
+    }
+
+    private String variantName(Map<String, String> attributes) {
+        return String.join(" / ", attributes.values());
+    }
+
+    private long variantPrice(long[] range, int variantIndex, int variantCount, int productIndex) {
+        double ratio = variantCount == 1 ? 0.5 : variantIndex / (double) (variantCount - 1);
+        long price = range[0] + Math.round((range[1] - range[0]) * (0.15 + ratio * 0.7));
+        long jitter = ((productIndex % 5) - 2) * 50_000L;
+        return Math.max(range[0], Math.min(range[1], (price + jitter) / 10_000 * 10_000));
+    }
+
+    private int stockQuantity(int productIndex, int variantIndex) {
+        return switch (Math.floorMod(productIndex + variantIndex, 12)) {
+            case 0 -> 0;
+            case 1 -> 1;
+            case 2 -> 3;
+            case 3 -> 5;
+            default -> 12 + Math.floorMod(productIndex * 11 + variantIndex * 7, 89);
+        };
+    }
+
+    private int lowStockThreshold(String categorySlug) {
+        if (categorySlug.startsWith("laptop") || categorySlug.startsWith("vga") || categorySlug.startsWith("cpu")) {
+            return 3;
+        }
+        if (categorySlug.startsWith("ban-phim") || categorySlug.startsWith("chuot") || categorySlug.startsWith("tai-nghe")) {
+            return 8;
+        }
+        return 5;
     }
 
     private void insertVariants(List<VariantSeed> variants) {
@@ -337,10 +454,11 @@ public class ProductDataSeeder implements CommandLineRunner {
     private void insertInventories(List<VariantSeed> variants, Map<String, Long> variantIds) {
         jdbc.batchUpdate("""
                 INSERT INTO inventories (variant_id, quantity, low_stock_threshold)
-                VALUES (?, ?, 5)
+                VALUES (?, ?, ?)
                 """, variants, BATCH_SIZE, (ps, variant) -> {
             ps.setLong(1, variantIds.get(variant.sku()));
-            ps.setInt(2, 10 + random.nextInt(91));
+            ps.setInt(2, variant.stockQuantity());
+            ps.setInt(3, variant.lowStockThreshold());
         });
     }
 
@@ -486,6 +604,10 @@ public class ProductDataSeeder implements CommandLineRunner {
             String sku,
             String name,
             long price,
-            String attributesJson
+            String attributesJson,
+            int stockQuantity,
+            int lowStockThreshold
     ) {}
+
+    private record VariantOptionGroup(String key, List<String> values) {}
 }
