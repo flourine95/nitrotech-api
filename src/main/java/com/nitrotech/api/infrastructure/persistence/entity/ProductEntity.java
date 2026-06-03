@@ -44,6 +44,9 @@ public class ProductEntity {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(name = "short_description", length = 500)
+    private String shortDescription;
+
     private String thumbnail;
 
     @JdbcTypeCode(SqlTypes.JSON)

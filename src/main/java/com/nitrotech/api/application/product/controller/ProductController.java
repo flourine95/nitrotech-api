@@ -6,6 +6,8 @@ import com.nitrotech.api.domain.product.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +31,7 @@ public class ProductController {
     private final GetPublicProductUseCase getPublicProductUseCase;
     private final SearchProductsUseCase searchProductsUseCase;
     private final GetProductFacetsUseCase getProductFacetsUseCase;
+    private final GetRelatedProductsUseCase getRelatedProductsUseCase;
 
     @GetMapping("/facets")
     public ResponseEntity<ApiResult<ProductFacets>> getFacets(
@@ -79,6 +82,14 @@ public class ProductController {
         return ResponseEntity.ok(ApiResult.paged(
                 getProductsUseCase.execute(filter, pageable)
         ));
+    }
+
+    @GetMapping("/{id}/related")
+    public ResponseEntity<ApiResult<List<ProductData>>> related(
+            @PathVariable Long id,
+            @RequestParam(name = "limit", defaultValue = "4") @Min(1) @Max(12) int limit
+    ) {
+        return ResponseEntity.ok(ApiResult.ok(getRelatedProductsUseCase.execute(id, limit)));
     }
 
     @GetMapping("/{idOrSlug}")

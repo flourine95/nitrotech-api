@@ -67,7 +67,7 @@ public class AdminProductController {
                         v.sku(), v.name(), v.price(), v.attributes(), v.active(), v.imageId())).toList();
         ProductData data = createProductUseCase.execute(new CreateProductCommand(
                 req.categoryId(), req.brandId(), req.name(), req.slug(),
-                req.description(), req.thumbnail(), req.specs(), req.active(),
+                req.description(), req.shortDescription(), req.thumbnail(), req.specs(), req.active(),
                 req.images(), variants, req.manualBadge(), req.manualBadgeExpiresAt()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(data));
     }
@@ -79,7 +79,7 @@ public class AdminProductController {
     ) {
         ProductData data = updateProductUseCase.execute(new UpdateProductCommand(
                 id, req.categoryId(), req.brandId(), req.name(), req.slug(),
-                req.description(), req.thumbnail(), req.specs(), req.active(), req.images(),
+                req.description(), req.shortDescription(), req.thumbnail(), req.specs(), req.active(), req.images(),
                 req.manualBadge(), req.manualBadgeExpiresAt()));
         return ResponseEntity.ok(ApiResult.ok(data));
     }

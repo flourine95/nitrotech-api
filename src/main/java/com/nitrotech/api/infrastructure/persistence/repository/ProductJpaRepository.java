@@ -57,6 +57,61 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
             """)
     Optional<ProductEntity> findVisibleBySlugWithRelations(@Param("slug") String slug);
 
+    @Query("""
+            SELECT p FROM ProductEntity p
+            LEFT JOIN FETCH p.category c
+            LEFT JOIN FETCH p.brand b
+            WHERE p.categoryId = :categoryId
+              AND p.id NOT IN :excludeIds
+              AND p.active = true
+              AND p.deletedAt IS NULL
+              AND c.active = true
+              AND c.deletedAt IS NULL
+              AND (b IS NULL OR (b.active = true AND b.deletedAt IS NULL))
+            ORDER BY p.createdAt DESC
+            """)
+    List<ProductEntity> findVisibleRelatedByCategory(
+            @Param("categoryId") Long categoryId,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT p FROM ProductEntity p
+            LEFT JOIN FETCH p.category c
+            LEFT JOIN FETCH p.brand b
+            WHERE p.brandId = :brandId
+              AND p.id NOT IN :excludeIds
+              AND p.active = true
+              AND p.deletedAt IS NULL
+              AND c.active = true
+              AND c.deletedAt IS NULL
+              AND (b IS NULL OR (b.active = true AND b.deletedAt IS NULL))
+            ORDER BY p.createdAt DESC
+            """)
+    List<ProductEntity> findVisibleRelatedByBrand(
+            @Param("brandId") Long brandId,
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
+    @Query("""
+            SELECT p FROM ProductEntity p
+            LEFT JOIN FETCH p.category c
+            LEFT JOIN FETCH p.brand b
+            WHERE p.id NOT IN :excludeIds
+              AND p.active = true
+              AND p.deletedAt IS NULL
+              AND c.active = true
+              AND c.deletedAt IS NULL
+              AND (b IS NULL OR (b.active = true AND b.deletedAt IS NULL))
+            ORDER BY p.createdAt DESC
+            """)
+    List<ProductEntity> findVisibleRelatedFallback(
+            @Param("excludeIds") List<Long> excludeIds,
+            Pageable pageable
+    );
+
     @Query("SELECT p FROM ProductEntity p WHERE p.deletedAt IS NOT NULL AND p.id = :id")
     Optional<ProductEntity> findDeletedById(@Param("id") Long id);
 

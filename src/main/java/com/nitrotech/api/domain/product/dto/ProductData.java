@@ -15,6 +15,7 @@ public record ProductData(
         String name,
         String slug,
         String description,
+        String shortDescription,
         String thumbnail,
         Map<String, Object> specs,
         boolean active,

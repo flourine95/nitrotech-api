@@ -221,6 +221,7 @@ public class ProductDataSeeder implements CommandLineRunner {
                     name,
                     slug,
                     generateDescription(name, categorySlug),
+                    generateShortDescription(name, categorySlug),
                     thumbnail,
                     specsFor(categorySlug, i)
             ));
@@ -238,16 +239,17 @@ public class ProductDataSeeder implements CommandLineRunner {
 
     private void insertProducts(List<ProductSeed> products) {
         jdbc.batchUpdate("""
-                INSERT INTO products (category_id, brand_id, name, slug, description, thumbnail, specs, active)
-                VALUES (?, ?, ?, ?, ?, ?, ?::jsonb, true)
+                INSERT INTO products (category_id, brand_id, name, slug, description, short_description, thumbnail, specs, active)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?::jsonb, true)
                 """, products, BATCH_SIZE, (ps, p) -> {
             ps.setLong(1, p.categoryId());
             ps.setLong(2, p.brandId());
             ps.setString(3, p.name());
             ps.setString(4, p.slug());
             ps.setString(5, p.description());
-            ps.setString(6, p.thumbnail());
-            ps.setString(7, p.specsJson());
+            ps.setString(6, p.shortDescription());
+            ps.setString(7, p.thumbnail());
+            ps.setString(8, p.specsJson());
         });
     }
 
@@ -494,6 +496,11 @@ public class ProductDataSeeder implements CommandLineRunner {
         return name + " - " + categoryName + " chất lượng cao, hiệu năng ổn định. Bảo hành chính hãng 12 tháng.";
     }
 
+    private String generateShortDescription(String name, String categorySlug) {
+        String categoryName = CATEGORY_NAMES.getOrDefault(categorySlug, "sản phẩm");
+        return name + " thuộc nhóm " + categoryName + ", phù hợp cho nhu cầu nâng cấp cấu hình NitroTech.";
+    }
+
     private String specsFor(String categorySlug, int index) {
         return switch (categorySlug) {
             case "laptop-gaming" -> json(Map.of(
@@ -593,6 +600,7 @@ public class ProductDataSeeder implements CommandLineRunner {
             String name,
             String slug,
             String description,
+            String shortDescription,
             String thumbnail,
             String specsJson
     ) {}

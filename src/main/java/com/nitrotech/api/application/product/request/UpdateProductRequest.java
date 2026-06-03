@@ -19,6 +19,10 @@ public record UpdateProductRequest(
         String slug,
 
         String description,
+
+        @Size(max = 500, message = "Short description must be at most 500 characters")
+        String shortDescription,
+
         String thumbnail,
         Map<String, Object> specs,
         Boolean active,

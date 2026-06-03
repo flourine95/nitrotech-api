@@ -24,6 +24,7 @@ public interface ProductRepository {
     void restore(Long id);
     void hardDelete(Long id);
     List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable);
+    List<ProductData> findRelated(Long productId, int limit);
 
     ProductFacets getFacets(ProductFilter filter);
     ProductVariantData createVariant(Long productId, CreateVariantCommand command);
