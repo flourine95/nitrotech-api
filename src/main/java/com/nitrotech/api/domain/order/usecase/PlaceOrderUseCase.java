@@ -37,20 +37,26 @@ public class PlaceOrderUseCase {
             if (!inventoryRepository.hasSufficientStock(item.variantId(), item.quantity())) {
                 int available = inventoryRepository.getQuantity(item.variantId());
                 throw new DomainException("INSUFFICIENT_STOCK",
-                        "Insufficient stock for " + item.variantName() + ". Available: " + available) {};
+                        "Insufficient stock for " + item.variant().name() + ". Available: " + available) {};
             }
         });
 
-        var address = addressRepository.findByIdAndUserId(command.addressId(), command.userId())
-                .orElseThrow(() -> new NotFoundException("ADDRESS_NOT_FOUND", "Address not found"));
+        ShippingAddressSnapshot snapshot = command.shippingAddress();
+        if (snapshot == null) {
+            if (command.addressId() == null) {
+                throw new NotFoundException("ADDRESS_NOT_FOUND", "Address not found");
+            }
+            var address = addressRepository.findByIdAndUserId(command.addressId(), command.userId())
+                    .orElseThrow(() -> new NotFoundException("ADDRESS_NOT_FOUND", "Address not found"));
 
-        ShippingAddressSnapshot snapshot = new ShippingAddressSnapshot(
-                address.receiver(), address.phone(),
-                address.province(), address.provinceCode(),
-                address.district(), address.districtCode(),
-                address.ward(), address.wardCode(),
-                address.street()
-        );
+            snapshot = new ShippingAddressSnapshot(
+                    address.receiver(), address.phone(),
+                    address.province(), address.provinceCode(),
+                    address.district(), address.districtCode(),
+                    address.ward(), address.wardCode(),
+                    address.street()
+            );
+        }
 
         List<OrderItemData> items = cart.items().stream().map(this::toOrderItem).toList();
         BigDecimal totalAmount = items.stream().map(OrderItemData::subtotal)
@@ -76,7 +82,7 @@ public class PlaceOrderUseCase {
     }
 
     private OrderItemData toOrderItem(CartItemData item) {
-        return new OrderItemData(null, item.variantId(), item.variantName(), item.variantSku(),
-                item.quantity(), item.variantPrice(), item.subtotal());
+        return new OrderItemData(null, item.variantId(), item.variant().name(), item.variant().sku(),
+                item.quantity(), item.variant().price(), item.subtotal());
     }
 }

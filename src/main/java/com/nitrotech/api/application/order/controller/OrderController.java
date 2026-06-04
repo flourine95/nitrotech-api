@@ -5,6 +5,7 @@ import com.nitrotech.api.application.order.request.UpdateOrderStatusRequest;
 import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListQuery;
+import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
@@ -53,8 +54,19 @@ public class OrderController {
             @Valid @RequestBody CreateOrderRequest req
     ) {
         String paymentMethod = req.paymentMethod() != null ? req.paymentMethod() : "cod";
+        ShippingAddressSnapshot shippingAddress = req.shippingAddress() == null ? null : new ShippingAddressSnapshot(
+                req.shippingAddress().name(),
+                req.shippingAddress().phone(),
+                req.shippingAddress().city(),
+                req.shippingAddress().cityCode() != null ? req.shippingAddress().cityCode() : "",
+                req.shippingAddress().district(),
+                req.shippingAddress().districtCode() != null ? req.shippingAddress().districtCode() : "",
+                req.shippingAddress().ward(),
+                req.shippingAddress().wardCode() != null ? req.shippingAddress().wardCode() : "",
+                req.shippingAddress().address()
+        );
         OrderData order = placeOrderUseCase.execute(new CreateOrderCommand(
-                principal.id(), req.addressId(), paymentMethod, req.promotionCode(), req.note()));
+                principal.id(), req.addressId(), shippingAddress, paymentMethod, req.promotionCode(), req.note()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(order));
     }
 

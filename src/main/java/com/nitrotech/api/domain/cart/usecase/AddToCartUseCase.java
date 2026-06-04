@@ -21,13 +21,16 @@ public class AddToCartUseCase {
         if (!productRepository.existsVariantById(variantId)) {
             throw new NotFoundException("VARIANT_NOT_FOUND", "Variant not found");
         }
-        if (!inventoryRepository.hasSufficientStock(variantId, quantity)) {
+        int desiredQuantity = cartRepository.hasItem(userId, variantId)
+                ? cartRepository.getItemQuantity(userId, variantId) + quantity
+                : quantity;
+        if (!inventoryRepository.hasSufficientStock(variantId, desiredQuantity)) {
             int available = inventoryRepository.getQuantity(variantId);
             throw new DomainException("INSUFFICIENT_STOCK",
                     "Insufficient stock. Available: " + available) {};
         }
         if (cartRepository.hasItem(userId, variantId)) {
-            return cartRepository.updateItemQuantity(userId, variantId, quantity);
+            return cartRepository.updateItemQuantity(userId, variantId, desiredQuantity);
         }
         return cartRepository.addItem(userId, variantId, quantity);
     }

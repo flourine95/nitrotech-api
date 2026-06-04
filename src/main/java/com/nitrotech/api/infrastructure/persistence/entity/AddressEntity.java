@@ -35,10 +35,10 @@ public class AddressEntity {
     @Column(nullable = false)
     private String provinceCode;
 
-    @Column(nullable = false)
+    @Column
     private String district;
 
-    @Column(nullable = false)
+    @Column
     private String districtCode;
 
     @Column(nullable = false)
