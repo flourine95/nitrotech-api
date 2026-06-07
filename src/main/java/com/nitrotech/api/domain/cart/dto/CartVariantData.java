@@ -1,10 +1,9 @@
-package com.nitrotech.api.domain.product.dto;
+package com.nitrotech.api.domain.cart.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.Map;
 
-public record ProductVariantData(
+public record CartVariantData(
         Long id,
         Long productId,
         String sku,
@@ -18,6 +17,5 @@ public record ProductVariantData(
         Integer lowStockThreshold,
         Boolean inStock,
         Boolean lowStock,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        CartProductData product
 ) {}

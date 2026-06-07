@@ -34,7 +34,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         entity.setParentId(command.parentId());
         entity.setActive(command.active());
         
-        List<CategoryEntity> siblings = jpa.findAllActive(null, command.parentId());
+        List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, command.parentId());
         int maxOrder = siblings.stream()
                 .mapToInt(CategoryEntity::getSortOrder)
                 .max()
@@ -46,7 +46,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     @Override
     public CategoryData update(UpdateCategoryCommand command) {
-        CategoryEntity entity = jpa.findActiveById(command.id())
+        CategoryEntity entity = jpa.findNotDeletedById(command.id())
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + command.id() + " not found"));
         if (command.name() != null) entity.setName(command.name());
@@ -60,12 +60,22 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     @Override
     public Optional<CategoryData> findById(Long id) {
-        return jpa.findActiveById(id).map(this::toDataForDetail);
+        return jpa.findNotDeletedById(id).map(this::toDataForDetail);
     }
 
     @Override
     public Optional<CategoryData> findBySlug(String slug) {
         return jpa.findBySlugAndDeletedAtIsNull(slug).map(this::toDataForDetail);
+    }
+
+    @Override
+    public Optional<CategoryData> findVisibleById(Long id) {
+        return jpa.findVisibleById(id).map(this::toDataForDetail);
+    }
+
+    @Override
+    public Optional<CategoryData> findVisibleBySlug(String slug) {
+        return jpa.findBySlugAndActiveTrueAndDeletedAtIsNull(slug).map(this::toDataForDetail);
     }
 
     @Override
@@ -109,12 +119,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
 
     @Override
     public boolean existsById(Long id) {
-        return jpa.existsActiveById(id);
+        return jpa.existsNotDeletedById(id);
     }
 
     @Override
-    public boolean hasActiveChildren(Long id) {
-        return jpa.existsActiveChildrenByParentId(id);
+    public boolean hasNotDeletedChildren(Long id) {
+        return jpa.existsNotDeletedChildrenByParentId(id);
     }
 
     @Override
@@ -123,18 +133,18 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public boolean existsActiveBySlugAndIdNot(String slug, Long excludeId) {
-        return jpa.existsActiveBySlugAndIdNot(slug, excludeId);
+    public boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId) {
+        return jpa.existsNotDeletedBySlugAndIdNot(slug, excludeId);
     }
 
     @Override
     public boolean existsBySlug(String slug) {
-        return jpa.existsActiveBySlug(slug);
+        return jpa.existsNotDeletedBySlug(slug);
     }
 
     @Override
     public boolean existsBySlugAndIdNot(String slug, Long id) {
-        return jpa.existsActiveBySlugAndIdNot(slug, id);
+        return jpa.existsNotDeletedBySlugAndIdNot(slug, id);
     }
 
     @Override
@@ -143,7 +153,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         int maxDepth = 20;
         while (current != null && maxDepth-- > 0) {
             if (current.equals(ancestorId)) return true;
-            current = jpa.findActiveById(current).map(CategoryEntity::getParentId).orElse(null);
+            current = jpa.findNotDeletedById(current).map(CategoryEntity::getParentId).orElse(null);
         }
         return false;
     }
@@ -151,14 +161,14 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public void softDelete(Long id) {
-        jpa.findActiveById(id).ifPresent(e -> {
+        jpa.findNotDeletedById(id).ifPresent(e -> {
             Long parentId = e.getParentId();
             int deletedSortOrder = e.getSortOrder();
             
             e.setDeletedAt(LocalDateTime.now());
             jpa.save(e);
             
-            List<CategoryEntity> siblings = jpa.findAllActive(null, parentId);
+            List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, parentId);
             siblings.stream()
                     .filter(sibling -> sibling.getSortOrder() > deletedSortOrder)
                     .forEach(sibling -> {
@@ -174,7 +184,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         jpa.findDeletedById(id).ifPresent(e -> {
             e.setDeletedAt(null);
             
-            List<CategoryEntity> siblings = jpa.findAllActive(null, e.getParentId());
+            List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, e.getParentId());
             int maxOrder = siblings.stream()
                     .mapToInt(CategoryEntity::getSortOrder)
                     .max()
@@ -193,7 +203,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
-        CategoryEntity moved = jpa.findActiveById(command.movedId())
+        CategoryEntity moved = jpa.findNotDeletedById(command.movedId())
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + command.movedId() + " not found"));
         
@@ -340,7 +350,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     public List<Long> bulkSoftDelete(List<Long> ids) {
         List<Long> deletableIds = new ArrayList<>();
         for (Long id : ids) {
-            if (jpa.existsActiveById(id) && !jpa.existsAnyChildrenByParentId(id)) {
+            if (jpa.existsNotDeletedById(id) && !jpa.existsAnyChildrenByParentId(id)) {
                 deletableIds.add(id);
             }
         }
@@ -380,7 +390,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public List<Long> bulkActivate(List<Long> ids) {
-        List<Long> activatableIds = jpa.findAllActiveByIds(ids).stream()
+        List<Long> activatableIds = jpa.findAllNotDeletedByIds(ids).stream()
                 .map(CategoryEntity::getId).toList();
         if (!activatableIds.isEmpty()) {
             jpa.bulkActivate(activatableIds);
@@ -391,7 +401,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public List<Long> bulkDeactivate(List<Long> ids) {
-        List<Long> deactivatableIds = jpa.findAllActiveByIds(ids).stream()
+        List<Long> deactivatableIds = jpa.findAllNotDeletedByIds(ids).stream()
                 .map(CategoryEntity::getId).toList();
         if (!deactivatableIds.isEmpty()) {
             jpa.bulkDeactivate(deactivatableIds);
@@ -402,11 +412,11 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public CategoryData moveUp(Long id) {
-        CategoryEntity entity = jpa.findActiveById(id)
+        CategoryEntity entity = jpa.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + id + " not found"));
 
-        List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+        List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, entity.getParentId());
         siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
 
         int currentIndex = IntStream.range(0, siblings.size())
@@ -433,11 +443,11 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public CategoryData moveDown(Long id) {
-        CategoryEntity entity = jpa.findActiveById(id)
+        CategoryEntity entity = jpa.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + id + " not found"));
 
-        List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+        List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, entity.getParentId());
         siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
 
         int currentIndex = IntStream.range(0, siblings.size())
@@ -464,7 +474,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     @Transactional
     public CategoryData move(Long id, Long newParentId, Long afterId) {
-        CategoryEntity entity = jpa.findActiveById(id)
+        CategoryEntity entity = jpa.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                         "Category with ID " + id + " not found"));
 
@@ -477,13 +487,13 @@ public class CategoryRepositoryImpl implements CategoryRepository {
         }
 
         if (afterId != null) {
-            CategoryEntity afterCategory = jpa.findActiveById(afterId)
+            CategoryEntity afterCategory = jpa.findNotDeletedById(afterId)
                     .orElseThrow(() -> new ConflictException(
                             "INVALID_AFTER_ID", "afterId category not found"));
 
             entity.setSortOrder(afterCategory.getSortOrder() + 1);
 
-            List<CategoryEntity> toShift = jpa.findAllActive(null, entity.getParentId()).stream()
+            List<CategoryEntity> toShift = jpa.findAllNotDeleted(null, entity.getParentId()).stream()
                     .filter(c -> !c.getId().equals(id) && c.getSortOrder() > afterCategory.getSortOrder())
                     .toList();
             for (CategoryEntity c : toShift) {
@@ -491,7 +501,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 jpa.save(c);
             }
         } else {
-            List<CategoryEntity> siblings = jpa.findAllActive(null, entity.getParentId());
+            List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, entity.getParentId());
             int maxOrder = siblings.stream()
                     .filter(c -> !c.getId().equals(id))
                     .mapToInt(CategoryEntity::getSortOrder)

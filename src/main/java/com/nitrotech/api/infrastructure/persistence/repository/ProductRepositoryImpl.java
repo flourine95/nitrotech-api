@@ -8,6 +8,8 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,6 +35,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     private final CategoryJpaRepository categoryJpa;
     private final BrandJpaRepository brandJpa;
     private final ReviewJpaRepository reviewJpa;
+    private final InventoryJpaRepository inventoryJpa;
 
     @Override
     @Transactional
@@ -43,6 +46,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         entity.setName(command.name());
         entity.setSlug(command.slug());
         entity.setDescription(command.description());
+        entity.setShortDescription(command.shortDescription());
         entity.setThumbnail(command.thumbnail());
         entity.setSpecs(command.specs());
         entity.setActive(command.active());
@@ -69,6 +73,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (command.name() != null) entity.setName(command.name());
         if (command.slug() != null) entity.setSlug(command.slug());
         if (command.description() != null) entity.setDescription(command.description());
+        if (command.shortDescription() != null) entity.setShortDescription(command.shortDescription());
         if (command.thumbnail() != null) entity.setThumbnail(command.thumbnail());
         if (command.specs() != null) entity.setSpecs(command.specs());
         if (command.active() != null) entity.setActive(command.active());
@@ -89,17 +94,30 @@ public class ProductRepositoryImpl implements ProductRepository {
 
     @Override
     public Optional<ProductData> findById(Long id) {
-        return productJpa.findActiveById(id).map(this::toDetailData);
+        return productJpa.findActiveByIdWithRelations(id).map(this::toDetailData);
     }
 
     @Override
     public Optional<ProductData> findBySlug(String slug) {
-        return productJpa.findBySlugAndDeletedAtIsNull(slug).map(this::toDetailData);
+        return productJpa.findBySlugWithRelations(slug).map(this::toDetailData);
+    }
+
+    @Override
+    public Optional<ProductData> findVisibleById(Long id) {
+        return productJpa.findVisibleByIdWithRelations(id).map(this::toDetailData);
+    }
+
+    @Override
+    public Optional<ProductData> findVisibleBySlug(String slug) {
+        return productJpa.findVisibleBySlugWithRelations(slug).map(this::toDetailData);
     }
 
     @Override
     public Page<ProductData> findAll(ProductFilter filter, Pageable pageable) {
-        Page<ProductEntity> page = productJpa.findAll(ProductSpecification.from(filter), pageable);
+        Page<ProductEntity> page = productJpa.findAll(
+                ProductSpecification.from(filter, resolveCategoryIds(filter.categorySlug())),
+                pageable
+        );
         
         if (page.isEmpty()) {
             return page.map(this::toListData);
@@ -112,11 +130,14 @@ public class ProductRepositoryImpl implements ProductRepository {
         var categoryNames = batchLoadCategoryNames(
                 page.getContent().stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
+        var categorySlugs = batchLoadCategorySlugs(
+                page.getContent().stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
         var brandNames = batchLoadBrandNames(
                 page.getContent().stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
         );
         
-        return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames));
+        return page.map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, categorySlugs, brandNames));
     }
 
     @Override
@@ -130,6 +151,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         List<Long> productIds = isAscending
                 ? productJpa.findProductIdsSortedByPriceAsc(
                         filter.active(),
+                        filter.visibleRelations(),
                         filter.search(),
                         filter.categorySlug(),
                         filter.brandSlugs(),
@@ -141,6 +163,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                   )
                 : productJpa.findProductIdsSortedByPriceDesc(
                         filter.active(),
+                        filter.visibleRelations(),
                         filter.search(),
                         filter.categorySlug(),
                         filter.brandSlugs(),
@@ -157,6 +180,7 @@ public class ProductRepositoryImpl implements ProductRepository {
         
         long total = productJpa.countProductsWithFilters(
                 filter.active(),
+                filter.visibleRelations(),
                 filter.search(),
                 filter.categorySlug(),
                 filter.brandSlugs(),
@@ -180,15 +204,18 @@ public class ProductRepositoryImpl implements ProductRepository {
         var categoryNames = batchLoadCategoryNames(
                 orderedProducts.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
         );
+        var categorySlugs = batchLoadCategorySlugs(
+                orderedProducts.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
         var brandNames = batchLoadBrandNames(
                 orderedProducts.stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
         );
         
         List<ProductData> content = orderedProducts.stream()
-                .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, brandNames))
+                .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, categorySlugs, brandNames))
                 .toList();
         
-        return new org.springframework.data.domain.PageImpl<>(content, pageable, total);
+        return new PageImpl<>(content, pageable, total);
     }
 
     @Override
@@ -267,6 +294,11 @@ public class ProductRepositoryImpl implements ProductRepository {
         });
     }
 
+    private List<Long> resolveCategoryIds(String categorySlug) {
+        if (categorySlug == null) return null;
+        return categoryJpa.findDescendantIdsBySlug(categorySlug);
+    }
+
     @Override
     public List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable) {
         List<Object[]> results;
@@ -280,6 +312,54 @@ public class ProductRepositoryImpl implements ProductRepository {
         return results.stream()
                 .map(this::toPickerItem)
                 .toList();
+    }
+
+    @Override
+    public List<ProductData> findRelated(Long productId, int limit) {
+        ProductEntity current = productJpa.findVisibleByIdWithRelations(productId)
+                .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
+
+        List<ProductEntity> related = new ArrayList<>();
+        List<Long> excludeIds = new ArrayList<>();
+        excludeIds.add(productId);
+
+        addRelatedBatch(
+                related,
+                excludeIds,
+                limit,
+                productJpa.findVisibleRelatedByCategory(
+                        current.getCategoryId(),
+                        excludeIds,
+                        PageRequest.of(0, remaining(limit, related))
+                )
+        );
+
+        if (current.getBrandId() != null && related.size() < limit) {
+            addRelatedBatch(
+                    related,
+                    excludeIds,
+                    limit,
+                    productJpa.findVisibleRelatedByBrand(
+                            current.getBrandId(),
+                            excludeIds,
+                            PageRequest.of(0, remaining(limit, related))
+                    )
+            );
+        }
+
+        if (related.size() < limit) {
+            addRelatedBatch(
+                    related,
+                    excludeIds,
+                    limit,
+                    productJpa.findVisibleRelatedFallback(
+                            excludeIds,
+                            PageRequest.of(0, remaining(limit, related))
+                    )
+            );
+        }
+
+        return toListDataBatch(related);
     }
 
     @Override
@@ -482,9 +562,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         }
         
         return new ProductData(
-                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
+                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()), resolveCategorySlug(e.getCategoryId()),
                 e.getBrandId(), resolveBrandName(e.getBrandId()),
-                e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
+                e.getName(), e.getSlug(), e.getDescription(), e.getShortDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
                 null,
                 variantCount,
@@ -501,8 +581,11 @@ public class ProductRepositoryImpl implements ProductRepository {
     private ProductData toDetailData(ProductEntity e) {
         List<String> images = imageJpa.findByProductIdOrderBySortOrderAsc(e.getId())
                 .stream().map(ProductImageEntity::getUrl).toList();
-        List<ProductVariantData> variants = variantJpa.findActiveByProductId(e.getId())
-                .stream().map(this::toVariantData).toList();
+        List<ProductVariantEntity> variantEntities = variantJpa.findActiveByProductId(e.getId());
+        Map<Long, InventoryEntity> inventoryByVariantId = batchLoadInventories(variantEntities);
+        List<ProductVariantData> variants = variantEntities.stream()
+                .map(v -> toVariantData(v, inventoryByVariantId.get(v.getId())))
+                .toList();
         
         String badge = computeBadge(e, variants.size());
         
@@ -512,10 +595,15 @@ public class ProductRepositoryImpl implements ProductRepository {
         Double rating = reviewStats != null ? reviewStats.rating() : null;
         Integer reviewCount = reviewStats != null ? reviewStats.reviewCount() : null;
         
+        // Use relationships for category/brand
+        String categoryName = e.getCategory() != null ? e.getCategory().getName() : null;
+        String categorySlug = e.getCategory() != null ? e.getCategory().getSlug() : null;
+        String brandName = e.getBrand() != null ? e.getBrand().getName() : null;
+        
         return new ProductData(
-                e.getId(), e.getCategoryId(), resolveCategoryName(e.getCategoryId()),
-                e.getBrandId(), resolveBrandName(e.getBrandId()),
-                e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
+                e.getId(), e.getCategoryId(), categoryName, categorySlug,
+                e.getBrandId(), brandName,
+                e.getName(), e.getSlug(), e.getDescription(), e.getShortDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
                 variants,
                 variants.size(),
@@ -537,25 +625,48 @@ public class ProductRepositoryImpl implements ProductRepository {
         return categoryJpa.findById(categoryId).map(CategoryEntity::getName).orElse(null);
     }
 
+    private String resolveCategorySlug(Long categoryId) {
+        if (categoryId == null) return null;
+        return categoryJpa.findById(categoryId).map(CategoryEntity::getSlug).orElse(null);
+    }
+
     private String resolveBrandName(Long brandId) {
         if (brandId == null) return null;
         return brandJpa.findById(brandId).map(BrandEntity::getName).orElse(null);
     }
 
     private ProductVariantData toVariantData(ProductVariantEntity e) {
+        return toVariantData(e, inventoryJpa.findByVariantId(e.getId()).orElse(null));
+    }
+
+    private ProductVariantData toVariantData(ProductVariantEntity e, InventoryEntity inventory) {
         String imageUrl = null;
         if (e.getImageId() != null) {
             imageUrl = imageJpa.findById(e.getImageId())
                     .map(ProductImageEntity::getUrl)
                     .orElse(null);
         }
+
+        Integer stockQuantity = inventory != null ? inventory.getQuantity() : null;
+        Integer lowStockThreshold = inventory != null ? inventory.getLowStockThreshold() : null;
         
         return new ProductVariantData(
                 e.getId(), e.getProductId(), e.getSku(), e.getName(),
                 e.getPrice(), e.getAttributes(), e.isActive(),
                 e.getImageId(), imageUrl,
+                stockQuantity,
+                lowStockThreshold,
+                stockQuantity != null ? stockQuantity > 0 : null,
+                stockQuantity != null && lowStockThreshold != null ? stockQuantity <= lowStockThreshold : null,
                 e.getCreatedAt(), e.getUpdatedAt()
         );
+    }
+
+    private Map<Long, InventoryEntity> batchLoadInventories(List<ProductVariantEntity> variants) {
+        List<Long> variantIds = variants.stream().map(ProductVariantEntity::getId).toList();
+        if (variantIds.isEmpty()) return Map.of();
+        return inventoryJpa.findByVariantIdIn(variantIds).stream()
+                .collect(Collectors.toMap(InventoryEntity::getVariantId, inventory -> inventory));
     }
 
     private String computeBadge(ProductEntity product, int variantCount) {
@@ -640,6 +751,55 @@ public class ProductRepositoryImpl implements ProductRepository {
                 ));
     }
 
+    private int remaining(int limit, List<ProductEntity> related) {
+        return Math.max(0, limit - related.size());
+    }
+
+    private void addRelatedBatch(
+            List<ProductEntity> related,
+            List<Long> excludeIds,
+            int limit,
+            List<ProductEntity> candidates
+    ) {
+        for (ProductEntity candidate : candidates) {
+            if (related.size() >= limit) return;
+            if (excludeIds.contains(candidate.getId())) continue;
+            related.add(candidate);
+            excludeIds.add(candidate.getId());
+        }
+    }
+
+    private List<ProductData> toListDataBatch(List<ProductEntity> products) {
+        if (products.isEmpty()) return List.of();
+
+        List<Long> productIds = products.stream().map(ProductEntity::getId).toList();
+        var imagesMap = batchLoadImages(productIds);
+        var statsMap = batchLoadProductStats(productIds);
+        var reviewStatsMap = batchLoadReviewStats(productIds);
+        var categoryNames = batchLoadCategoryNames(
+                products.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
+        var categorySlugs = batchLoadCategorySlugs(
+                products.stream().map(ProductEntity::getCategoryId).filter(Objects::nonNull).distinct().toList()
+        );
+        var brandNames = batchLoadBrandNames(
+                products.stream().map(ProductEntity::getBrandId).filter(Objects::nonNull).distinct().toList()
+        );
+
+        return products.stream()
+                .map(e -> toListDataBatched(e, imagesMap, statsMap, reviewStatsMap, categoryNames, categorySlugs, brandNames))
+                .toList();
+    }
+
+    private Map<Long, String> batchLoadCategorySlugs(List<Long> categoryIds) {
+        if (categoryIds.isEmpty()) return Map.of();
+        return categoryJpa.findAllById(categoryIds).stream()
+                .collect(Collectors.toMap(
+                        CategoryEntity::getId,
+                        CategoryEntity::getSlug
+                ));
+    }
+
     private Map<Long, String> batchLoadBrandNames(List<Long> brandIds) {
         if (brandIds.isEmpty()) return Map.of();
         return brandJpa.findAllById(brandIds).stream()
@@ -655,6 +815,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             Map<Long, ProductStats> statsMap,
             Map<Long, ReviewStats> reviewStatsMap,
             Map<Long, String> categoryNames,
+            Map<Long, String> categorySlugs,
             Map<Long, String> brandNames
     ) {
         List<String> images = imagesMap.getOrDefault(e.getId(), List.of());
@@ -664,9 +825,9 @@ public class ProductRepositoryImpl implements ProductRepository {
         String badge = computeBadge(e, stats.variantCount);
         
         return new ProductData(
-                e.getId(), e.getCategoryId(), categoryNames.get(e.getCategoryId()),
+                e.getId(), e.getCategoryId(), categoryNames.get(e.getCategoryId()), categorySlugs.get(e.getCategoryId()),
                 e.getBrandId(), brandNames.get(e.getBrandId()),
-                e.getName(), e.getSlug(), e.getDescription(), e.getThumbnail(),
+                e.getName(), e.getSlug(), e.getDescription(), e.getShortDescription(), e.getThumbnail(),
                 e.getSpecs(), e.isActive(), images,
                 null,
                 stats.variantCount,

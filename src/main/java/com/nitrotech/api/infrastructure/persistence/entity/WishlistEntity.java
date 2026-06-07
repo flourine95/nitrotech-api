@@ -20,6 +20,10 @@ public class WishlistEntity {
     @Id
     private Long productId;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "productId", insertable = false, updatable = false)
+    private ProductEntity product;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt = LocalDateTime.now();
 

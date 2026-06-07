@@ -18,14 +18,16 @@ public interface CategoryRepository {
     CategoryData update(UpdateCategoryCommand command);
     Optional<CategoryData> findById(Long id);
     Optional<CategoryData> findBySlug(String slug);
+    Optional<CategoryData> findVisibleById(Long id);
+    Optional<CategoryData> findVisibleBySlug(String slug);
     Optional<CategoryData> findDeletedById(Long id);
     Page<CategoryData> findAll(CategoryFilter filter, Pageable pageable);
     List<CategoryData> findTree(Boolean active);
     List<CategoryData> findDeleted();
     boolean existsById(Long id);
-    boolean hasActiveChildren(Long id);
+    boolean hasNotDeletedChildren(Long id);
     boolean hasAnyChildren(Long id);
-    boolean existsActiveBySlugAndIdNot(String slug, Long excludeId);
+    boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId);
     boolean existsBySlug(String slug);
     boolean existsBySlugAndIdNot(String slug, Long id);
     boolean isDescendantOf(Long potentialDescendantId, Long ancestorId);

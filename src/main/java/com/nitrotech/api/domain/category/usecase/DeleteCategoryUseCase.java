@@ -17,9 +17,9 @@ public class DeleteCategoryUseCase {
             throw new NotFoundException("CATEGORY_NOT_FOUND", 
                     "Category with ID " + id + " not found");
         }
-        if (categoryRepository.hasActiveChildren(id)) {
+        if (categoryRepository.hasNotDeletedChildren(id)) {
             throw new ConflictException("CATEGORY_HAS_CHILDREN",
-                    "Cannot delete category with active subcategories. Delete or move them first.");
+                    "Cannot delete category with subcategories. Delete or move them first.");
         }
         categoryRepository.softDelete(id);
     }

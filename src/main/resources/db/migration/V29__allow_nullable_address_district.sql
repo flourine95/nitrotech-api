@@ -1,0 +1,3 @@
+ALTER TABLE addresses
+ALTER COLUMN district DROP NOT NULL,
+ALTER COLUMN district_code DROP NOT NULL;

@@ -9,7 +9,7 @@ import java.util.List;
 
 public interface WishlistJpaRepository extends JpaRepository<WishlistEntity, WishlistEntity.WishlistId> {
 
-    @Query("SELECT w FROM WishlistEntity w WHERE w.userId = :userId ORDER BY w.createdAt DESC")
+    @Query("SELECT w FROM WishlistEntity w JOIN FETCH w.product p WHERE w.userId = :userId AND p.deletedAt IS NULL ORDER BY w.createdAt DESC")
     List<WishlistEntity> findByUserId(@Param("userId") Long userId);
 
     boolean existsByUserIdAndProductId(Long userId, Long productId);

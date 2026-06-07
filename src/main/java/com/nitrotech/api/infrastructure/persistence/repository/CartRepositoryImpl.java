@@ -1,10 +1,11 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
-import com.nitrotech.api.domain.cart.dto.CartData;
-import com.nitrotech.api.domain.cart.dto.CartItemData;
+import com.nitrotech.api.domain.cart.dto.*;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CartEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.CartItemEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.InventoryEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.ProductEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ProductVariantEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -22,6 +23,8 @@ public class CartRepositoryImpl implements CartRepository {
     private final CartItemJpaRepository itemJpa;
     private final ProductVariantJpaRepository variantJpa;
     private final ProductJpaRepository productJpa;
+    private final InventoryJpaRepository inventoryJpa;
+    private final ProductImageJpaRepository imageJpa;
 
     @Override
     @Transactional
@@ -51,7 +54,7 @@ public class CartRepositoryImpl implements CartRepository {
         CartEntity cart = getOrCreateCartEntity(userId);
         CartItemEntity item = itemJpa.findByCartIdAndVariantId(cart.getId(), variantId)
                 .orElseThrow();
-        item.setQuantity(item.getQuantity() + quantity);
+        item.setQuantity(quantity);
         item.setUpdatedAt(LocalDateTime.now());
         return toItemData(itemJpa.save(item));
     }
@@ -77,6 +80,14 @@ public class CartRepositoryImpl implements CartRepository {
                 .orElse(false);
     }
 
+    @Override
+    public int getItemQuantity(Long userId, Long variantId) {
+        return cartJpa.findByUserId(userId)
+                .flatMap(cart -> itemJpa.findByCartIdAndVariantId(cart.getId(), variantId))
+                .map(CartItemEntity::getQuantity)
+                .orElse(0);
+    }
+
     private CartEntity getOrCreateCartEntity(Long userId) {
         return cartJpa.findByUserId(userId).orElseGet(() -> {
             CartEntity c = new CartEntity();
@@ -88,22 +99,62 @@ public class CartRepositoryImpl implements CartRepository {
     private CartData toCartData(CartEntity cart) {
         List<CartItemData> items = itemJpa.findByCartId(cart.getId())
                 .stream().map(this::toItemData).toList();
-        BigDecimal total = items.stream()
+        BigDecimal subtotal = items.stream()
                 .map(CartItemData::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        return new CartData(cart.getId(), cart.getUserId(), items, items.size(), total);
+        int totalItems = items.stream().mapToInt(CartItemData::quantity).sum();
+        CartSummaryData summary = new CartSummaryData(
+                totalItems,
+                subtotal,
+                BigDecimal.ZERO,
+                BigDecimal.ZERO,
+                subtotal
+        );
+        return new CartData(cart.getId(), cart.getUserId(), items, summary);
     }
 
     private CartItemData toItemData(CartItemEntity item) {
         ProductVariantEntity variant = variantJpa.findById(item.getVariantId()).orElseThrow();
-        String productName = productJpa.findById(variant.getProductId())
-                .map(p -> p.getName()).orElse(null);
-        String thumbnail = productJpa.findById(variant.getProductId())
-                .map(p -> p.getThumbnail()).orElse(null);
+        ProductEntity product = productJpa.findById(variant.getProductId()).orElseThrow();
+        InventoryEntity inventory = inventoryJpa.findByVariantId(variant.getId()).orElse(null);
+        String imageUrl = variant.getImageId() == null
+                ? null
+                : imageJpa.findById(variant.getImageId()).map(image -> image.getUrl()).orElse(null);
         BigDecimal subtotal = variant.getPrice().multiply(BigDecimal.valueOf(item.getQuantity()));
+        Integer stockQuantity = inventory == null ? null : inventory.getQuantity();
+        Integer lowStockThreshold = inventory == null ? null : inventory.getLowStockThreshold();
+        Boolean inStock = stockQuantity == null ? null : stockQuantity > 0;
+        Boolean lowStock = stockQuantity == null || lowStockThreshold == null
+                ? null
+                : stockQuantity <= lowStockThreshold;
+        CartProductData productData = new CartProductData(
+                product.getId(), product.getName(), product.getSlug(), product.getThumbnail()
+        );
+        CartVariantData variantData = new CartVariantData(
+                variant.getId(),
+                variant.getProductId(),
+                variant.getSku(),
+                variant.getName(),
+                variant.getPrice(),
+                variant.getAttributes(),
+                variant.isActive(),
+                variant.getImageId(),
+                imageUrl,
+                stockQuantity,
+                lowStockThreshold,
+                inStock,
+                lowStock,
+                productData
+        );
         return new CartItemData(
-                item.getId(), variant.getId(), variant.getSku(), variant.getName(),
-                variant.getPrice(), productName, thumbnail, item.getQuantity(), subtotal
+                item.getId(),
+                item.getCartId(),
+                variant.getId(),
+                variantData,
+                item.getQuantity(),
+                subtotal,
+                item.getCreatedAt(),
+                item.getUpdatedAt()
         );
     }
 }

@@ -12,6 +12,8 @@ public interface ProductRepository {
     ProductData update(UpdateProductCommand command);
     Optional<ProductData> findById(Long id);
     Optional<ProductData> findBySlug(String slug);
+    Optional<ProductData> findVisibleById(Long id);
+    Optional<ProductData> findVisibleBySlug(String slug);
     Page<ProductData> findAll(ProductFilter filter, Pageable pageable);
     Page<ProductData> findAllSortedByPrice(ProductFilter filter, Pageable pageable);
     boolean existsById(Long id);
@@ -22,6 +24,7 @@ public interface ProductRepository {
     void restore(Long id);
     void hardDelete(Long id);
     List<ProductPickerItem> search(String search, String categorySlug, String brandSlug, List<Long> excludeIds, Pageable pageable);
+    List<ProductData> findRelated(Long productId, int limit);
 
     ProductFacets getFacets(ProductFilter filter);
     ProductVariantData createVariant(Long productId, CreateVariantCommand command);

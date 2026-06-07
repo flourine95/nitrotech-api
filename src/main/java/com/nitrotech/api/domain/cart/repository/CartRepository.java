@@ -10,4 +10,5 @@ public interface CartRepository {
     void removeItem(Long userId, Long variantId);
     void clearCart(Long userId);
     boolean hasItem(Long userId, Long variantId);
+    int getItemQuantity(Long userId, Long variantId);
 }
