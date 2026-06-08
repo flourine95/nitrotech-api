@@ -10,7 +10,7 @@ public record CreateOrderRequest(
         @Valid
         ShippingAddressRequest shippingAddress,
 
-        @Pattern(regexp = "^(cod|vnpay|momo)$", message = "Payment method must be cod, vnpay or momo")
+        @Pattern(regexp = "^(cod|vnpay|momo|sepay)$", message = "Payment method must be cod, vnpay, momo or sepay")
         String paymentMethod,
 
         String promotionCode,

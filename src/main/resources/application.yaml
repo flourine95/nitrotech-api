@@ -68,6 +68,11 @@ cloudinary:
   api-key: ${CLOUDINARY_API_KEY}
   api-secret: ${CLOUDINARY_API_SECRET}
 
+# SePay
+sepay:
+  payment-code-prefix: ${SEPAY_PAYMENT_CODE_PREFIX:NT}
+  webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
+
 # Swagger / OpenAPI
 springdoc:
   api-docs:
