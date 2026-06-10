@@ -41,6 +41,11 @@ ghtk:
   api-url: http://localhost:9099
   token: mock-token
 
+ghn:
+  api-url: http://localhost:9099
+  token: mock-token
+  shop-id: "123456"
+
 cors:
   allowed-origins: http://localhost:3000
 

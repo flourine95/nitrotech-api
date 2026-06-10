@@ -35,7 +35,9 @@ public class SecurityConfig {
             "/favicon.ico",
             "/v3/api-docs/**",
             "/swagger-ui/**",
-            "/swagger-ui.html"
+            "/swagger-ui.html",
+            "/mock-ghtk/**",
+            "/mock-ghn/**"
     };
 
     private final CorsConfigurationSource corsConfigurationSource;
