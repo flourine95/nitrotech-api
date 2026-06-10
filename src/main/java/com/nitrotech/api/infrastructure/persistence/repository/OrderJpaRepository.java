@@ -34,14 +34,14 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
     boolean existsByIdAndUserId(Long id, Long userId);
 
     @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query("""
-            UPDATE OrderEntity o
-            SET o.status = 'expired'
-            , o.updatedAt = :expiredAt
-            WHERE o.status = 'pending'
-            AND o.createdAt <= :cutoff
-            AND o.deletedAt IS NULL
-            """)
+    @Query(value = """
+            UPDATE orders
+            SET status = 'expired'
+            , updated_at = :expiredAt
+            WHERE status = 'pending'
+            AND created_at <= :cutoff
+            AND deleted_at IS NULL
+            """, nativeQuery = true)
     int expirePendingCreatedAtOrBefore(
             @Param("cutoff") Instant cutoff,
             @Param("expiredAt") Instant expiredAt
