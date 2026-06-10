@@ -32,6 +32,7 @@ public class SecurityConfig {
             "/api/products/**",
             "/api/banners",
             "/api/webhooks/sepay",
+            "/api/webhooks/payments/**",
             "/favicon.ico",
             "/v3/api-docs/**",
             "/swagger-ui/**",
