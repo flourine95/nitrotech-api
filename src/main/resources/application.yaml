@@ -51,6 +51,19 @@ resend:
 # App
 app:
   frontend-url: ${FRONTEND_URL:http://localhost:3000}
+  shipping:
+    default-provider: ${DEFAULT_SHIPPING_PROVIDER:ghtk}
+
+# GHTK
+ghtk:
+  api-url: ${GHTK_API_URL:https://services.giaohangtietkiem.vn}
+  token: ${GHTK_TOKEN:}
+
+# GHN
+ghn:
+  api-url: ${GHN_API_URL:https://online-gateway.ghn.vn/shiip/public-api}
+  token: ${GHN_TOKEN:}
+  shop-id: ${GHN_SHOP_ID:}
 
 # CORS
 cors:

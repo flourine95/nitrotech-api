@@ -15,7 +15,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -113,7 +113,7 @@ public class BrandRepositoryImpl implements BrandRepository {
     public void softDelete(Long id) {
         BrandEntity entity = jpa.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
-        entity.setDeletedAt(LocalDateTime.now());
+        entity.setDeletedAt(Instant.now());
         jpa.save(entity);
     }
 
@@ -136,7 +136,7 @@ public class BrandRepositoryImpl implements BrandRepository {
         List<Long> notDeletedIds = jpa.findAllNotDeletedByIds(ids).stream()
                 .map(BrandEntity::getId).toList();
         if (!notDeletedIds.isEmpty()) {
-            jpa.bulkSoftDelete(notDeletedIds, LocalDateTime.now());
+            jpa.bulkSoftDelete(notDeletedIds, Instant.now());
         }
         return notDeletedIds;
     }

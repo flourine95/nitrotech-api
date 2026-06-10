@@ -15,7 +15,8 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -81,7 +82,6 @@ public class ProductRepositoryImpl implements ProductRepository {
             entity.setManualBadge(command.manualBadge());
             entity.setManualBadgeExpiresAt(command.manualBadgeExpiresAt());
         }
-        entity.setUpdatedAt(LocalDateTime.now());
         ProductEntity saved = productJpa.save(entity);
 
         if (command.images() != null) {
@@ -230,7 +230,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public void softDelete(Long id) {
         productJpa.findActiveById(id).ifPresent(e -> {
-            e.setDeletedAt(LocalDateTime.now());
+            e.setDeletedAt(Instant.now());
             productJpa.save(e);
         });
     }
@@ -250,7 +250,6 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (command.attributes() != null) entity.setAttributes(command.attributes());
         if (command.active() != null) entity.setActive(command.active());
         if (command.imageId() != null) entity.setImageId(command.imageId());
-        entity.setUpdatedAt(LocalDateTime.now());
         return toVariantData(variantJpa.save(entity));
     }
 
@@ -289,7 +288,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public void softDeleteVariant(Long id) {
         variantJpa.findActiveById(id).ifPresent(e -> {
-            e.setDeletedAt(LocalDateTime.now());
+            e.setDeletedAt(Instant.now());
             variantJpa.save(e);
         });
     }
@@ -670,7 +669,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     private String computeBadge(ProductEntity product, int variantCount) {
-        LocalDateTime now = LocalDateTime.now();
+        Instant now = Instant.now();
         
         if (product.getManualBadge() != null) {
             if (product.getManualBadgeExpiresAt() == null || 
@@ -683,7 +682,7 @@ public class ProductRepositoryImpl implements ProductRepository {
             return "lowstock";
         }
         
-        if (product.getCreatedAt().isAfter(now.minusDays(30))) {
+        if (product.getCreatedAt().isAfter(now.minus(Duration.ofDays(30)))) {
             return "new";
         }
         

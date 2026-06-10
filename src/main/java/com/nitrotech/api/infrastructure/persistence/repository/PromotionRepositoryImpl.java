@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -41,7 +41,7 @@ public class PromotionRepositoryImpl implements PromotionRepository {
 
     @Override
     public Optional<PromotionData> findActiveByCode(String code) {
-        return jpa.findActiveByCode(code, LocalDateTime.now()).map(this::toData);
+        return jpa.findActiveByCode(code, Instant.now()).map(this::toData);
     }
 
     @Override
@@ -54,7 +54,6 @@ public class PromotionRepositoryImpl implements PromotionRepository {
         PromotionEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new NotFoundException("PROMOTION_NOT_FOUND", "Promotion not found"));
         entity.setStatus(status);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -108,7 +107,6 @@ public class PromotionRepositoryImpl implements PromotionRepository {
         e.setStartAt(c.startAt());
         e.setEndAt(c.endAt());
         e.setStatus(c.status() != null ? c.status() : "draft");
-        e.setUpdatedAt(LocalDateTime.now());
         return e;
     }
 

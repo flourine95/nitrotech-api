@@ -2,7 +2,7 @@ package com.nitrotech.api.application.banner.request;
 
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record UpdateBannerRequest(
         @Size(max = 255, message = "Title must be at most 255 characters")
@@ -16,7 +16,7 @@ public record UpdateBannerRequest(
 
         String position,
         Boolean active,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
+        Instant startDate,
+        Instant endDate,
         Integer sortOrder
 ) {}

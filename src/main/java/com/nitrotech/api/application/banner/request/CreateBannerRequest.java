@@ -3,7 +3,7 @@ package com.nitrotech.api.application.banner.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CreateBannerRequest(
         @NotBlank(message = "Title is required")
@@ -21,7 +21,7 @@ public record CreateBannerRequest(
         String position,
 
         boolean active,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
+        Instant startDate,
+        Instant endDate,
         int sortOrder
 ) {}

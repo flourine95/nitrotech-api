@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.brand.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record BrandData(
         Long id,
@@ -9,6 +9,6 @@ public record BrandData(
         String logo,
         String description,
         boolean active,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

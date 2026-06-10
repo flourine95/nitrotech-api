@@ -10,7 +10,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 @Repository
@@ -56,7 +56,6 @@ public class ReviewRepositoryImpl implements ReviewRepository {
         ReviewEntity entity = jpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("REVIEW_NOT_FOUND", "Review not found"));
         entity.setStatus(status);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -68,7 +67,7 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     @Override
     public void softDelete(Long id) {
         jpa.findActiveById(id).ifPresent(e -> {
-            e.setDeletedAt(LocalDateTime.now());
+            e.setDeletedAt(Instant.now());
             jpa.save(e);
         });
     }
