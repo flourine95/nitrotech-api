@@ -29,13 +29,13 @@ public interface AddressJpaRepository extends JpaRepository<AddressEntity, Long>
      * Set all addresses of user to non-default
      */
     @Modifying
-    @Query("UPDATE AddressEntity a SET a.defaultAddress = false, a.updatedAt = CURRENT_TIMESTAMP WHERE a.userId = :userId")
+    @Query(value = "UPDATE addresses SET default_address = false, updated_at = CURRENT_TIMESTAMP WHERE user_id = :userId", nativeQuery = true)
     void unsetAllDefaultAddresses(@Param("userId") Long userId);
 
     /**
      * Set specific address as default
      */
     @Modifying
-    @Query("UPDATE AddressEntity a SET a.defaultAddress = true, a.updatedAt = CURRENT_TIMESTAMP WHERE a.id = :addressId")
+    @Query(value = "UPDATE addresses SET default_address = true, updated_at = CURRENT_TIMESTAMP WHERE id = :addressId", nativeQuery = true)
     void setAsDefault(@Param("addressId") Long addressId);
 }

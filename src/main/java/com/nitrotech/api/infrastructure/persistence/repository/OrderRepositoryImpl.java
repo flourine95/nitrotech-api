@@ -11,7 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,13 +76,18 @@ public class OrderRepositoryImpl implements OrderRepository {
         OrderEntity entity = orderJpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
         entity.setStatus(status);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(orderJpa.save(entity));
     }
 
     @Override
     public boolean existsByIdAndUserId(Long id, Long userId) {
         return orderJpa.existsByIdAndUserId(id, userId);
+    }
+
+    @Override
+    @Transactional
+    public int expirePendingCreatedAtOrBefore(Instant cutoff, Instant expiredAt) {
+        return orderJpa.expirePendingCreatedAtOrBefore(cutoff, expiredAt);
     }
 
     private Map<String, Object> snapshotToMap(ShippingAddressSnapshot s) {

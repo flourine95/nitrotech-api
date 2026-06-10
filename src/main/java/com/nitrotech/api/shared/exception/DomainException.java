@@ -1,5 +1,8 @@
 package com.nitrotech.api.shared.exception;
 
+import lombok.Getter;
+
+@Getter
 public abstract class DomainException extends RuntimeException {
 
     private final String code;
@@ -9,7 +12,4 @@ public abstract class DomainException extends RuntimeException {
         this.code = code;
     }
 
-    public String getCode() {
-        return code;
-    }
 }

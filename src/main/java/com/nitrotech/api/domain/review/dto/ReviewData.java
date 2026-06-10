@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.review.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record ReviewData(
@@ -13,6 +13,6 @@ public record ReviewData(
         String comment,
         List<String> images,
         String status,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

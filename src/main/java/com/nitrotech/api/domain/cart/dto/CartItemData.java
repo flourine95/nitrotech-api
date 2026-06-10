@@ -1,7 +1,7 @@
 package com.nitrotech.api.domain.cart.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CartItemData(
         Long id,
@@ -10,6 +10,6 @@ public record CartItemData(
         CartVariantData variant,
         int quantity,
         BigDecimal subtotal,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

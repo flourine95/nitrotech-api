@@ -12,7 +12,6 @@ import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -55,7 +54,6 @@ public class CartRepositoryImpl implements CartRepository {
         CartItemEntity item = itemJpa.findByCartIdAndVariantId(cart.getId(), variantId)
                 .orElseThrow();
         item.setQuantity(quantity);
-        item.setUpdatedAt(LocalDateTime.now());
         return toItemData(itemJpa.save(item));
     }
 

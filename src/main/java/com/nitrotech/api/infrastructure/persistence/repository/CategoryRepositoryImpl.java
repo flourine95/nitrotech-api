@@ -12,7 +12,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -165,7 +165,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             Long parentId = e.getParentId();
             int deletedSortOrder = e.getSortOrder();
             
-            e.setDeletedAt(LocalDateTime.now());
+            e.setDeletedAt(Instant.now());
             jpa.save(e);
             
             List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, parentId);
@@ -355,7 +355,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
             }
         }
         if (!deletableIds.isEmpty()) {
-            jpa.bulkSoftDelete(deletableIds, LocalDateTime.now());
+            jpa.bulkSoftDelete(deletableIds, Instant.now());
         }
         return deletableIds;
     }

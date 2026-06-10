@@ -3,7 +3,7 @@ package com.nitrotech.api.domain.category.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Schema(description = "Category data with nested children and breadcrumb path")
@@ -48,10 +48,10 @@ public record CategoryData(
         @Schema(description = "Number of products in this category", example = "23")
         Integer productCount,
 
-        @Schema(description = "Creation timestamp", example = "2026-05-08T10:30:00")
-        LocalDateTime createdAt,
+        @Schema(description = "Creation timestamp", example = "2026-05-08T10:30:00Z")
+        Instant createdAt,
 
-        @Schema(description = "Last update timestamp", example = "2026-05-08T15:45:00")
-        LocalDateTime updatedAt
+        @Schema(description = "Last update timestamp", example = "2026-05-08T15:45:00Z")
+        Instant updatedAt
 ) {
 }

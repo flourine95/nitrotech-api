@@ -8,7 +8,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -34,7 +33,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
     public InventoryData adjust(Long variantId, int delta) {
         InventoryEntity entity = getOrCreateEntity(variantId);
         entity.setQuantity(entity.getQuantity() + delta);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -43,7 +41,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
     public InventoryData setQuantity(Long variantId, int quantity) {
         InventoryEntity entity = getOrCreateEntity(variantId);
         entity.setQuantity(quantity);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -52,7 +49,6 @@ public class InventoryRepositoryImpl implements InventoryRepository {
     public InventoryData setThreshold(Long variantId, int threshold) {
         InventoryEntity entity = getOrCreateEntity(variantId);
         entity.setLowStockThreshold(threshold);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 

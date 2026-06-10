@@ -7,7 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -78,7 +78,7 @@ public class UserTokenRepositoryImpl implements PasswordResetTokenRepository, Em
         entity.setUserId(userId);
         entity.setToken(UUID.randomUUID().toString());
         entity.setType(type);
-        entity.setExpiresAt(LocalDateTime.now().plusMinutes(expiryMinutes));
+        entity.setExpiresAt(Instant.now().plusSeconds(expiryMinutes * 60L));
         return jpa.save(entity).getToken();
     }
 }

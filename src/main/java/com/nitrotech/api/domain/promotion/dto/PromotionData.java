@@ -1,7 +1,7 @@
 package com.nitrotech.api.domain.promotion.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record PromotionData(
         Long id,
@@ -16,10 +16,10 @@ public record PromotionData(
         int priority,
         Integer usageLimit,
         int usagePerUser,
-        LocalDateTime startAt,
-        LocalDateTime endAt,
+        Instant startAt,
+        Instant endAt,
         String status,
         int totalUsed,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

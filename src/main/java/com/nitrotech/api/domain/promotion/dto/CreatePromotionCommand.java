@@ -1,7 +1,7 @@
 package com.nitrotech.api.domain.promotion.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CreatePromotionCommand(
         String name,
@@ -15,7 +15,7 @@ public record CreatePromotionCommand(
         int priority,
         Integer usageLimit,
         int usagePerUser,
-        LocalDateTime startAt,
-        LocalDateTime endAt,
+        Instant startAt,
+        Instant endAt,
         String status
 ) {}

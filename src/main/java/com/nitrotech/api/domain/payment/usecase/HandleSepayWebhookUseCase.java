@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -93,7 +93,7 @@ public class HandleSepayWebhookUseCase {
         entity.setStatus(status);
         entity.setProviderRef(providerRef);
         entity.setProviderData(providerData(request));
-        entity.setPaidAt("paid".equals(status) ? LocalDateTime.now() : null);
+        entity.setPaidAt("paid".equals(status) ? Instant.now() : null);
         paymentTransactionJpa.save(entity);
     }
 

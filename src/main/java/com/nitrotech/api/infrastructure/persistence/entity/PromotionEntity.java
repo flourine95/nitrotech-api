@@ -4,9 +4,11 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "promotions")
@@ -50,17 +52,19 @@ public class PromotionEntity {
     private int usagePerUser = 1;
 
     @Column(nullable = false)
-    private LocalDateTime startAt;
+    private Instant startAt;
 
     @Column(nullable = false)
-    private LocalDateTime endAt;
+    private Instant endAt;
 
     @Column(nullable = false)
     private String status = "draft";
 
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Instant createdAt;
 
+    @UpdateTimestamp
     @Column(nullable = false)
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private Instant updatedAt;
 }

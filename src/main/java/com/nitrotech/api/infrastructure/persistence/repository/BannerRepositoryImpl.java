@@ -9,7 +9,7 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +45,6 @@ public class BannerRepositoryImpl implements BannerRepository {
         if (command.startDate() != null) entity.setStartDate(command.startDate());
         if (command.endDate() != null) entity.setEndDate(command.endDate());
         if (command.sortOrder() != null) entity.setSortOrder(command.sortOrder());
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(jpa.save(entity));
     }
 
@@ -56,7 +55,7 @@ public class BannerRepositoryImpl implements BannerRepository {
 
     @Override
     public List<BannerData> findActive(String position) {
-        return jpa.findActive(position, LocalDateTime.now()).stream()
+        return jpa.findActive(position, Instant.now()).stream()
                 .map(this::toData)
                 .toList();
     }
