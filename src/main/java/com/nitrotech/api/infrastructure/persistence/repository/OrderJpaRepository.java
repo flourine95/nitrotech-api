@@ -4,9 +4,11 @@ import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.Optional;
 
 public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
@@ -30,4 +32,18 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long> {
     );
 
     boolean existsByIdAndUserId(Long id, Long userId);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            UPDATE OrderEntity o
+            SET o.status = 'expired'
+            , o.updatedAt = :expiredAt
+            WHERE o.status = 'pending'
+            AND o.createdAt <= :cutoff
+            AND o.deletedAt IS NULL
+            """)
+    int expirePendingCreatedAtOrBefore(
+            @Param("cutoff") Instant cutoff,
+            @Param("expiredAt") Instant expiredAt
+    );
 }

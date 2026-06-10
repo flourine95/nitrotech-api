@@ -11,6 +11,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -81,6 +82,12 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public boolean existsByIdAndUserId(Long id, Long userId) {
         return orderJpa.existsByIdAndUserId(id, userId);
+    }
+
+    @Override
+    @Transactional
+    public int expirePendingCreatedAtOrBefore(Instant cutoff, Instant expiredAt) {
+        return orderJpa.expirePendingCreatedAtOrBefore(cutoff, expiredAt);
     }
 
     private Map<String, Object> snapshotToMap(ShippingAddressSnapshot s) {
