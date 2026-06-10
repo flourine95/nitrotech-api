@@ -34,6 +34,12 @@ mail:
 
 app:
   frontend-url: http://localhost:3000
+  shipping:
+    default-provider: ghtk
+
+ghtk:
+  api-url: http://localhost:9099
+  token: mock-token
 
 cors:
   allowed-origins: http://localhost:3000
