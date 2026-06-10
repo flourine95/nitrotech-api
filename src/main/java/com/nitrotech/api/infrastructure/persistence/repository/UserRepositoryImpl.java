@@ -8,7 +8,6 @@ import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Repository
@@ -58,7 +57,6 @@ public class UserRepositoryImpl implements UserRepository {
         if (name != null) entity.setName(name);
         if (phone != null) entity.setPhone(phone);
         if (avatar != null) entity.setAvatar(avatar);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toProfileData(jpa.save(entity));
     }
 
@@ -67,7 +65,6 @@ public class UserRepositoryImpl implements UserRepository {
         UserEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
         entity.setPassword(hashedPassword);
-        entity.setUpdatedAt(LocalDateTime.now());
         jpa.save(entity);
     }
 
@@ -76,7 +73,6 @@ public class UserRepositoryImpl implements UserRepository {
         UserEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
         entity.setStatus(UserEntity.Status.active);
-        entity.setUpdatedAt(LocalDateTime.now());
         jpa.save(entity);
     }
 

@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public interface BannerJpaRepository extends JpaRepository<BannerEntity, Long> {
@@ -17,7 +17,7 @@ public interface BannerJpaRepository extends JpaRepository<BannerEntity, Long> {
             AND (b.endDate IS NULL OR b.endDate >= :now)
             ORDER BY b.sortOrder ASC
             """)
-    List<BannerEntity> findActive(@Param("position") String position, @Param("now") LocalDateTime now);
+    List<BannerEntity> findActive(@Param("position") String position, @Param("now") Instant now);
 
     @Query("""
             SELECT b FROM BannerEntity b

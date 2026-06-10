@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -74,7 +74,7 @@ public interface CategoryJpaRepository extends JpaRepository<CategoryEntity, Lon
     
     @Modifying
     @Query("UPDATE CategoryEntity c SET c.deletedAt = :now WHERE c.id IN :ids AND c.deletedAt IS NULL")
-    int bulkSoftDelete(@Param("ids") List<Long> ids, @Param("now") LocalDateTime now);
+    int bulkSoftDelete(@Param("ids") List<Long> ids, @Param("now") Instant now);
     
     @Modifying
     @Query("UPDATE CategoryEntity c SET c.deletedAt = NULL WHERE c.id IN :ids AND c.deletedAt IS NOT NULL")

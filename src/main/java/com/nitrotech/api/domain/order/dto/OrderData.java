@@ -1,7 +1,7 @@
 package com.nitrotech.api.domain.order.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record OrderData(
@@ -17,6 +17,6 @@ public record OrderData(
         String promotionCode,
         String note,
         List<OrderItemData> items,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

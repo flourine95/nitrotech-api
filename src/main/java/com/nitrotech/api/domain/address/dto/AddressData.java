@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.address.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record AddressData(
     Long id,
@@ -15,6 +15,6 @@ public record AddressData(
     String wardCode,
     String street,
     boolean defaultAddress,
-    LocalDateTime createdAt,
-    LocalDateTime updatedAt
+    Instant createdAt,
+    Instant updatedAt
 ) {}

@@ -3,7 +3,7 @@ package com.nitrotech.api.application.promotion.request;
 import jakarta.validation.constraints.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CreatePromotionRequest(
         @NotBlank String name,
@@ -27,8 +27,8 @@ public record CreatePromotionRequest(
         @Min(1)
         int usagePerUser,
 
-        @NotNull LocalDateTime startAt,
-        @NotNull LocalDateTime endAt,
+        @NotNull Instant startAt,
+        @NotNull Instant endAt,
 
         @Pattern(regexp = "^(draft|active|paused)$")
         String status

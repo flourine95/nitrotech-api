@@ -1,7 +1,7 @@
 package com.nitrotech.api.domain.product.dto;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
@@ -27,6 +27,6 @@ public record ProductData(
         String badge,                       // "new", "bestseller", "lowstock", "preorder", null
         Double rating,                      // avg rating from reviews
         Integer reviewCount,                // total approved reviews
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

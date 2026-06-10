@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.banner.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record CreateBannerCommand(
         String title,
@@ -8,7 +8,7 @@ public record CreateBannerCommand(
         String url,
         String position,
         boolean active,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
+        Instant startDate,
+        Instant endDate,
         int sortOrder
 ) {}

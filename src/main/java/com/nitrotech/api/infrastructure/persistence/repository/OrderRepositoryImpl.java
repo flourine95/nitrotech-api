@@ -11,7 +11,6 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -76,7 +75,6 @@ public class OrderRepositoryImpl implements OrderRepository {
         OrderEntity entity = orderJpa.findActiveById(id)
                 .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
         entity.setStatus(status);
-        entity.setUpdatedAt(LocalDateTime.now());
         return toData(orderJpa.save(entity));
     }
 

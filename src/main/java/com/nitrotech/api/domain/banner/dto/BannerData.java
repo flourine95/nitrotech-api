@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.banner.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record BannerData(
         Long id,
@@ -9,9 +9,9 @@ public record BannerData(
         String url,
         String position,
         boolean active,
-        LocalDateTime startDate,
-        LocalDateTime endDate,
+        Instant startDate,
+        Instant endDate,
         int sortOrder,
-        LocalDateTime createdAt,
-        LocalDateTime updatedAt
+        Instant createdAt,
+        Instant updatedAt
 ) {}

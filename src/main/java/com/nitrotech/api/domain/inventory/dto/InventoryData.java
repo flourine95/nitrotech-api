@@ -1,6 +1,6 @@
 package com.nitrotech.api.domain.inventory.dto;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record InventoryData(
         Long id,
@@ -10,5 +10,5 @@ public record InventoryData(
         int quantity,
         int lowStockThreshold,
         boolean lowStock,
-        LocalDateTime updatedAt
+        Instant updatedAt
 ) {}

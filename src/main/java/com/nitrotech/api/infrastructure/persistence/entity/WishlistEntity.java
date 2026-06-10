@@ -4,9 +4,10 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.io.Serializable;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 @Table(name = "wishlists")
@@ -24,8 +25,9 @@ public class WishlistEntity {
     @JoinColumn(name = "productId", insertable = false, updatable = false)
     private ProductEntity product;
 
+    @CreationTimestamp
     @Column(nullable = false, updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    private Instant createdAt;
 
     public record WishlistId(Long userId, Long productId) implements Serializable {}
 }
