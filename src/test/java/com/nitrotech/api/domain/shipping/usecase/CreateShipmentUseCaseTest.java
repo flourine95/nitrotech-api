@@ -33,7 +33,7 @@ class CreateShipmentUseCaseTest {
         orderRepository = mock(OrderRepository.class);
         shipmentRepository = mock(ShipmentRepository.class);
         registry = mock(ShippingProviderRegistry.class);
-        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry);
+        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, "ghtk");
     }
 
     @Test

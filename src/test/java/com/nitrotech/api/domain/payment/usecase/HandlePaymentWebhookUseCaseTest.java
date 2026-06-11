@@ -104,15 +104,16 @@ class HandlePaymentWebhookUseCaseTest {
     }
 
     @Test
-    void throwsExceptionWhenPaymentCodeIsMissing() throws Exception {
+    void ignoresWebhookWhenPaymentCodeIsMissing() throws Exception {
         when(paymentTransactionJpa.findByProviderAndProviderRef("sepay", "92704"))
                 .thenReturn(Optional.empty());
 
         RawWebhookRequest rawRequest = rawRequest(null, "Khach chuyen khoan", new BigDecimal("500000"), "in", 92704L, "FT24012345678");
 
-        assertThatThrownBy(() -> useCase.execute("sepay", rawRequest))
-                .isInstanceOf(BadRequestException.class)
-                .hasMessageContaining("Cannot extract order ID");
+        Map<String, Object> result = useCase.execute("sepay", rawRequest);
+
+        assertThat(result.get("success")).isEqualTo(false);
+        assertThat(result.get("message").toString()).contains("Ignored: Cannot extract order ID");
 
         verify(orderRepository, never()).findById(anyLong());
         verify(paymentTransactionJpa, never()).save(any());
@@ -120,16 +121,17 @@ class HandlePaymentWebhookUseCaseTest {
     }
 
     @Test
-    void throwsExceptionWhenOrderCannotBeFound() throws Exception {
+    void ignoresWebhookWhenOrderCannotBeFound() throws Exception {
         when(paymentTransactionJpa.findByProviderAndProviderRef("sepay", "92704"))
                 .thenReturn(Optional.empty());
         when(orderRepository.findById(123L)).thenReturn(Optional.empty());
 
         RawWebhookRequest rawRequest = rawRequest("NT123", "NT123 content", new BigDecimal("500000"), "in", 92704L, "FT24012345678");
 
-        assertThatThrownBy(() -> useCase.execute("sepay", rawRequest))
-                .isInstanceOf(NotFoundException.class)
-                .hasMessageContaining("Order with ID 123 not found");
+        Map<String, Object> result = useCase.execute("sepay", rawRequest);
+
+        assertThat(result.get("success")).isEqualTo(false);
+        assertThat(result.get("message").toString()).contains("Ignored: Order with ID 123 not found");
 
         verify(paymentTransactionJpa, never()).save(any());
         verify(updateOrderStatusUseCase, never()).execute(anyLong(), anyString());

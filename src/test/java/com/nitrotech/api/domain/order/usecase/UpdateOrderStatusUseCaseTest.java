@@ -2,7 +2,6 @@ package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
-import com.nitrotech.api.domain.shipping.usecase.CreateShipmentUseCase;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,14 +19,12 @@ import static org.mockito.Mockito.*;
 class UpdateOrderStatusUseCaseTest {
 
     private OrderRepository orderRepository;
-    private CreateShipmentUseCase createShipmentUseCase;
     private UpdateOrderStatusUseCase useCase;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
-        createShipmentUseCase = mock(CreateShipmentUseCase.class);
-        useCase = new UpdateOrderStatusUseCase(orderRepository, createShipmentUseCase, "ghtk");
+        useCase = new UpdateOrderStatusUseCase(orderRepository);
     }
 
     @Test
@@ -39,7 +36,6 @@ class UpdateOrderStatusUseCaseTest {
 
         assertThat(result.status()).isEqualTo("confirmed");
         verify(orderRepository).updateStatus(123L, "confirmed");
-        verify(createShipmentUseCase).execute(123L, "ghtk");
     }
 
     @Test
@@ -51,7 +47,6 @@ class UpdateOrderStatusUseCaseTest {
 
         assertThat(result.status()).isEqualTo("shipped");
         verify(orderRepository).updateStatus(123L, "shipped");
-        verify(createShipmentUseCase, never()).execute(anyLong(), anyString());
     }
 
     @Test

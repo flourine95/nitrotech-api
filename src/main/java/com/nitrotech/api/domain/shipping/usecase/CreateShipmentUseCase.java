@@ -8,8 +8,8 @@ import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.shipping.ShippingProviderRegistry;
 import com.nitrotech.api.shared.exception.NotFoundException;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,16 +17,29 @@ import java.util.Optional;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class CreateShipmentUseCase {
 
     private final OrderRepository orderRepository;
     private final ShipmentRepository shipmentRepository;
     private final ShippingProviderRegistry shippingProviderRegistry;
+    private final String defaultProvider;
+
+    public CreateShipmentUseCase(
+            OrderRepository orderRepository,
+            ShipmentRepository shipmentRepository,
+            ShippingProviderRegistry shippingProviderRegistry,
+            @Value("${app.shipping.default-provider:ghtk}") String defaultProvider
+    ) {
+        this.orderRepository = orderRepository;
+        this.shipmentRepository = shipmentRepository;
+        this.shippingProviderRegistry = shippingProviderRegistry;
+        this.defaultProvider = defaultProvider;
+    }
 
     @Transactional
     public ShipmentData execute(Long orderId, String providerName) {
-        log.info("Creating shipment for orderId: {}, provider: {}", orderId, providerName);
+        String resolvedProvider = (providerName == null || providerName.isBlank()) ? defaultProvider : providerName;
+        log.info("Creating shipment for orderId: {}, provider: {}", orderId, resolvedProvider);
 
         // Check if shipment already exists
         Optional<ShipmentData> existing = shipmentRepository.findByOrderId(orderId);
@@ -41,7 +54,7 @@ public class CreateShipmentUseCase {
                         "Order with ID " + orderId + " not found"));
 
         // Get shipping provider
-        ShippingProvider provider = shippingProviderRegistry.getProvider(providerName);
+        ShippingProvider provider = shippingProviderRegistry.getProvider(resolvedProvider);
 
         // Request shipment creation
         ShippingResult result = provider.createShipment(order);
