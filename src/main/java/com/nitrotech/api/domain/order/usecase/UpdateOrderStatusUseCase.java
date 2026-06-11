@@ -2,10 +2,8 @@ package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
-import com.nitrotech.api.domain.shipping.usecase.CreateShipmentUseCase;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -23,17 +21,9 @@ public class UpdateOrderStatusUseCase {
     );
 
     private final OrderRepository orderRepository;
-    private final CreateShipmentUseCase createShipmentUseCase;
-    private final String defaultProvider;
 
-    public UpdateOrderStatusUseCase(
-            OrderRepository orderRepository,
-            CreateShipmentUseCase createShipmentUseCase,
-            @Value("${app.shipping.default-provider:ghtk}") String defaultProvider
-    ) {
+    public UpdateOrderStatusUseCase(OrderRepository orderRepository) {
         this.orderRepository = orderRepository;
-        this.createShipmentUseCase = createShipmentUseCase;
-        this.defaultProvider = defaultProvider;
     }
 
     public OrderData execute(Long id, String newStatus) {
@@ -45,12 +35,6 @@ public class UpdateOrderStatusUseCase {
             throw new DomainException("INVALID_STATUS_TRANSITION",
                     "Cannot transition from " + order.status() + " to " + newStatus) {};
         }
-        OrderData updatedOrder = orderRepository.updateStatus(id, newStatus);
-
-        if ("confirmed".equalsIgnoreCase(newStatus)) {
-            createShipmentUseCase.execute(id, defaultProvider);
-        }
-
-        return updatedOrder;
+        return orderRepository.updateStatus(id, newStatus);
     }
 }

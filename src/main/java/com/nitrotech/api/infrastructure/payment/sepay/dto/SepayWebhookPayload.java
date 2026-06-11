@@ -1,8 +1,8 @@
-package com.nitrotech.api.application.payment.request;
+package com.nitrotech.api.infrastructure.payment.sepay.dto;
 
 import java.math.BigDecimal;
 
-public record SepayWebhookRequest(
+public record SepayWebhookPayload(
         Long id,
         String gateway,
         String transactionDate,
