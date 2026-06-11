@@ -22,23 +22,22 @@ import static org.mockito.Mockito.*;
 class GhnShippingProviderTest {
 
     private GhnClient ghnClient;
-    private GhnAddressResolver ghnAddressResolver;
+    private GhnCarrierAddressResolver ghnCarrierAddressResolver;
     private GhnShippingProvider provider;
 
     @BeforeEach
     void setUp() {
         ghnClient = mock(GhnClient.class);
-        ghnAddressResolver = mock(GhnAddressResolver.class);
-        provider = new GhnShippingProvider(ghnClient, ghnAddressResolver);
+        ghnCarrierAddressResolver = mock(GhnCarrierAddressResolver.class);
+        provider = new GhnShippingProvider(ghnClient, ghnCarrierAddressResolver);
     }
 
     @Test
     void mapsAndCreatesShipmentSuccessfullyForCod() {
         OrderData order = order("cod", new BigDecimal("500000"));
         
-        when(ghnAddressResolver.getProvinceId("79", "HCM")).thenReturn(10);
-        when(ghnAddressResolver.getDistrictId(10, "760", "Q1")).thenReturn(101);
-        when(ghnAddressResolver.getWardCode(101, "Ben Nghe")).thenReturn("W_BEN_NGHE");
+        when(ghnCarrierAddressResolver.resolve(order.shippingAddress()))
+                .thenReturn(new GhnCarrierAddress(10, 101, "W_BEN_NGHE"));
 
         GhnOrderResponse.DataDetails details = new GhnOrderResponse.DataDetails(
                 "GHN123456", 25000, "2026-06-14T18:00:00Z"
@@ -74,9 +73,8 @@ class GhnShippingProviderTest {
     void mapsAndCreatesShipmentSuccessfullyForPrepaid() {
         OrderData order = order("sepay", new BigDecimal("500000"));
         
-        when(ghnAddressResolver.getProvinceId("79", "HCM")).thenReturn(10);
-        when(ghnAddressResolver.getDistrictId(10, "760", "Q1")).thenReturn(101);
-        when(ghnAddressResolver.getWardCode(101, "Ben Nghe")).thenReturn("W_BEN_NGHE");
+        when(ghnCarrierAddressResolver.resolve(order.shippingAddress()))
+                .thenReturn(new GhnCarrierAddress(10, 101, "W_BEN_NGHE"));
 
         GhnOrderResponse.DataDetails details = new GhnOrderResponse.DataDetails(
                 "GHN123456", 25000, "2026-06-14T18:00:00Z"
@@ -98,9 +96,8 @@ class GhnShippingProviderTest {
     void capsInsuranceValueAt20Million() {
         OrderData order = order("cod", new BigDecimal("25000000")); // 25 Million VND
         
-        when(ghnAddressResolver.getProvinceId("79", "HCM")).thenReturn(10);
-        when(ghnAddressResolver.getDistrictId(10, "760", "Q1")).thenReturn(101);
-        when(ghnAddressResolver.getWardCode(101, "Ben Nghe")).thenReturn("W_BEN_NGHE");
+        when(ghnCarrierAddressResolver.resolve(order.shippingAddress()))
+                .thenReturn(new GhnCarrierAddress(10, 101, "W_BEN_NGHE"));
 
         GhnOrderResponse.DataDetails details = new GhnOrderResponse.DataDetails(
                 "GHN123456", 25000, "2026-06-14T18:00:00Z"
@@ -121,9 +118,8 @@ class GhnShippingProviderTest {
     void throwsShippingExceptionWhenGhnClientThrowsException() {
         OrderData order = order("cod", new BigDecimal("500000"));
 
-        when(ghnAddressResolver.getProvinceId("79", "HCM")).thenReturn(10);
-        when(ghnAddressResolver.getDistrictId(10, "760", "Q1")).thenReturn(101);
-        when(ghnAddressResolver.getWardCode(101, "Ben Nghe")).thenReturn("W_BEN_NGHE");
+        when(ghnCarrierAddressResolver.resolve(order.shippingAddress()))
+                .thenReturn(new GhnCarrierAddress(10, 101, "W_BEN_NGHE"));
 
         when(ghnClient.createOrder(any())).thenThrow(new RuntimeException("Connection timeout"));
 
@@ -137,9 +133,8 @@ class GhnShippingProviderTest {
     void throwsShippingExceptionWhenGhnReturnsFailureCode() {
         OrderData order = order("cod", new BigDecimal("500000"));
 
-        when(ghnAddressResolver.getProvinceId("79", "HCM")).thenReturn(10);
-        when(ghnAddressResolver.getDistrictId(10, "760", "Q1")).thenReturn(101);
-        when(ghnAddressResolver.getWardCode(101, "Ben Nghe")).thenReturn("W_BEN_NGHE");
+        when(ghnCarrierAddressResolver.resolve(order.shippingAddress()))
+                .thenReturn(new GhnCarrierAddress(10, 101, "W_BEN_NGHE"));
 
         GhnOrderResponse response = new GhnOrderResponse(400, "District ID invalid", null);
         when(ghnClient.createOrder(any())).thenReturn(response);
