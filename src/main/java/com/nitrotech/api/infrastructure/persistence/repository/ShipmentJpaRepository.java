@@ -7,4 +7,5 @@ import java.util.Optional;
 
 public interface ShipmentJpaRepository extends JpaRepository<ShipmentEntity, Long> {
     Optional<ShipmentEntity> findByOrderId(Long orderId);
+    Optional<ShipmentEntity> findByProviderIgnoreCaseAndTrackingCode(String provider, String trackingCode);
 }
