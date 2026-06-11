@@ -7,8 +7,6 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListQuery;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.usecase.*;
-import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.usecase.CreateShipmentUseCase;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.validation.Valid;
@@ -30,7 +28,6 @@ public class OrderController {
     private final GetOrderUseCase getOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
-    private final CreateShipmentUseCase createShipmentUseCase;
 
     @GetMapping
     public ResponseEntity<ApiResult<List<OrderData>>> list(
@@ -87,14 +84,5 @@ public class OrderController {
             @Valid @RequestBody UpdateOrderStatusRequest req
     ) {
         return ResponseEntity.ok(ApiResult.ok(updateOrderStatusUseCase.execute(id, req.status())));
-    }
-
-    @PostMapping("/{id}/shipment")
-    public ResponseEntity<ApiResult<ShipmentData>> createShipment(
-            @PathVariable Long id,
-            @RequestParam(required = false) String provider
-    ) {
-        ShipmentData shipment = createShipmentUseCase.execute(id, provider);
-        return ResponseEntity.ok(ApiResult.ok(shipment));
     }
 }

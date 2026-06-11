@@ -7,6 +7,7 @@ import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.shipping.ShippingProviderRegistry;
+import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +54,13 @@ public class CreateShipmentUseCase {
                 .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", 
                         "Order with ID " + orderId + " not found"));
 
+        // Check order status
+        String status = order.status();
+        if (!"confirmed".equalsIgnoreCase(status) && !"processing".equalsIgnoreCase(status)) {
+            throw new DomainException("INVALID_ORDER_STATUS",
+                    "Cannot create shipment for order " + orderId + " in " + status + " status") {};
+        }
+
         // Get shipping provider
         ShippingProvider provider = shippingProviderRegistry.getProvider(resolvedProvider);
 
@@ -62,7 +70,7 @@ public class CreateShipmentUseCase {
         // Save shipment details
         ShipmentData shipment = ShipmentData.builder()
                 .orderId(orderId)
-                .provider(providerName.toLowerCase())
+                .provider(resolvedProvider.toLowerCase())
                 .trackingCode(result.getTrackingCode())
                 .status("ready_to_pick")
                 .fee(result.getFee())

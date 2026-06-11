@@ -7,6 +7,7 @@ import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.shipping.ShippingProviderRegistry;
+import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,7 @@ class CreateShipmentUseCaseTest {
         String providerName = "ghtk";
 
         OrderData order = mock(OrderData.class);
+        when(order.status()).thenReturn("confirmed");
         when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
         when(shipmentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
 
@@ -116,5 +118,59 @@ class CreateShipmentUseCaseTest {
                 .hasMessageContaining("Order with ID 123 not found");
 
         verify(registry, never()).getProvider(anyString());
+    }
+
+    @Test
+    void createsShipmentWithNullProviderFallsBackToDefault() {
+        Long orderId = 123L;
+        OrderData order = mock(OrderData.class);
+        when(order.status()).thenReturn("confirmed");
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(shipmentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+
+        ShippingProvider provider = mock(ShippingProvider.class);
+        when(provider.getProviderName()).thenReturn("ghtk");
+        when(registry.getProvider("ghtk")).thenReturn(provider);
+
+        Instant estTime = Instant.now().plusSeconds(86400 * 2);
+        ShippingResult shippingResult = ShippingResult.builder()
+                .trackingCode("S12345.6789")
+                .fee(new BigDecimal("35000"))
+                .estimatedAt(estTime)
+                .build();
+        when(provider.createShipment(order)).thenReturn(shippingResult);
+
+        ShipmentData savedMock = ShipmentData.builder()
+                .id(1L)
+                .orderId(orderId)
+                .provider("ghtk")
+                .trackingCode("S12345.6789")
+                .status("ready_to_pick")
+                .fee(new BigDecimal("35000"))
+                .estimatedAt(estTime)
+                .build();
+        when(shipmentRepository.save(any(ShipmentData.class))).thenReturn(savedMock);
+
+        ShipmentData result = useCase.execute(orderId, null);
+
+        assertThat(result).isNotNull();
+        assertThat(result.getProvider()).isEqualTo("ghtk");
+        verify(registry).getProvider("ghtk");
+    }
+
+    @Test
+    void throwsDomainExceptionWhenOrderStatusIsBlocked() {
+        Long orderId = 123L;
+        OrderData order = mock(OrderData.class);
+        when(order.status()).thenReturn("pending");
+        when(orderRepository.findById(orderId)).thenReturn(Optional.of(order));
+        when(shipmentRepository.findByOrderId(orderId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> useCase.execute(orderId, "ghtk"))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("Cannot create shipment for order 123 in pending status");
+
+        verify(registry, never()).getProvider(anyString());
+        verify(shipmentRepository, never()).save(any());
     }
 }
