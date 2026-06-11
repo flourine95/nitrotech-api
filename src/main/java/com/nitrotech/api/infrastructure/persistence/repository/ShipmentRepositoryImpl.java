@@ -49,6 +49,11 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
     }
 
     @Override
+    public Optional<ShipmentData> findByProviderAndTrackingCode(String provider, String trackingCode) {
+        return shipmentJpa.findByProviderIgnoreCaseAndTrackingCode(provider, trackingCode).map(this::toData);
+    }
+
+    @Override
     @Transactional
     public void addLog(Long shipmentId, String status, String location, String note) {
         ShipmentEntity shipment = shipmentJpa.findById(shipmentId)
