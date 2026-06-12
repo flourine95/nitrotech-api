@@ -26,7 +26,7 @@ public class GhnShippingProvider implements ShippingProvider {
     private static final int DEFAULT_DIMENSION_CM = 10;
     
     private final GhnClient ghnClient;
-    private final GhnAddressResolver ghnAddressResolver;
+    private final GhnCarrierAddressResolver ghnCarrierAddressResolver;
 
     @Override
     public String getProviderName() {
@@ -69,10 +69,8 @@ public class GhnShippingProvider implements ShippingProvider {
             throw new ShippingException("INVALID_ADDRESS_CODE", "Shipping address is missing");
         }
 
-        // 1. Resolve address GSO codes into GHN specific IDs/codes
-        Integer provinceId = ghnAddressResolver.getProvinceId(addr.provinceCode(), addr.province());
-        Integer districtId = ghnAddressResolver.getDistrictId(provinceId, addr.districtCode(), addr.district());
-        String wardCode = ghnAddressResolver.getWardCode(districtId, addr.ward());
+        // 1. Resolve internal address codes into GHN specific IDs/codes
+        GhnCarrierAddress carrierAddress = ghnCarrierAddressResolver.resolve(addr);
 
         // 2. Map items and calculate total weight
         List<GhnOrderRequest.Item> items = order.items().stream()
@@ -106,8 +104,8 @@ public class GhnShippingProvider implements ShippingProvider {
                 .toName(addr.receiver())
                 .toPhone(addr.phone())
                 .toAddress(addr.street())
-                .toWardCode(wardCode)
-                .toDistrictId(districtId)
+                .toWardCode(carrierAddress.wardCode())
+                .toDistrictId(carrierAddress.districtId())
                 .codAmount(codAmount)
                 .weight(totalWeightG)
                 .length(DEFAULT_DIMENSION_CM)
