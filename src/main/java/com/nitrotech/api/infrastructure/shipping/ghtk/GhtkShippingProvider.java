@@ -15,12 +15,30 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 @Component
 @RequiredArgsConstructor
 public class GhtkShippingProvider implements ShippingProvider {
 
     private static final double DEFAULT_PRODUCT_WEIGHT = 0.2; // Default 200g in kg
+    private static final String DEFAULT_HAMLET = "Khác";
+    private static final Map<String, String> PROVINCE_ALIASES = Map.of(
+            "hcm", "TP. Hồ Chí Minh",
+            "tp hcm", "TP. Hồ Chí Minh",
+            "tp. hcm", "TP. Hồ Chí Minh",
+            "ho chi minh", "TP. Hồ Chí Minh",
+            "hồ chí minh", "TP. Hồ Chí Minh",
+            "tphcm", "TP. Hồ Chí Minh",
+            "ha noi", "Hà Nội",
+            "hà nội", "Hà Nội"
+    );
+    private static final Map<String, String> WARD_ALIASES = Map.of(
+            "ben nghe", "Phường Bến Nghé",
+            "bến nghé", "Phường Bến Nghé"
+    );
+
     private final GhtkClient ghtkClient;
 
     @Override
@@ -81,10 +99,11 @@ public class GhtkShippingProvider implements ShippingProvider {
                 .id(order.id().toString())
                 .tel(addr.phone())
                 .name(addr.receiver())
-                .address(addr.street())
-                .province(addr.province())
-                .district(addr.district())
-                .ward(addr.ward())
+                .address(normalizeAddress(addr.street()))
+                .province(normalizeProvince(addr.province()))
+                .district(normalizeDistrict(addr.district()))
+                .ward(normalizeWard(addr.ward()))
+                .hamlet(DEFAULT_HAMLET)
                 .isFreeship(isFreeship)
                 .pickMoney(pickMoney)
                 .note(order.note())
@@ -111,5 +130,63 @@ public class GhtkShippingProvider implements ShippingProvider {
             // Fallback to 3 days from now if parsing fails
             return Instant.now().plus(Duration.ofDays(3));
         }
+    }
+
+    private String normalizeAddress(String value) {
+        return normalizeWhitespace(value);
+    }
+
+    private String normalizeProvince(String value) {
+        String normalized = normalizeWhitespace(value);
+        if (normalized == null) {
+            return null;
+        }
+        return PROVINCE_ALIASES.getOrDefault(key(normalized), normalized);
+    }
+
+    private String normalizeDistrict(String value) {
+        String normalized = normalizeWhitespace(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = key(normalized);
+        if (key.matches("q\\d+")) {
+            return "Quận " + key.substring(1);
+        }
+        if (key.matches("quan\\s*\\d+")) {
+            return "Quận " + key.replaceAll("\\D+", "");
+        }
+        return normalized;
+    }
+
+    private String normalizeWard(String value) {
+        String normalized = normalizeWhitespace(value);
+        if (normalized == null) {
+            return null;
+        }
+        String key = key(normalized);
+        if (WARD_ALIASES.containsKey(key)) {
+            return WARD_ALIASES.get(key);
+        }
+        if (key.matches("p\\d+")) {
+            return "Phường " + key.substring(1);
+        }
+        if (key.matches("phuong\\s*\\d+")) {
+            return "Phường " + key.replaceAll("\\D+", "");
+        }
+        return normalized;
+    }
+
+    private String normalizeWhitespace(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        return value.trim().replaceAll("\\s+", " ");
+    }
+
+    private String key(String value) {
+        return normalizeWhitespace(value)
+                .toLowerCase(Locale.ROOT)
+                .replace(".", "");
     }
 }

@@ -59,6 +59,10 @@ class GhtkShippingProviderTest {
         assertThat(capturedOrder.getTel()).isEqualTo("0909123456");
         assertThat(capturedOrder.getPickMoney()).isEqualTo(new BigDecimal("500000")); // COD picks order total
         assertThat(capturedOrder.getIsFreeship()).isEqualTo(1);
+        assertThat(capturedOrder.getProvince()).isEqualTo("TP. Hồ Chí Minh");
+        assertThat(capturedOrder.getDistrict()).isEqualTo("Quận 1");
+        assertThat(capturedOrder.getWard()).isEqualTo("Phường Bến Nghé");
+        assertThat(capturedOrder.getHamlet()).isEqualTo("Khác");
     }
 
     @Test

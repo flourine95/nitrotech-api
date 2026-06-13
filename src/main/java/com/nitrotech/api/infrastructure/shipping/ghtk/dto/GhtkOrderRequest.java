@@ -42,6 +42,8 @@ public class GhtkOrderRequest {
         private String province;
         private String district;
         private String ward;
+        private String street;
+        private String hamlet;
         @JsonProperty("is_freeship")
         private Integer isFreeship; // 1: shop pays, 0: buyer pays
         @JsonProperty("pick_money")
