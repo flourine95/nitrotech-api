@@ -42,6 +42,12 @@ ghn:
   shop-id: "123456"
   client-id: "654321"
 
+sepay:
+  payment-code-prefix: NT
+  webhook-api-key: test-sepay-webhook-key
+  account-number: "123456789"
+  bank-name: MBBank
+
 cors:
   allowed-origins: http://localhost:3000
 

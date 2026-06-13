@@ -85,10 +85,14 @@ Required:
 - `GHN_TOKEN` - GHN API token
 - `GHN_SHOP_ID` - GHN shop ID
 - `GHN_CLIENT_ID` - GHN client ID used when requesting webhook setup
+- `SEPAY_WEBHOOK_API_KEY` - SePay webhook API key
+- `SEPAY_ACCOUNT_NUMBER` - Bank account number used for SePay QR
+- `SEPAY_BANK_NAME` - Bank code/name used for SePay QR
 
 Optional:
 
 - `SERVER_PORT` - Application port (default: 8080)
+- `SEPAY_PAYMENT_CODE_PREFIX` - Payment code prefix (default: `NT`)
 
 ## GHN Webhook Setup
 

@@ -81,6 +81,8 @@ cloudinary:
 sepay:
   payment-code-prefix: ${SEPAY_PAYMENT_CODE_PREFIX:NT}
   webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
+  account-number: ${SEPAY_ACCOUNT_NUMBER:123456789}
+  bank-name: ${SEPAY_BANK_NAME:MBBank}
 
 # Swagger / OpenAPI
 springdoc:
