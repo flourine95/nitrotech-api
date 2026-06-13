@@ -35,10 +35,11 @@ cp src/main/resources/application-dev.example.yaml src/main/resources/applicatio
 Edit `application-dev.yaml` with your credentials:
 
 ```yaml
-spring:
-  mail:
-    username: your-mailtrap-username
-    password: your-mailtrap-password
+resend:
+  api-key: your-resend-api-key
+
+mail:
+  from: NitroTech <noreply@send.yourdomain.com>
 
 cloudinary:
   cloud-name: your-cloud-name
@@ -72,9 +73,7 @@ Required:
 - `DB_USERNAME` - Database username
 - `DB_PASSWORD` - Database password
 - `REDIS_URL` - Redis URL
-- `MAIL_HOST` - SMTP host
-- `MAIL_USERNAME` - SMTP username
-- `MAIL_PASSWORD` - SMTP password
+- `RESEND_API_KEY` - Resend API key
 - `MAIL_FROM` - Sender email address
 - `FRONTEND_URL` - Frontend URL for email links
 - `PUBLIC_API_URL` - Public API base URL used for third-party callbacks
@@ -89,7 +88,6 @@ Required:
 
 Optional:
 
-- `MAIL_PORT` - SMTP port (default: 587)
 - `SERVER_PORT` - Application port (default: 8080)
 
 ## GHN Webhook Setup
