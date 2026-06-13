@@ -85,6 +85,11 @@ Required:
 - `GHN_TOKEN` - GHN API token
 - `GHN_SHOP_ID` - GHN shop ID
 - `GHN_CLIENT_ID` - GHN client ID used when requesting webhook setup
+- `GHTK_PICKUP_NAME` - GHTK pickup contact name
+- `GHTK_PICKUP_TEL` - GHTK pickup phone
+- `GHTK_PICKUP_ADDRESS` - GHTK pickup street address
+- `GHTK_PICKUP_PROVINCE` - GHTK pickup province/city
+- `GHTK_PICKUP_DISTRICT` - GHTK pickup district
 - `SEPAY_WEBHOOK_API_KEY` - SePay webhook API key
 - `SEPAY_ACCOUNT_NUMBER` - Bank account number used for SePay QR
 - `SEPAY_BANK_NAME` - Bank code/name used for SePay QR
@@ -92,6 +97,8 @@ Required:
 Optional:
 
 - `SERVER_PORT` - Application port (default: 8080)
+- `GHTK_PICKUP_ADDRESS_ID` - GHTK pickup warehouse/address ID, if assigned by GHTK
+- `GHTK_PICKUP_WARD` - GHTK pickup ward
 - `SEPAY_PAYMENT_CODE_PREFIX` - Payment code prefix (default: `NT`)
 
 ## GHN Webhook Setup

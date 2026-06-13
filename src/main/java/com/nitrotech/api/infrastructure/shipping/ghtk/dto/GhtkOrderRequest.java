@@ -36,6 +36,20 @@ public class GhtkOrderRequest {
     @AllArgsConstructor
     public static class Order {
         private String id; // partner_order_id
+        @JsonProperty("pick_name")
+        private String pickName;
+        @JsonProperty("pick_address_id")
+        private String pickAddressId;
+        @JsonProperty("pick_address")
+        private String pickAddress;
+        @JsonProperty("pick_province")
+        private String pickProvince;
+        @JsonProperty("pick_district")
+        private String pickDistrict;
+        @JsonProperty("pick_ward")
+        private String pickWard;
+        @JsonProperty("pick_tel")
+        private String pickTel;
         private String tel;
         private String name;
         private String address;

@@ -59,6 +59,14 @@ app:
 ghtk:
   api-url: ${GHTK_API_URL:https://services.giaohangtietkiem.vn}
   token: ${GHTK_TOKEN:}
+  pickup:
+    name: ${GHTK_PICKUP_NAME:}
+    tel: ${GHTK_PICKUP_TEL:}
+    address-id: ${GHTK_PICKUP_ADDRESS_ID:}
+    address: ${GHTK_PICKUP_ADDRESS:}
+    province: ${GHTK_PICKUP_PROVINCE:}
+    district: ${GHTK_PICKUP_DISTRICT:}
+    ward: ${GHTK_PICKUP_WARD:}
 
 # GHN
 ghn:

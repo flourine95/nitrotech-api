@@ -46,6 +46,14 @@ cloudinary:
 ghtk:
   api-url: https://services-staging.ghtklab.com
   token: paste-ghtk-staging-token-here
+  pickup:
+    name: paste-pickup-contact-name-here
+    tel: paste-pickup-phone-here
+    address-id:
+    address: paste-pickup-address-here
+    province: paste-pickup-province-here
+    district: paste-pickup-district-here
+    ward: paste-pickup-ward-here
 
 ghn:
   api-url: https://dev-online-gateway.ghn.vn/shiip/public-api
