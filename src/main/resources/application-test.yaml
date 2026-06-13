@@ -20,20 +20,15 @@ spring:
   cache:
     type: simple
 
-  mail:
-    host: localhost
-    port: 25
-    username:
-    password:
-    properties:
-      mail.smtp.auth: false
-      mail.smtp.starttls.enable: false
-
 mail:
   from: noreply@test.local
 
+resend:
+  api-key: test-resend-api-key
+
 app:
   frontend-url: http://localhost:3000
+  public-api-url: http://localhost:8080
   shipping:
     default-provider: ghtk
 
@@ -45,6 +40,7 @@ ghn:
   api-url: http://localhost:9099
   token: mock-token
   shop-id: "123456"
+  client-id: "654321"
 
 cors:
   allowed-origins: http://localhost:3000
