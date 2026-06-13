@@ -27,7 +27,7 @@ class GhtkShippingProviderTest {
     @BeforeEach
     void setUp() {
         ghtkClient = mock(GhtkClient.class);
-        provider = new GhtkShippingProvider(ghtkClient);
+        provider = new GhtkShippingProvider(ghtkClient, new GhtkAddressNormalizer());
     }
 
     @Test
@@ -61,7 +61,7 @@ class GhtkShippingProviderTest {
         assertThat(capturedOrder.getIsFreeship()).isEqualTo(1);
         assertThat(capturedOrder.getProvince()).isEqualTo("TP. Hồ Chí Minh");
         assertThat(capturedOrder.getDistrict()).isEqualTo("Quận 1");
-        assertThat(capturedOrder.getWard()).isEqualTo("Phường Bến Nghé");
+        assertThat(capturedOrder.getWard()).isEqualTo("Ben Nghe");
         assertThat(capturedOrder.getHamlet()).isEqualTo("Khác");
     }
 
