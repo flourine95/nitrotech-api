@@ -24,21 +24,26 @@ public class HandleShippingWebhookUseCase {
             throw new BadRequestException("INVALID_SHIPPING_PROVIDER", "Shipping provider is required");
         }
 
-        String trackingCode = firstString(payload, "OrderCode", "order_code", "orderCode", "tracking_code", "trackingCode");
-        String providerStatus = firstString(payload, "Status", "status", "CurrentStatus", "current_status");
+        String normalizedProvider = provider.trim().toLowerCase(Locale.ROOT);
+        String trackingCode = firstString(payload, "OrderCode", "order_code", "orderCode",
+                "tracking_code", "trackingCode", "label_id");
+        String providerStatus = firstString(payload, "Status", "status", "CurrentStatus", "current_status", "status_id");
         String location = firstString(payload, "Warehouse", "warehouse", "Location", "location");
         String type = firstString(payload, "Type", "type");
+        if (type == null && "ghtk".equals(normalizedProvider)) {
+            type = "status_" + providerStatus;
+        }
 
         if (trackingCode == null || providerStatus == null) {
             throw new BadRequestException("INVALID_SHIPPING_WEBHOOK",
                     "Shipping webhook must include tracking code and status");
         }
 
-        ShipmentData shipment = shipmentRepository.findByProviderAndTrackingCode(provider, trackingCode)
+        ShipmentData shipment = shipmentRepository.findByProviderAndTrackingCode(normalizedProvider, trackingCode)
                 .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND",
                         "Shipment with tracking code " + trackingCode + " not found"));
 
-        String status = mapStatus(providerStatus);
+        String status = mapStatus(normalizedProvider, providerStatus);
         shipment.setStatus(status);
         if (isInTransit(status) && shipment.getShippedAt() == null) {
             shipment.setShippedAt(Instant.now());
@@ -48,9 +53,13 @@ public class HandleShippingWebhookUseCase {
         }
 
         ShipmentData saved = shipmentRepository.save(shipment);
-        String note = "Webhook " + provider.toUpperCase(Locale.ROOT) + ": " + providerStatus;
+        String note = "Webhook " + normalizedProvider.toUpperCase(Locale.ROOT) + ": " + providerStatus;
         if (type != null) {
             note += " (" + type + ")";
+        }
+        String reason = firstString(payload, "reason", "Reason");
+        if (reason != null) {
+            note += " - " + reason;
         }
         shipmentRepository.addLog(saved.getId(), status, location, note);
 
@@ -68,11 +77,18 @@ public class HandleShippingWebhookUseCase {
             if (value instanceof String text && !text.isBlank()) {
                 return text.trim();
             }
+            if (value instanceof Number number) {
+                return String.valueOf(number);
+            }
         }
         return null;
     }
 
-    private String mapStatus(String providerStatus) {
+    private String mapStatus(String provider, String providerStatus) {
+        if ("ghtk".equals(provider)) {
+            return mapGhtkStatus(providerStatus);
+        }
+
         String normalized = providerStatus.trim().toLowerCase(Locale.ROOT)
                 .replace('-', '_')
                 .replace(' ', '_');
@@ -81,6 +97,23 @@ public class HandleShippingWebhookUseCase {
             case "cancelled", "canceled" -> "cancel";
             case "delivery_success", "delivered_success" -> "delivered";
             default -> normalized;
+        };
+    }
+
+    private String mapGhtkStatus(String statusId) {
+        String normalized = statusId.trim();
+        return switch (normalized) {
+            case "-1" -> "cancel";
+            case "1", "2" -> "ready_to_pick";
+            case "3", "12", "123" -> "picked";
+            case "4", "45" -> "delivering";
+            case "5", "6" -> "delivered";
+            case "7", "8", "127", "128" -> "pickup_failed";
+            case "9", "10", "49", "410" -> "delivery_failed";
+            case "11", "20" -> "returning";
+            case "21" -> "returned";
+            case "13" -> "compensating";
+            default -> "ghtk_status_" + normalized.toLowerCase(Locale.ROOT);
         };
     }
 

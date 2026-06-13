@@ -107,6 +107,35 @@ class HandleShippingWebhookUseCaseTest {
     }
 
     @Test
+    void handlesGhtkWebhookPayload() {
+        ShipmentData shipment = ShipmentData.builder()
+                .id(20L)
+                .provider("ghtk")
+                .trackingCode("S1.A1.17373471")
+                .status("ready_to_pick")
+                .build();
+
+        when(shipmentRepository.findByProviderAndTrackingCode("ghtk", "S1.A1.17373471"))
+                .thenReturn(Optional.of(shipment));
+        when(shipmentRepository.save(any(ShipmentData.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        Map<String, Object> result = useCase.execute("GHTK", Map.of(
+                "partner_id", "1234567",
+                "label_id", "S1.A1.17373471",
+                "status_id", 5,
+                "action_time", "2016-11-02T12:18:39+07:00",
+                "reason", ""
+        ));
+
+        assertThat(result.get("ok")).isEqualTo(true);
+        assertThat(result.get("status")).isEqualTo("delivered");
+        assertThat(shipment.getDeliveredAt()).isNotNull();
+        verify(shipmentRepository).addLog(20L, "delivered", null,
+                "Webhook GHTK: 5 (status_5)");
+    }
+
+    @Test
     void throwsWhenTrackingCodeOrStatusIsMissing() {
         assertThatThrownBy(() -> useCase.execute("ghn", Map.of("OrderCode", "GHN123")))
                 .isInstanceOf(BadRequestException.class)
