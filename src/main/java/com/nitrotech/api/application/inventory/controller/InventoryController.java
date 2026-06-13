@@ -9,6 +9,7 @@ import com.nitrotech.api.shared.response.ApiResult;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +23,7 @@ public class InventoryController {
     private final AdjustInventoryUseCase adjustInventoryUseCase;
 
     @GetMapping("/variants/{variantId}")
+    @PreAuthorize("hasAuthority('INVENTORY_MANAGE')")
     public ResponseEntity<ApiResult<InventoryData>> get(
             @PathVariable Long variantId
     ) {
@@ -29,11 +31,13 @@ public class InventoryController {
     }
 
     @GetMapping("/low-stock")
+    @PreAuthorize("hasAuthority('INVENTORY_MANAGE')")
     public ResponseEntity<ApiResult<List<InventoryData>>> lowStock() {
         return ResponseEntity.ok(ApiResult.ok(getInventoryUseCase.executeLowStock()));
     }
 
     @PatchMapping("/variants/{variantId}/adjust")
+    @PreAuthorize("hasAuthority('INVENTORY_MANAGE')")
     public ResponseEntity<ApiResult<InventoryData>> adjust(
             @PathVariable Long variantId,
             @Valid @RequestBody AdjustInventoryRequest req
@@ -42,6 +46,7 @@ public class InventoryController {
     }
 
     @PutMapping("/variants/{variantId}")
+    @PreAuthorize("hasAuthority('INVENTORY_MANAGE')")
     public ResponseEntity<ApiResult<InventoryData>> set(
             @PathVariable Long variantId,
             @Valid @RequestBody SetInventoryRequest req

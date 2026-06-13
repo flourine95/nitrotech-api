@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,7 @@ public class PromotionController {
     }
 
     @GetMapping("/admin/promotions")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<List<PromotionData>>> list(
             @RequestParam(required = false) String status,
             @RequestParam(defaultValue = "0") int page,
@@ -48,6 +50,7 @@ public class PromotionController {
     }
 
     @GetMapping("/admin/promotions/{id}")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<PromotionData>> get(
             @PathVariable Long id
     ) {
@@ -55,12 +58,14 @@ public class PromotionController {
     }
 
     @PostMapping("/admin/promotions")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<PromotionData>> create(@Valid @RequestBody CreatePromotionRequest req) {
         PromotionData data = managePromotionUseCase.create(toCommand(req));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(data));
     }
 
     @PutMapping("/admin/promotions/{id}")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<PromotionData>> update(
             @PathVariable Long id,
             @Valid @RequestBody CreatePromotionRequest req
@@ -69,6 +74,7 @@ public class PromotionController {
     }
 
     @PatchMapping("/admin/promotions/{id}/status")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<PromotionData>> updateStatus(
             @PathVariable Long id,
             @RequestParam String status
@@ -77,6 +83,7 @@ public class PromotionController {
     }
 
     @DeleteMapping("/admin/promotions/{id}")
+    @PreAuthorize("hasAuthority('PROMOTION_MANAGE')")
     public ResponseEntity<ApiResult<Void>> delete(
             @PathVariable Long id
     ) {

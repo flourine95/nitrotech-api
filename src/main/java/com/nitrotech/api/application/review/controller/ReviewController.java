@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -48,6 +49,7 @@ public class ReviewController {
     }
 
     @GetMapping("/admin/reviews/pending")
+    @PreAuthorize("hasAuthority('REVIEW_MANAGE')")
     public ResponseEntity<ApiResult<List<ReviewData>>> pending(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
@@ -56,11 +58,13 @@ public class ReviewController {
     }
 
     @PatchMapping("/admin/reviews/{id}/approve")
+    @PreAuthorize("hasAuthority('REVIEW_MANAGE')")
     public ResponseEntity<ApiResult<ReviewData>> approve(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResult.ok(moderateReviewUseCase.approve(id)));
     }
 
     @PatchMapping("/admin/reviews/{id}/reject")
+    @PreAuthorize("hasAuthority('REVIEW_MANAGE')")
     public ResponseEntity<ApiResult<ReviewData>> reject(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResult.ok(moderateReviewUseCase.reject(id)));
     }

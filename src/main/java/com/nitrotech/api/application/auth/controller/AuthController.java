@@ -51,7 +51,13 @@ public class AuthController {
     ) {
         AuthResult result = loginUseCase.execute(new LoginCommand(request.email(), request.password()));
 
-        UserPrincipal principal = new UserPrincipal(result.user().id(), result.user().email(), result.user().name());
+        UserPrincipal principal = new UserPrincipal(
+                result.user().id(),
+                result.user().email(),
+                result.user().name(),
+                result.user().roles(),
+                result.user().permissions()
+        );
         UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                 principal, null, principal.getAuthorities());
         SecurityContext context = SecurityContextHolder.createEmptyContext();

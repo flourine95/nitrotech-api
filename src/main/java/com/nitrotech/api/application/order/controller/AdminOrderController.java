@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.shipping.usecase.CreateShipmentUseCase;
 import com.nitrotech.api.shared.response.ApiResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,6 +16,7 @@ public class AdminOrderController {
     private final CreateShipmentUseCase createShipmentUseCase;
 
     @PostMapping("/{id}/shipment")
+    @PreAuthorize("hasAuthority('SHIPMENT_CREATE')")
     public ResponseEntity<ApiResult<ShipmentData>> createShipment(
             @PathVariable Long id,
             @RequestParam(required = false) String provider
