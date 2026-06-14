@@ -46,7 +46,8 @@ public class CreateShipmentUseCase {
         Optional<ShipmentData> existing = shipmentRepository.findByOrderId(orderId);
         if (existing.isPresent()) {
             log.warn("Shipment already exists for orderId: {}", orderId);
-            return existing.get();
+            throw new DomainException("SHIPMENT_ALREADY_EXISTS",
+                    "Shipment already exists for order " + orderId) {};
         }
 
         // Retrieve order details
@@ -83,6 +84,8 @@ public class CreateShipmentUseCase {
         shipmentRepository.addLog(
                 savedShipment.getId(),
                 "ready_to_pick",
+                "ready_to_pick",
+                "ADMIN_CREATE",
                 null,
                 "Vận đơn được khởi tạo thành công qua đối tác " + provider.getProviderName().toUpperCase()
         );

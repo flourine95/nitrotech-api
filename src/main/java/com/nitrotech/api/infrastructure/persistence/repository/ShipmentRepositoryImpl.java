@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentLogEntity;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -54,8 +56,15 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
     }
 
     @Override
+    public List<ShipmentLogData> findLogsByShipmentId(Long shipmentId) {
+        return logJpa.findByShipment_IdOrderByCreatedAtAsc(shipmentId).stream()
+                .map(this::toLogData)
+                .toList();
+    }
+
+    @Override
     @Transactional
-    public void addLog(Long shipmentId, String status, String location, String note) {
+    public void addLog(Long shipmentId, String status, String rawStatus, String source, String location, String note) {
         ShipmentEntity shipment = shipmentJpa.findById(shipmentId)
                 .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
                         "Shipment with ID " + shipmentId + " not found"));
@@ -63,6 +72,8 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
         ShipmentLogEntity log = new ShipmentLogEntity();
         log.setShipment(shipment);
         log.setStatus(status);
+        log.setRawStatus(rawStatus);
+        log.setSource(source);
         log.setLocation(location);
         log.setNote(note);
 
@@ -83,5 +94,18 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
                 .build();
+    }
+
+    private ShipmentLogData toLogData(ShipmentLogEntity entity) {
+        return new ShipmentLogData(
+                entity.getId(),
+                entity.getShipment().getId(),
+                entity.getStatus(),
+                entity.getRawStatus(),
+                entity.getSource(),
+                entity.getLocation(),
+                entity.getNote(),
+                entity.getCreatedAt()
+        );
     }
 }

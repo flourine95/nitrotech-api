@@ -24,6 +24,12 @@ public class ShipmentLogEntity {
     @Column(nullable = false)
     private String status;
 
+    @Column(name = "raw_status")
+    private String rawStatus;
+
+    @Column(nullable = false)
+    private String source = "SYSTEM";
+
     @Column
     private String location;
 

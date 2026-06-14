@@ -1,0 +1,3 @@
+ALTER TABLE shipment_logs
+    ADD COLUMN source VARCHAR(50) NOT NULL DEFAULT 'SYSTEM',
+    ADD COLUMN raw_status VARCHAR(100);

@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
@@ -17,6 +19,7 @@ import java.util.Map;
 public class HandleShippingWebhookUseCase {
 
     private final ShipmentRepository shipmentRepository;
+    private final OrderRepository orderRepository;
 
     @Transactional
     public Map<String, Object> execute(String provider, Map<String, Object> payload) {
@@ -61,7 +64,8 @@ public class HandleShippingWebhookUseCase {
         if (reason != null) {
             note += " - " + reason;
         }
-        shipmentRepository.addLog(saved.getId(), status, location, note);
+        shipmentRepository.addLog(saved.getId(), status, providerStatus, "WEBHOOK", location, note);
+        syncOrderStatus(saved, status);
 
         return Map.of(
                 "ok", true,
@@ -124,5 +128,24 @@ public class HandleShippingWebhookUseCase {
                  "return_transporting", "return_sorting", "returning" -> true;
             default -> false;
         };
+    }
+
+    private void syncOrderStatus(ShipmentData shipment, String shipmentStatus) {
+        orderRepository.findById(shipment.getOrderId()).ifPresent(order -> {
+            if ("cancelled".equals(order.status())) {
+                return;
+            }
+            if ("delivered".equals(shipmentStatus) && !"delivered".equals(order.status())) {
+                orderRepository.updateStatus(order.id(), "delivered");
+                return;
+            }
+            if (isInTransit(shipmentStatus) && shouldMarkProcessing(order)) {
+                orderRepository.updateStatus(order.id(), "processing");
+            }
+        });
+    }
+
+    private boolean shouldMarkProcessing(OrderData order) {
+        return "confirmed".equals(order.status()) || "pending".equals(order.status());
     }
 }

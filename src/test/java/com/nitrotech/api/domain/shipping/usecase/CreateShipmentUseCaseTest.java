@@ -84,11 +84,12 @@ class CreateShipmentUseCaseTest {
         assertThat(captured.getTrackingCode()).isEqualTo("S12345.6789");
         assertThat(captured.getStatus()).isEqualTo("ready_to_pick");
 
-        verify(shipmentRepository).addLog(eq(1L), eq("ready_to_pick"), isNull(), anyString());
+        verify(shipmentRepository).addLog(eq(1L), eq("ready_to_pick"), eq("ready_to_pick"),
+                eq("ADMIN_CREATE"), isNull(), anyString());
     }
 
     @Test
-    void returnsExistingShipmentWithoutRecreating() {
+    void throwsWhenShipmentAlreadyExists() {
         Long orderId = 123L;
         ShipmentData existing = ShipmentData.builder()
                 .id(1L)
@@ -99,9 +100,10 @@ class CreateShipmentUseCaseTest {
                 .build();
         when(shipmentRepository.findByOrderId(orderId)).thenReturn(Optional.of(existing));
 
-        ShipmentData result = useCase.execute(orderId, "ghtk");
+        assertThatThrownBy(() -> useCase.execute(orderId, "ghtk"))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("Shipment already exists for order 123");
 
-        assertThat(result).isEqualTo(existing);
         verify(orderRepository, never()).findById(anyLong());
         verify(registry, never()).getProvider(anyString());
         verify(shipmentRepository, never()).save(any());

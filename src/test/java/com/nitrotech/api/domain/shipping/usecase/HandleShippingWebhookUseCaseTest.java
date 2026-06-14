@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
@@ -18,12 +20,14 @@ import static org.mockito.Mockito.*;
 class HandleShippingWebhookUseCaseTest {
 
     private ShipmentRepository shipmentRepository;
+    private OrderRepository orderRepository;
     private HandleShippingWebhookUseCase useCase;
 
     @BeforeEach
     void setUp() {
         shipmentRepository = mock(ShipmentRepository.class);
-        useCase = new HandleShippingWebhookUseCase(shipmentRepository);
+        orderRepository = mock(OrderRepository.class);
+        useCase = new HandleShippingWebhookUseCase(shipmentRepository, orderRepository);
     }
 
     @Test
@@ -54,7 +58,8 @@ class HandleShippingWebhookUseCaseTest {
         assertThat(shipment.getDeliveredAt()).isNotNull();
 
         verify(shipmentRepository).save(shipment);
-        verify(shipmentRepository).addLog(10L, "delivered", "HCM", "Webhook GHN: delivered (Switch_status)");
+        verify(shipmentRepository).addLog(10L, "delivered", "delivered", "WEBHOOK",
+                "HCM", "Webhook GHN: delivered (Switch_status)");
     }
 
     @Test
@@ -102,7 +107,7 @@ class HandleShippingWebhookUseCaseTest {
 
         assertThat(shipment.getStatus()).isEqualTo("return_transporting");
         assertThat(shipment.getShippedAt()).isNotNull();
-        verify(shipmentRepository).addLog(10L, "return_transporting", "Buu cuc GHN",
+        verify(shipmentRepository).addLog(10L, "return_transporting", "return_transporting", "WEBHOOK", "Buu cuc GHN",
                 "Webhook GHN: return_transporting");
     }
 
@@ -131,8 +136,35 @@ class HandleShippingWebhookUseCaseTest {
         assertThat(result.get("ok")).isEqualTo(true);
         assertThat(result.get("status")).isEqualTo("delivered");
         assertThat(shipment.getDeliveredAt()).isNotNull();
-        verify(shipmentRepository).addLog(20L, "delivered", null,
+        verify(shipmentRepository).addLog(20L, "delivered", "5", "WEBHOOK", null,
                 "Webhook GHTK: 5 (status_5)");
+    }
+
+    @Test
+    void deliveredWebhookCompletesOrder() {
+        ShipmentData shipment = ShipmentData.builder()
+                .id(20L)
+                .orderId(123L)
+                .provider("ghtk")
+                .trackingCode("S1.A1.17373471")
+                .status("ready_to_pick")
+                .build();
+        OrderData order = mock(OrderData.class);
+        when(order.id()).thenReturn(123L);
+        when(order.status()).thenReturn("processing");
+
+        when(shipmentRepository.findByProviderAndTrackingCode("ghtk", "S1.A1.17373471"))
+                .thenReturn(Optional.of(shipment));
+        when(shipmentRepository.save(any(ShipmentData.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(orderRepository.findById(123L)).thenReturn(Optional.of(order));
+
+        useCase.execute("ghtk", Map.of(
+                "label_id", "S1.A1.17373471",
+                "status_id", 5
+        ));
+
+        verify(orderRepository).updateStatus(123L, "delivered");
     }
 
     @Test
