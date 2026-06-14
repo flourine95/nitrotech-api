@@ -2,6 +2,8 @@ package com.nitrotech.api.domain.shipping.usecase;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
@@ -21,13 +23,15 @@ class HandleShippingWebhookUseCaseTest {
 
     private ShipmentRepository shipmentRepository;
     private OrderRepository orderRepository;
+    private AuditLogService auditLogService;
     private HandleShippingWebhookUseCase useCase;
 
     @BeforeEach
     void setUp() {
         shipmentRepository = mock(ShipmentRepository.class);
         orderRepository = mock(OrderRepository.class);
-        useCase = new HandleShippingWebhookUseCase(shipmentRepository, orderRepository);
+        auditLogService = mock(AuditLogService.class);
+        useCase = new HandleShippingWebhookUseCase(shipmentRepository, orderRepository, auditLogService);
     }
 
     @Test
@@ -60,6 +64,7 @@ class HandleShippingWebhookUseCaseTest {
         verify(shipmentRepository).save(shipment);
         verify(shipmentRepository).addLog(10L, "delivered", "delivered", "WEBHOOK",
                 "HCM", "Webhook GHN: delivered (Switch_status)");
+        verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
     @Test

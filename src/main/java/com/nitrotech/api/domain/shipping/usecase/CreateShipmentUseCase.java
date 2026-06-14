@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
@@ -14,6 +16,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -23,17 +26,20 @@ public class CreateShipmentUseCase {
     private final OrderRepository orderRepository;
     private final ShipmentRepository shipmentRepository;
     private final ShippingProviderRegistry shippingProviderRegistry;
+    private final AuditLogService auditLogService;
     private final String defaultProvider;
 
     public CreateShipmentUseCase(
             OrderRepository orderRepository,
             ShipmentRepository shipmentRepository,
             ShippingProviderRegistry shippingProviderRegistry,
+            AuditLogService auditLogService,
             @Value("${app.shipping.default-provider:ghtk}") String defaultProvider
     ) {
         this.orderRepository = orderRepository;
         this.shipmentRepository = shipmentRepository;
         this.shippingProviderRegistry = shippingProviderRegistry;
+        this.auditLogService = auditLogService;
         this.defaultProvider = defaultProvider;
     }
 
@@ -89,6 +95,19 @@ public class CreateShipmentUseCase {
                 null,
                 "Vận đơn được khởi tạo thành công qua đối tác " + provider.getProviderName().toUpperCase()
         );
+        auditLogService.record(AuditLogCommand.success(
+                "SHIPMENT_CREATED",
+                "SHIPMENT",
+                savedShipment.getId(),
+                null,
+                Map.of(
+                        "orderId", savedShipment.getOrderId(),
+                        "provider", savedShipment.getProvider(),
+                        "trackingCode", savedShipment.getTrackingCode(),
+                        "status", savedShipment.getStatus()
+                ),
+                Map.of("orderId", orderId)
+        ));
 
         log.info("Shipment created successfully: {}", savedShipment);
         return savedShipment;

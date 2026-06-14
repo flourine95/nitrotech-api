@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
@@ -20,6 +22,7 @@ public class HandleShippingWebhookUseCase {
 
     private final ShipmentRepository shipmentRepository;
     private final OrderRepository orderRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public Map<String, Object> execute(String provider, Map<String, Object> payload) {
@@ -47,6 +50,7 @@ public class HandleShippingWebhookUseCase {
                         "Shipment with tracking code " + trackingCode + " not found"));
 
         String status = mapStatus(normalizedProvider, providerStatus);
+        String previousStatus = shipment.getStatus();
         shipment.setStatus(status);
         if (isInTransit(status) && shipment.getShippedAt() == null) {
             shipment.setShippedAt(Instant.now());
@@ -66,6 +70,22 @@ public class HandleShippingWebhookUseCase {
         }
         shipmentRepository.addLog(saved.getId(), status, providerStatus, "WEBHOOK", location, note);
         syncOrderStatus(saved, status);
+        auditLogService.record(new AuditLogCommand(
+                "WEBHOOK",
+                null,
+                null,
+                "SHIPMENT_WEBHOOK_RECEIVED",
+                "SHIPMENT",
+                String.valueOf(saved.getId()),
+                "SUCCESS",
+                Map.of("status", previousStatus),
+                Map.of("status", saved.getStatus(), "rawStatus", providerStatus),
+                Map.of(
+                        "provider", normalizedProvider,
+                        "trackingCode", trackingCode,
+                        "type", type == null ? "" : type
+                )
+        ));
 
         return Map.of(
                 "ok", true,

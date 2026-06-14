@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
@@ -27,6 +29,7 @@ class CreateShipmentUseCaseTest {
     private OrderRepository orderRepository;
     private ShipmentRepository shipmentRepository;
     private ShippingProviderRegistry registry;
+    private AuditLogService auditLogService;
     private CreateShipmentUseCase useCase;
 
     @BeforeEach
@@ -34,7 +37,8 @@ class CreateShipmentUseCaseTest {
         orderRepository = mock(OrderRepository.class);
         shipmentRepository = mock(ShipmentRepository.class);
         registry = mock(ShippingProviderRegistry.class);
-        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, "ghtk");
+        auditLogService = mock(AuditLogService.class);
+        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, auditLogService, "ghtk");
     }
 
     @Test
@@ -86,6 +90,7 @@ class CreateShipmentUseCaseTest {
 
         verify(shipmentRepository).addLog(eq(1L), eq("ready_to_pick"), eq("ready_to_pick"),
                 eq("ADMIN_CREATE"), isNull(), anyString());
+        verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
     @Test
