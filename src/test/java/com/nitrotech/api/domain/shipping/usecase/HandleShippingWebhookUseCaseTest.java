@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -62,7 +63,7 @@ class HandleShippingWebhookUseCaseTest {
         assertThat(shipment.getDeliveredAt()).isNotNull();
 
         verify(shipmentRepository).save(shipment);
-        verify(shipmentRepository).addLog(10L, "delivered", "delivered", "WEBHOOK",
+        verify(shipmentRepository).addLog(10L, "delivered", "delivered", ShipmentLogSource.WEBHOOK,
                 "HCM", "Webhook GHN: delivered (Switch_status)");
         verify(auditLogService).record(any(AuditLogCommand.class));
     }
@@ -112,7 +113,7 @@ class HandleShippingWebhookUseCaseTest {
 
         assertThat(shipment.getStatus()).isEqualTo("return_transporting");
         assertThat(shipment.getShippedAt()).isNotNull();
-        verify(shipmentRepository).addLog(10L, "return_transporting", "return_transporting", "WEBHOOK", "Buu cuc GHN",
+        verify(shipmentRepository).addLog(10L, "return_transporting", "return_transporting", ShipmentLogSource.WEBHOOK, "Buu cuc GHN",
                 "Webhook GHN: return_transporting");
     }
 
@@ -141,7 +142,7 @@ class HandleShippingWebhookUseCaseTest {
         assertThat(result.get("ok")).isEqualTo(true);
         assertThat(result.get("status")).isEqualTo("delivered");
         assertThat(shipment.getDeliveredAt()).isNotNull();
-        verify(shipmentRepository).addLog(20L, "delivered", "5", "WEBHOOK", null,
+        verify(shipmentRepository).addLog(20L, "delivered", "5", ShipmentLogSource.WEBHOOK, null,
                 "Webhook GHTK: 5 (status_5)");
     }
 

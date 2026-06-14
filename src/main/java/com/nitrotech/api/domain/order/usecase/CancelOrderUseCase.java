@@ -1,6 +1,8 @@
 package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
@@ -33,8 +35,8 @@ public class CancelOrderUseCase {
         }
         OrderData updated = orderRepository.updateStatus(id, "cancelled");
         auditLogService.record(AuditLogCommand.success(
-                "ORDER_CANCELLED",
-                "ORDER",
+                AuditAction.ORDER_CANCELLED,
+                AuditResourceType.ORDER,
                 id,
                 Map.of("status", order.status()),
                 Map.of("status", updated.status()),

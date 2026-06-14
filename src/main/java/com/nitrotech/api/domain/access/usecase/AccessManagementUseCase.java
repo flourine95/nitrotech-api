@@ -1,6 +1,8 @@
 package com.nitrotech.api.domain.access.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.access.dto.PermissionData;
 import com.nitrotech.api.domain.access.dto.RoleData;
@@ -67,8 +69,8 @@ public class AccessManagementUseCase {
         accessRepository.replaceRolePermissions(roleId, permissionIds);
         RoleData updated = getRole(roleId);
         auditLogService.record(AuditLogCommand.success(
-                "ROLE_PERMISSION_UPDATED",
-                "ROLE",
+                AuditAction.ROLE_PERMISSION_UPDATED,
+                AuditResourceType.ROLE,
                 roleId,
                 Map.of("permissionSlugs", role.permissionSlugs()),
                 Map.of("permissionSlugs", updated.permissionSlugs()),
@@ -86,8 +88,8 @@ public class AccessManagementUseCase {
         accessRepository.replaceUserRoles(userId, roleIds);
         UserAccessData updated = getUser(userId);
         auditLogService.record(AuditLogCommand.success(
-                "USER_ROLE_UPDATED",
-                "USER",
+                AuditAction.USER_ROLE_UPDATED,
+                AuditResourceType.USER,
                 userId,
                 Map.of("roleSlugs", user.roleSlugs()),
                 Map.of("roleSlugs", updated.roleSlugs()),

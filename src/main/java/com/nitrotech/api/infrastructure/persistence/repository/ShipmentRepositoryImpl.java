@@ -2,6 +2,7 @@ package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentLogEntity;
@@ -60,7 +61,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
 
     @Override
     @Transactional
-    public void addLog(Long shipmentId, String status, String rawStatus, String source, String location, String note) {
+    public void addLog(Long shipmentId, String status, String rawStatus, ShipmentLogSource source, String location, String note) {
         ShipmentEntity shipment = shipmentJpa.findById(shipmentId)
                 .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
                         "Shipment with ID " + shipmentId + " not found"));
@@ -69,7 +70,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
         log.setShipment(shipment);
         log.setStatus(status);
         log.setRawStatus(rawStatus);
-        log.setSource(source);
+        log.setSource(source.name());
         log.setLocation(location);
         log.setNote(note);
 

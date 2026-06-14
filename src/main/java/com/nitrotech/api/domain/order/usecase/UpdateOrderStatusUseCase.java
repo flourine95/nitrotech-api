@@ -1,6 +1,8 @@
 package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
@@ -40,8 +42,8 @@ public class UpdateOrderStatusUseCase {
         }
         OrderData updated = orderRepository.updateStatus(id, newStatus);
         auditLogService.record(AuditLogCommand.success(
-                "ORDER_STATUS_UPDATED",
-                "ORDER",
+                AuditAction.ORDER_STATUS_UPDATED,
+                AuditResourceType.ORDER,
                 id,
                 Map.of("status", order.status()),
                 Map.of("status", updated.status()),

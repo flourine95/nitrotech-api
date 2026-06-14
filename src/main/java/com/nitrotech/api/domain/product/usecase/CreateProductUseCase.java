@@ -1,6 +1,8 @@
 package com.nitrotech.api.domain.product.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
@@ -44,8 +46,8 @@ public class CreateProductUseCase {
         }
         ProductData product = productRepository.create(command);
         auditLogService.record(AuditLogCommand.success(
-                "PRODUCT_CREATED",
-                "PRODUCT",
+                AuditAction.PRODUCT_CREATED,
+                AuditResourceType.PRODUCT,
                 product.id(),
                 null,
                 Map.of("name", product.name(), "slug", product.slug(), "active", product.active()),

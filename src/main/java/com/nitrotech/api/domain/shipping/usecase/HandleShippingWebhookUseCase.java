@@ -1,10 +1,15 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditActorType;
+import com.nitrotech.api.domain.audit.dto.AuditOutcome;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -68,16 +73,16 @@ public class HandleShippingWebhookUseCase {
         if (reason != null) {
             note += " - " + reason;
         }
-        shipmentRepository.addLog(saved.getId(), status, providerStatus, "WEBHOOK", location, note);
+        shipmentRepository.addLog(saved.getId(), status, providerStatus, ShipmentLogSource.WEBHOOK, location, note);
         syncOrderStatus(saved, status);
         auditLogService.record(new AuditLogCommand(
-                "WEBHOOK",
+                AuditActorType.WEBHOOK,
                 null,
                 null,
-                "SHIPMENT_WEBHOOK_RECEIVED",
-                "SHIPMENT",
+                AuditAction.SHIPMENT_WEBHOOK_RECEIVED,
+                AuditResourceType.SHIPMENT,
                 String.valueOf(saved.getId()),
-                "SUCCESS",
+                AuditOutcome.SUCCESS,
                 Map.of("status", previousStatus),
                 Map.of("status", saved.getStatus(), "rawStatus", providerStatus),
                 Map.of(

@@ -2,6 +2,8 @@ package com.nitrotech.api.domain.audit.service;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.dto.AuditLogData;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.repository.AuditLogRepository;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;
@@ -48,8 +50,8 @@ class AuditLogServiceTest {
         );
 
         service.record(AuditLogCommand.success(
-                "ROLE_PERMISSION_UPDATED",
-                "ROLE",
+                AuditAction.ROLE_PERMISSION_UPDATED,
+                AuditResourceType.ROLE,
                 1L,
                 Map.of("permissionSlugs", Set.of("ROLE_READ")),
                 Map.of("permissionSlugs", Set.of("ROLE_READ", "ROLE_MANAGE"), "apiToken", "secret"),
@@ -66,5 +68,33 @@ class AuditLogServiceTest {
         assertThat(data.actorRoles()).containsExactly("admin");
         assertThat(data.action()).isEqualTo("ROLE_PERMISSION_UPDATED");
         assertThat(data.afterData()).containsEntry("apiToken", "[REDACTED]");
+    }
+
+    @Test
+    void recordsCustomerPrincipalAsUserActor() {
+        UserPrincipal principal = new UserPrincipal(
+                8L,
+                "customer@example.com",
+                "Customer",
+                Set.of("customer"),
+                Set.of("ORDER_CANCEL_OWN")
+        );
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(principal, null, principal.getAuthorities())
+        );
+
+        service.record(AuditLogCommand.success(
+                AuditAction.ORDER_CANCELLED,
+                AuditResourceType.ORDER,
+                10L,
+                null,
+                Map.of("status", "cancelled"),
+                null
+        ));
+
+        ArgumentCaptor<AuditLogData> captor = ArgumentCaptor.forClass(AuditLogData.class);
+        verify(repository).save(captor.capture());
+
+        assertThat(captor.getValue().actorType()).isEqualTo("USER");
     }
 }

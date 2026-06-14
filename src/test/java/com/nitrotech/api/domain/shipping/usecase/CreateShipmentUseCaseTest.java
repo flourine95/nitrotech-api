@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
@@ -89,7 +90,7 @@ class CreateShipmentUseCaseTest {
         assertThat(captured.getStatus()).isEqualTo("ready_to_pick");
 
         verify(shipmentRepository).addLog(eq(1L), eq("ready_to_pick"), eq("ready_to_pick"),
-                eq("ADMIN_CREATE"), isNull(), anyString());
+                eq(ShipmentLogSource.ADMIN), isNull(), anyString());
         verify(auditLogService).record(any(AuditLogCommand.class));
     }
 

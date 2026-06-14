@@ -1,6 +1,8 @@
 package com.nitrotech.api.domain.product.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.product.dto.ProductData;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
@@ -24,8 +26,8 @@ public class DeleteProductUseCase {
                 .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
         productRepository.softDelete(id);
         auditLogService.record(AuditLogCommand.success(
-                "PRODUCT_DELETED",
-                "PRODUCT",
+                AuditAction.PRODUCT_DELETED,
+                AuditResourceType.PRODUCT,
                 id,
                 Map.of("name", product.name(), "slug", product.slug()),
                 null,

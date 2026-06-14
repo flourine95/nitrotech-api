@@ -3,6 +3,7 @@ package com.nitrotech.api.domain.audit.service;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.dto.AuditLogData;
 import com.nitrotech.api.domain.audit.repository.AuditLogRepository;
+import com.nitrotech.api.domain.audit.dto.AuditActorType;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +21,7 @@ import java.util.*;
 @RequiredArgsConstructor
 public class AuditLogService {
 
+    private static final Set<String> BACK_OFFICE_ROLES = Set.of("admin", "super_admin", "staff");
     private static final Set<String> SENSITIVE_KEYS = Set.of(
             "password", "token", "apiKey", "api_key", "secret", "authorization", "cookie"
     );
@@ -37,10 +39,10 @@ public class AuditLogService {
                 actor.id(),
                 actor.email(),
                 actor.roles(),
-                command.action(),
-                command.resourceType(),
+                command.action().name(),
+                command.resourceType().name(),
                 command.resourceId(),
-                command.outcome(),
+                command.outcome().name(),
                 sanitize(command.beforeData()),
                 sanitize(command.afterData()),
                 sanitize(command.metadata()),
@@ -52,7 +54,7 @@ public class AuditLogService {
     private AuditActor resolveActor(AuditLogCommand command) {
         if (command.actorType() != null) {
             return new AuditActor(
-                    command.actorType(),
+                    command.actorType().name(),
                     command.actorId(),
                     command.actorEmail(),
                     List.of()
@@ -61,10 +63,14 @@ public class AuditLogService {
 
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.getPrincipal() instanceof UserPrincipal principal) {
-            return new AuditActor("ADMIN", principal.id(), principal.email(), principal.roles().stream().sorted().toList());
+            List<String> roles = principal.roles().stream().sorted().toList();
+            AuditActorType actorType = roles.stream().anyMatch(BACK_OFFICE_ROLES::contains)
+                    ? AuditActorType.ADMIN
+                    : AuditActorType.USER;
+            return new AuditActor(actorType.name(), principal.id(), principal.email(), roles);
         }
 
-        return new AuditActor("SYSTEM", null, null, List.of());
+        return new AuditActor(AuditActorType.SYSTEM.name(), null, null, List.of());
     }
 
     private RequestSnapshot requestSnapshot() {

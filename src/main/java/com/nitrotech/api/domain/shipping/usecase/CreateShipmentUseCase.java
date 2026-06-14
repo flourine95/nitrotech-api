@@ -1,10 +1,13 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
@@ -91,13 +94,13 @@ public class CreateShipmentUseCase {
                 savedShipment.getId(),
                 "ready_to_pick",
                 "ready_to_pick",
-                "ADMIN_CREATE",
+                ShipmentLogSource.ADMIN,
                 null,
                 "Vận đơn được khởi tạo thành công qua đối tác " + provider.getProviderName().toUpperCase()
         );
         auditLogService.record(AuditLogCommand.success(
-                "SHIPMENT_CREATED",
-                "SHIPMENT",
+                AuditAction.SHIPMENT_CREATED,
+                AuditResourceType.SHIPMENT,
                 savedShipment.getId(),
                 null,
                 Map.of(

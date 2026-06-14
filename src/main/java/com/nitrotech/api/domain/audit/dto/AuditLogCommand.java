@@ -3,20 +3,20 @@ package com.nitrotech.api.domain.audit.dto;
 import java.util.Map;
 
 public record AuditLogCommand(
-        String actorType,
+        AuditActorType actorType,
         Long actorId,
         String actorEmail,
-        String action,
-        String resourceType,
+        AuditAction action,
+        AuditResourceType resourceType,
         String resourceId,
-        String outcome,
+        AuditOutcome outcome,
         Map<String, Object> beforeData,
         Map<String, Object> afterData,
         Map<String, Object> metadata
 ) {
     public static AuditLogCommand success(
-            String action,
-            String resourceType,
+            AuditAction action,
+            AuditResourceType resourceType,
             Object resourceId,
             Map<String, Object> beforeData,
             Map<String, Object> afterData,
@@ -27,7 +27,7 @@ public record AuditLogCommand(
                 action,
                 resourceType,
                 resourceId == null ? null : String.valueOf(resourceId),
-                "SUCCESS",
+                AuditOutcome.SUCCESS,
                 beforeData,
                 afterData,
                 metadata
