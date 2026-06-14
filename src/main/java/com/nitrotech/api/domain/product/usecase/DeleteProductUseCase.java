@@ -11,8 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class DeleteProductUseCase {
@@ -29,7 +27,7 @@ public class DeleteProductUseCase {
                 AuditAction.PRODUCT_DELETED,
                 AuditResourceType.PRODUCT,
                 id,
-                Map.of("name", product.name(), "slug", product.slug()),
+                ProductAuditPayload.snapshot(product),
                 null,
                 null
         ));

@@ -8,6 +8,7 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
@@ -82,7 +83,7 @@ public class CreateShipmentUseCase {
                 .orderId(orderId)
                 .provider(resolvedProvider.toLowerCase())
                 .trackingCode(result.getTrackingCode())
-                .status("ready_to_pick")
+                .status(ShipmentStatus.READY_TO_PICK)
                 .fee(result.getFee())
                 .estimatedAt(result.getEstimatedAt())
                 .build();
@@ -92,8 +93,8 @@ public class CreateShipmentUseCase {
         // Create initial shipment status log
         shipmentRepository.addLog(
                 savedShipment.getId(),
-                "ready_to_pick",
-                "ready_to_pick",
+                ShipmentStatus.READY_TO_PICK,
+                ShipmentStatus.READY_TO_PICK.value(),
                 ShipmentLogSource.ADMIN,
                 null,
                 "Vận đơn được khởi tạo thành công qua đối tác " + provider.getProviderName().toUpperCase()
@@ -107,7 +108,7 @@ public class CreateShipmentUseCase {
                         "orderId", savedShipment.getOrderId(),
                         "provider", savedShipment.getProvider(),
                         "trackingCode", savedShipment.getTrackingCode(),
-                        "status", savedShipment.getStatus()
+                        "status", savedShipment.getStatus().value()
                 ),
                 Map.of("orderId", orderId)
         ));

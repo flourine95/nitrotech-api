@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.OrderShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +47,7 @@ class GetOrderShipmentUseCaseTest {
     void returnsShipmentWithLogs() {
         ShipmentData shipment = ShipmentData.builder().id(10L).orderId(123L).build();
         ShipmentLogData log = new ShipmentLogData(
-                1L, 10L, "ready_to_pick", "ready_to_pick", "ADMIN_CREATE",
+                1L, 10L, ShipmentStatus.READY_TO_PICK, "ready_to_pick", "ADMIN",
                 null, "Created", Instant.now());
         when(orderRepository.findById(123L)).thenReturn(Optional.of(mock(OrderData.class)));
         when(shipmentRepository.findByOrderId(123L)).thenReturn(Optional.of(shipment));

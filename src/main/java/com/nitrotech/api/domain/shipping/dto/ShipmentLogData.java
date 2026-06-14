@@ -5,7 +5,7 @@ import java.time.Instant;
 public record ShipmentLogData(
         Long id,
         Long shipmentId,
-        String status,
+        ShipmentStatus status,
         String rawStatus,
         String source,
         String location,

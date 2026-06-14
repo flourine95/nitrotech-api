@@ -10,6 +10,7 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -54,13 +55,13 @@ public class HandleShippingWebhookUseCase {
                 .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND",
                         "Shipment with tracking code " + trackingCode + " not found"));
 
-        String status = mapStatus(normalizedProvider, providerStatus);
-        String previousStatus = shipment.getStatus();
+        ShipmentStatus status = mapStatus(normalizedProvider, providerStatus);
+        ShipmentStatus previousStatus = shipment.getStatus();
         shipment.setStatus(status);
         if (isInTransit(status) && shipment.getShippedAt() == null) {
             shipment.setShippedAt(Instant.now());
         }
-        if ("delivered".equals(status) && shipment.getDeliveredAt() == null) {
+        if (ShipmentStatus.DELIVERED == status && shipment.getDeliveredAt() == null) {
             shipment.setDeliveredAt(Instant.now());
         }
 
@@ -83,8 +84,8 @@ public class HandleShippingWebhookUseCase {
                 AuditResourceType.SHIPMENT,
                 String.valueOf(saved.getId()),
                 AuditOutcome.SUCCESS,
-                Map.of("status", previousStatus),
-                Map.of("status", saved.getStatus(), "rawStatus", providerStatus),
+                Map.of("status", previousStatus.value()),
+                Map.of("status", saved.getStatus().value(), "rawStatus", providerStatus),
                 Map.of(
                         "provider", normalizedProvider,
                         "trackingCode", trackingCode,
@@ -96,7 +97,7 @@ public class HandleShippingWebhookUseCase {
                 "ok", true,
                 "shipmentId", saved.getId(),
                 "trackingCode", saved.getTrackingCode(),
-                "status", saved.getStatus()
+                "status", saved.getStatus().value()
         );
     }
 
@@ -113,7 +114,7 @@ public class HandleShippingWebhookUseCase {
         return null;
     }
 
-    private String mapStatus(String provider, String providerStatus) {
+    private ShipmentStatus mapStatus(String provider, String providerStatus) {
         if ("ghtk".equals(provider)) {
             return mapGhtkStatus(providerStatus);
         }
@@ -123,44 +124,44 @@ public class HandleShippingWebhookUseCase {
                 .replace(' ', '_');
 
         return switch (normalized) {
-            case "cancelled", "canceled" -> "cancel";
-            case "delivery_success", "delivered_success" -> "delivered";
-            default -> normalized;
+            case "cancelled", "canceled" -> ShipmentStatus.CANCEL;
+            case "delivery_success", "delivered_success" -> ShipmentStatus.DELIVERED;
+            default -> ShipmentStatus.fromValue(normalized);
         };
     }
 
-    private String mapGhtkStatus(String statusId) {
+    private ShipmentStatus mapGhtkStatus(String statusId) {
         String normalized = statusId.trim();
         return switch (normalized) {
-            case "-1" -> "cancel";
-            case "1", "2" -> "ready_to_pick";
-            case "3", "12", "123" -> "picked";
-            case "4", "45" -> "delivering";
-            case "5", "6" -> "delivered";
-            case "7", "8", "127", "128" -> "pickup_failed";
-            case "9", "10", "49", "410" -> "delivery_failed";
-            case "11", "20" -> "returning";
-            case "21" -> "returned";
-            case "13" -> "compensating";
-            default -> "ghtk_status_" + normalized.toLowerCase(Locale.ROOT);
+            case "-1" -> ShipmentStatus.CANCEL;
+            case "1", "2" -> ShipmentStatus.READY_TO_PICK;
+            case "3", "12", "123" -> ShipmentStatus.PICKED;
+            case "4", "45" -> ShipmentStatus.DELIVERING;
+            case "5", "6" -> ShipmentStatus.DELIVERED;
+            case "7", "8", "127", "128" -> ShipmentStatus.PICKUP_FAILED;
+            case "9", "10", "49", "410" -> ShipmentStatus.DELIVERY_FAILED;
+            case "11", "20" -> ShipmentStatus.RETURNING;
+            case "21" -> ShipmentStatus.RETURNED;
+            case "13" -> ShipmentStatus.COMPENSATING;
+            default -> ShipmentStatus.UNKNOWN;
         };
     }
 
-    private boolean isInTransit(String status) {
+    private boolean isInTransit(ShipmentStatus status) {
         return switch (status) {
-            case "picked", "storing", "transporting", "sorting", "delivering",
-                 "money_collect_delivering", "waiting_to_return", "return",
-                 "return_transporting", "return_sorting", "returning" -> true;
+            case PICKED, STORING, TRANSPORTING, SORTING, DELIVERING,
+                 MONEY_COLLECT_DELIVERING, WAITING_TO_RETURN, RETURN,
+                 RETURN_TRANSPORTING, RETURN_SORTING, RETURNING -> true;
             default -> false;
         };
     }
 
-    private void syncOrderStatus(ShipmentData shipment, String shipmentStatus) {
+    private void syncOrderStatus(ShipmentData shipment, ShipmentStatus shipmentStatus) {
         orderRepository.findById(shipment.getOrderId()).ifPresent(order -> {
             if ("cancelled".equals(order.status())) {
                 return;
             }
-            if ("delivered".equals(shipmentStatus) && !"delivered".equals(order.status())) {
+            if (ShipmentStatus.DELIVERED == shipmentStatus && !"delivered".equals(order.status())) {
                 orderRepository.updateStatus(order.id(), "delivered");
                 return;
             }

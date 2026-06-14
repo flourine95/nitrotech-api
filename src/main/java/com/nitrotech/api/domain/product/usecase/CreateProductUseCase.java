@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class CreateProductUseCase {
@@ -50,7 +48,7 @@ public class CreateProductUseCase {
                 AuditResourceType.PRODUCT,
                 product.id(),
                 null,
-                Map.of("name", product.name(), "slug", product.slug(), "active", product.active()),
+                ProductAuditPayload.snapshot(product),
                 null
         ));
         return product;

@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-
 @Service
 @RequiredArgsConstructor
 public class UpdateProductUseCase {
@@ -41,12 +39,13 @@ public class UpdateProductUseCase {
             throw new ConflictException("PRODUCT_SLUG_EXISTS", "Slug already exists");
         }
         ProductData after = productRepository.update(command);
+        ProductAuditPayload.ProductDelta delta = ProductAuditPayload.delta(before, after);
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.PRODUCT_UPDATED,
                 AuditResourceType.PRODUCT,
                 command.id(),
-                Map.of("name", before.name(), "slug", before.slug(), "active", before.active()),
-                Map.of("name", after.name(), "slug", after.slug(), "active", after.active()),
+                delta.beforeData(),
+                delta.afterData(),
                 null
         ));
         return after;

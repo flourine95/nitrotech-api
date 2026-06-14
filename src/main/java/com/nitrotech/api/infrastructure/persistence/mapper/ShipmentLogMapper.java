@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.mapper;
 
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentLogEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -11,4 +12,8 @@ public interface ShipmentLogMapper {
 
     @Mapping(source = "shipment.id", target = "shipmentId")
     ShipmentLogData toData(ShipmentLogEntity entity);
+
+    default ShipmentStatus toStatus(String status) {
+        return ShipmentStatus.fromValue(status);
+    }
 }
