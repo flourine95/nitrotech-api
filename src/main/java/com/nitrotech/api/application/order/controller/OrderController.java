@@ -13,6 +13,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class OrderController {
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
     public ResponseEntity<ApiResult<List<OrderData>>> list(
             @AuthenticationPrincipal UserPrincipal principal,
             @RequestParam(required = false) String status,
@@ -41,6 +43,7 @@ public class OrderController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
     public ResponseEntity<ApiResult<OrderData>> get(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
@@ -71,6 +74,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAuthority('ORDER_CANCEL_OWN')")
     public ResponseEntity<ApiResult<OrderData>> cancel(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
@@ -79,6 +83,7 @@ public class OrderController {
     }
 
     @PatchMapping("/{id}/status")
+    @PreAuthorize("hasAuthority('ORDER_UPDATE_STATUS')")
     public ResponseEntity<ApiResult<OrderData>> updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody UpdateOrderStatusRequest req

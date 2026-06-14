@@ -14,6 +14,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -38,6 +39,7 @@ public class AdminProductController {
     private final DeleteVariantUseCase deleteVariantUseCase;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('PRODUCT_READ')")
     public ResponseEntity<ApiResult<List<ProductData>>> list(
             @RequestParam(name = "search", required = false) @Size(max = 100, message = "Search query must not exceed 100 characters") String search,
             @RequestParam(name = "active", required = false) Boolean active,
@@ -56,11 +58,13 @@ public class AdminProductController {
     }
 
     @GetMapping("/{idOrSlug}")
+    @PreAuthorize("hasAuthority('PRODUCT_READ')")
     public ResponseEntity<ApiResult<ProductData>> get(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(ApiResult.ok(getProductUseCase.execute(idOrSlug)));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('PRODUCT_CREATE')")
     public ResponseEntity<ApiResult<ProductData>> create(@Valid @RequestBody CreateProductRequest req) {
         List<CreateVariantCommand> variants = req.variants() == null ? null :
                 req.variants().stream().map(v -> new CreateVariantCommand(
@@ -73,6 +77,7 @@ public class AdminProductController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('PRODUCT_UPDATE')")
     public ResponseEntity<ApiResult<ProductData>> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateProductRequest req
@@ -85,24 +90,28 @@ public class AdminProductController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('PRODUCT_DELETE')")
     public ResponseEntity<ApiResult<Void>> delete(@PathVariable Long id) {
         deleteProductUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Product deleted successfully"));
     }
 
     @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasAuthority('PRODUCT_UPDATE')")
     public ResponseEntity<ApiResult<Void>> restore(@PathVariable Long id) {
         restoreProductUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Product restored successfully"));
     }
 
     @DeleteMapping("/{id}/permanent")
+    @PreAuthorize("hasAuthority('PRODUCT_DELETE')")
     public ResponseEntity<ApiResult<Void>> hardDelete(@PathVariable Long id) {
         hardDeleteProductUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Product permanently deleted"));
     }
 
     @PostMapping("/{productId}/variants")
+    @PreAuthorize("hasAuthority('PRODUCT_CREATE')")
     public ResponseEntity<ApiResult<ProductVariantData>> createVariant(
             @PathVariable Long productId,
             @Valid @RequestBody CreateVariantRequest req
@@ -113,6 +122,7 @@ public class AdminProductController {
     }
 
     @PutMapping("/{productId}/variants/{variantId}")
+    @PreAuthorize("hasAuthority('PRODUCT_UPDATE')")
     public ResponseEntity<ApiResult<ProductVariantData>> updateVariant(
             @PathVariable Long productId,
             @PathVariable Long variantId,
@@ -124,6 +134,7 @@ public class AdminProductController {
     }
 
     @DeleteMapping("/{productId}/variants/{variantId}")
+    @PreAuthorize("hasAuthority('PRODUCT_DELETE')")
     public ResponseEntity<ApiResult<Void>> deleteVariant(
             @PathVariable Long productId,
             @PathVariable Long variantId

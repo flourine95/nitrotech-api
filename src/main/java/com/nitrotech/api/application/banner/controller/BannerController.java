@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,6 +32,7 @@ public class BannerController {
     }
 
     @GetMapping("/admin")
+    @PreAuthorize("hasAuthority('BANNER_MANAGE')")
     public ResponseEntity<ApiResult<List<BannerData>>> listAll(
             @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) String position
@@ -39,6 +41,7 @@ public class BannerController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('BANNER_MANAGE')")
     public ResponseEntity<ApiResult<BannerData>> create(@Valid @RequestBody CreateBannerRequest req) {
         BannerData data = createBannerUseCase.execute(new CreateBannerCommand(
                 req.title(), req.image(), req.url(), req.position(),
@@ -47,6 +50,7 @@ public class BannerController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('BANNER_MANAGE')")
     public ResponseEntity<ApiResult<BannerData>> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateBannerRequest req
@@ -58,6 +62,7 @@ public class BannerController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('BANNER_MANAGE')")
     public ResponseEntity<ApiResult<Void>> delete(@PathVariable Long id) {
         deleteBannerUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Banner deleted successfully"));

@@ -27,7 +27,16 @@ class GhtkShippingProviderTest {
     @BeforeEach
     void setUp() {
         ghtkClient = mock(GhtkClient.class);
-        provider = new GhtkShippingProvider(ghtkClient);
+        provider = new GhtkShippingProvider(ghtkClient, new GhtkAddressNormalizer(),
+                new GhtkPickupProperties(
+                        "NitroTech Warehouse",
+                        "0909000000",
+                        null,
+                        "590 CMT8 P.11",
+                        "TP. Hồ Chí Minh",
+                        "Quận 3",
+                        "Phường 1"
+                ));
     }
 
     @Test
@@ -57,8 +66,18 @@ class GhtkShippingProviderTest {
         GhtkOrderRequest.Order capturedOrder = captured.getOrder();
         assertThat(capturedOrder.getId()).isEqualTo("123");
         assertThat(capturedOrder.getTel()).isEqualTo("0909123456");
+        assertThat(capturedOrder.getPickName()).isEqualTo("NitroTech Warehouse");
+        assertThat(capturedOrder.getPickTel()).isEqualTo("0909000000");
+        assertThat(capturedOrder.getPickAddress()).isEqualTo("590 CMT8 P.11");
+        assertThat(capturedOrder.getPickProvince()).isEqualTo("TP. Hồ Chí Minh");
+        assertThat(capturedOrder.getPickDistrict()).isEqualTo("Quận 3");
+        assertThat(capturedOrder.getPickWard()).isEqualTo("Phường 1");
         assertThat(capturedOrder.getPickMoney()).isEqualTo(new BigDecimal("500000")); // COD picks order total
         assertThat(capturedOrder.getIsFreeship()).isEqualTo(1);
+        assertThat(capturedOrder.getProvince()).isEqualTo("TP. Hồ Chí Minh");
+        assertThat(capturedOrder.getDistrict()).isEqualTo("Quận 1");
+        assertThat(capturedOrder.getWard()).isEqualTo("Ben Nghe");
+        assertThat(capturedOrder.getHamlet()).isEqualTo("Khác");
     }
 
     @Test
@@ -100,6 +119,20 @@ class GhtkShippingProviderTest {
                 .isInstanceOf(ShippingException.class)
                 .hasMessageContaining("GHTK failed to create order: Address invalid")
                 .extracting("code").isEqualTo("GHTK_CREATION_FAILED");
+    }
+
+    @Test
+    void throwsWhenPickupConfigIsMissing() {
+        GhtkShippingProvider misconfigured = new GhtkShippingProvider(
+                ghtkClient,
+                new GhtkAddressNormalizer(),
+                new GhtkPickupProperties(null, null, null, null, null, null, null)
+        );
+
+        assertThatThrownBy(() -> misconfigured.createShipment(order("cod", new BigDecimal("500000"))))
+                .isInstanceOf(ShippingException.class)
+                .hasMessageContaining("ghtk.pickup.name")
+                .extracting("code").isEqualTo("GHTK_PICKUP_CONFIG_MISSING");
     }
 
     private OrderData order(String paymentMethod, BigDecimal finalAmount) {

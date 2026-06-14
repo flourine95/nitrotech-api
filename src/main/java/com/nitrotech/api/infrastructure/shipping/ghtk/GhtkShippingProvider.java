@@ -7,6 +7,7 @@ import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderRequest;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderResponse;
 import com.nitrotech.api.shared.exception.ShippingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -18,10 +19,14 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
+@EnableConfigurationProperties(GhtkPickupProperties.class)
 public class GhtkShippingProvider implements ShippingProvider {
 
     private static final double DEFAULT_PRODUCT_WEIGHT = 0.2; // Default 200g in kg
+
     private final GhtkClient ghtkClient;
+    private final GhtkAddressNormalizer addressNormalizer;
+    private final GhtkPickupProperties pickupProperties;
 
     @Override
     public String getProviderName() {
@@ -79,12 +84,20 @@ public class GhtkShippingProvider implements ShippingProvider {
 
         GhtkOrderRequest.Order ghtkOrder = GhtkOrderRequest.Order.builder()
                 .id(order.id().toString())
+                .pickName(requiredPickup("name", pickupProperties.name()))
+                .pickAddressId(pickupProperties.addressId())
+                .pickAddress(requiredPickup("address", pickupProperties.address()))
+                .pickProvince(addressNormalizer.normalizeProvince(requiredPickup("province", pickupProperties.province())))
+                .pickDistrict(addressNormalizer.normalizeDistrict(requiredPickup("district", pickupProperties.district())))
+                .pickWard(addressNormalizer.normalizeWard(pickupProperties.ward()))
+                .pickTel(requiredPickup("tel", pickupProperties.tel()))
                 .tel(addr.phone())
                 .name(addr.receiver())
-                .address(addr.street())
-                .province(addr.province())
-                .district(addr.district())
-                .ward(addr.ward())
+                .address(addressNormalizer.normalizeAddress(addr.street()))
+                .province(addressNormalizer.normalizeProvince(addr.province()))
+                .district(addressNormalizer.normalizeDistrict(addr.district()))
+                .ward(addressNormalizer.normalizeWard(addr.ward()))
+                .hamlet(GhtkAddressNormalizer.DEFAULT_HAMLET)
                 .isFreeship(isFreeship)
                 .pickMoney(pickMoney)
                 .note(order.note())
@@ -111,5 +124,13 @@ public class GhtkShippingProvider implements ShippingProvider {
             // Fallback to 3 days from now if parsing fails
             return Instant.now().plus(Duration.ofDays(3));
         }
+    }
+
+    private String requiredPickup(String field, String value) {
+        if (value == null || value.isBlank()) {
+            throw new ShippingException("GHTK_PICKUP_CONFIG_MISSING",
+                    "Missing GHTK pickup config: ghtk.pickup." + field);
+        }
+        return value.trim();
     }
 }

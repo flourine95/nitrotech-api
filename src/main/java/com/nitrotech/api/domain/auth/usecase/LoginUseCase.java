@@ -28,6 +28,13 @@ public class LoginUseCase {
             throw new AccountNotActiveException(credential.status());
         }
 
-        return AuthResult.ofUser(new AuthResult.UserData(credential.id(), credential.name(), credential.email()));
+        UserRepository.UserAuthorities authorities = userRepository.findAuthoritiesByUserId(credential.id());
+        return AuthResult.ofUser(new AuthResult.UserData(
+                credential.id(),
+                credential.name(),
+                credential.email(),
+                authorities.roles(),
+                authorities.permissions()
+        ));
     }
 }

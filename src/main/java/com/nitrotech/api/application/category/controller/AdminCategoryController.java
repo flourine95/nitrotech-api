@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -37,6 +38,7 @@ public class AdminCategoryController {
     private final ToggleCategoryUseCase toggleCategoryUseCase;
 
     @GetMapping
+    @PreAuthorize("hasAuthority('CATEGORY_READ')")
     public ResponseEntity<ApiResult<List<CategoryData>>> list(
             @RequestParam(required = false) Boolean deleted
     ) {
@@ -49,11 +51,13 @@ public class AdminCategoryController {
     }
 
     @GetMapping("/{idOrSlug}")
+    @PreAuthorize("hasAuthority('CATEGORY_READ')")
     public ResponseEntity<ApiResult<CategoryData>> get(@PathVariable String idOrSlug) {
         return ResponseEntity.ok(ApiResult.ok(getCategoryUseCase.execute(idOrSlug)));
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('CATEGORY_CREATE')")
     public ResponseEntity<ApiResult<CategoryData>> create(@Valid @RequestBody CreateCategoryRequest request) {
         CategoryData data = createCategoryUseCase.execute(new CreateCategoryCommand(
                 request.name(), request.slug(), request.description(),
@@ -63,6 +67,7 @@ public class AdminCategoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<CategoryData>> update(
             @PathVariable Long id,
             @Valid @RequestBody UpdateCategoryRequest request
@@ -75,24 +80,28 @@ public class AdminCategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     public ResponseEntity<ApiResult<Void>> delete(@PathVariable Long id) {
         deleteCategoryUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Category deleted successfully"));
     }
 
     @PatchMapping("/{id}/restore")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<Void>> restore(@PathVariable Long id) {
         restoreCategoryUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Category restored successfully"));
     }
 
     @DeleteMapping("/{id}/permanent")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     public ResponseEntity<ApiResult<Void>> hardDelete(@PathVariable Long id) {
         hardDeleteCategoryUseCase.execute(id);
         return ResponseEntity.ok(ApiResult.ok("Category permanently deleted"));
     }
 
     @PatchMapping("/move")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<MoveCategoryResult>> move(
             @Valid @RequestBody MoveCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(moveCategoryUseCase.execute(
@@ -101,52 +110,61 @@ public class AdminCategoryController {
     }
 
     @DeleteMapping("/bulk")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     public ResponseEntity<ApiResult<BulkResult>> bulkDelete(
             @Valid @RequestBody BulkDeleteCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(bulkDeleteCategoryUseCase.execute(request.ids())));
     }
 
     @DeleteMapping("/bulk/permanent")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     public ResponseEntity<ApiResult<BulkResult>> bulkHardDelete(
             @Valid @RequestBody BulkHardDeleteCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(bulkHardDeleteCategoryUseCase.execute(request.ids())));
     }
 
     @PatchMapping("/bulk/restore")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<BulkResult>> bulkRestore(
             @Valid @RequestBody BulkRestoreCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(bulkRestoreCategoryUseCase.execute(request.ids())));
     }
 
     @PatchMapping("/bulk/activate")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<BulkResult>> bulkActivate(
             @Valid @RequestBody BulkActivateCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(bulkActivateCategoryUseCase.execute(request.ids())));
     }
 
     @PatchMapping("/bulk/deactivate")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<BulkResult>> bulkDeactivate(
             @Valid @RequestBody BulkDeactivateCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(bulkDeactivateCategoryUseCase.execute(request.ids())));
     }
 
     @PostMapping("/bulk/validate-delete")
+    @PreAuthorize("hasAuthority('CATEGORY_DELETE')")
     public ResponseEntity<ApiResult<ValidateDeleteResult>> validateBulkDelete(
             @Valid @RequestBody ValidateDeleteCategoryRequest request) {
         return ResponseEntity.ok(ApiResult.ok(validateBulkDeleteCategoryUseCase.execute(request.ids())));
     }
 
     @PatchMapping("/{id}/move-up")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<CategoryData>> moveUp(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResult.ok(moveUpCategoryUseCase.execute(id)));
     }
 
     @PatchMapping("/{id}/move-down")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<CategoryData>> moveDown(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResult.ok(moveDownCategoryUseCase.execute(id)));
     }
 
     @PatchMapping("/{id}/move")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<CategoryData>> simpleMove(
             @PathVariable Long id,
             @RequestBody SimpleMoveRequest request) {
@@ -155,6 +173,7 @@ public class AdminCategoryController {
     }
 
     @PatchMapping("/{id}/toggle")
+    @PreAuthorize("hasAuthority('CATEGORY_UPDATE')")
     public ResponseEntity<ApiResult<CategoryData>> toggle(@PathVariable Long id) {
         return ResponseEntity.ok(ApiResult.ok(toggleCategoryUseCase.execute(id)));
     }

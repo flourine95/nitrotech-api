@@ -59,6 +59,14 @@ app:
 ghtk:
   api-url: ${GHTK_API_URL:https://services.giaohangtietkiem.vn}
   token: ${GHTK_TOKEN:}
+  pickup:
+    name: ${GHTK_PICKUP_NAME:}
+    tel: ${GHTK_PICKUP_TEL:}
+    address-id: ${GHTK_PICKUP_ADDRESS_ID:}
+    address: ${GHTK_PICKUP_ADDRESS:}
+    province: ${GHTK_PICKUP_PROVINCE:}
+    district: ${GHTK_PICKUP_DISTRICT:}
+    ward: ${GHTK_PICKUP_WARD:}
 
 # GHN
 ghn:
@@ -81,6 +89,8 @@ cloudinary:
 sepay:
   payment-code-prefix: ${SEPAY_PAYMENT_CODE_PREFIX:NT}
   webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
+  account-number: ${SEPAY_ACCOUNT_NUMBER:123456789}
+  bank-name: ${SEPAY_BANK_NAME:MBBank}
 
 # Swagger / OpenAPI
 springdoc:

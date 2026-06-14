@@ -23,18 +23,17 @@ spring:
     compose:
       enabled: false
 
-  mail:
-    host: sandbox.smtp.mailtrap.io
-    port: 587
-    username: your-mailtrap-username   # Lấy tại mailtrap.io → Sandboxes → SMTP Settings
-    password: your-mailtrap-password
-
 mail:
-  from: noreply@yourdomain.com
+  from: NitroTech <noreply@send.yourdomain.com>
+
+resend:
+  api-key: paste-resend-api-key-here
 
 app:
   frontend-url: http://localhost:3000
   public-api-url: http://localhost:8080
+  shipping:
+    default-provider: ghtk
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001
@@ -44,11 +43,29 @@ cloudinary:
   api-key: your-api-key
   api-secret: your-api-secret
 
+ghtk:
+  api-url: https://services-staging.ghtklab.com
+  token: paste-ghtk-staging-token-here
+  pickup:
+    name: paste-pickup-contact-name-here
+    tel: paste-pickup-phone-here
+    address-id:
+    address: paste-pickup-address-here
+    province: paste-pickup-province-here
+    district: paste-pickup-district-here
+    ward: paste-pickup-ward-here
+
 ghn:
   api-url: https://dev-online-gateway.ghn.vn/shiip/public-api
   token: paste-ghn-staging-token-here
   shop-id: paste-ghn-staging-shop-id-here
   client-id: paste-ghn-client-id-here
+
+sepay:
+  payment-code-prefix: NT
+  webhook-api-key: paste-sepay-webhook-api-key-here
+  account-number: paste-sepay-account-number-here
+  bank-name: paste-sepay-bank-name-here
 
 logging:
   level:

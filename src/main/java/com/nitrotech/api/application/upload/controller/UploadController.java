@@ -6,6 +6,7 @@ import com.nitrotech.api.shared.response.ApiResult;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -19,6 +20,7 @@ public class UploadController {
     private final CloudinaryStorageService storageService;
 
     @PostMapping("/sign")
+    @PreAuthorize("hasAuthority('MEDIA_MANAGE')")
     public ResponseEntity<ApiResult<CloudinaryStorageService.SignatureResult>> sign(
             @Valid @RequestBody PresignRequest req
     ) {
@@ -26,6 +28,7 @@ public class UploadController {
     }
 
     @GetMapping("/folders")
+    @PreAuthorize("hasAuthority('MEDIA_MANAGE')")
     public ResponseEntity<ApiResult<List<Map<String, Object>>>> folders(
             @RequestParam(required = false) String parent
     ) {
@@ -33,6 +36,7 @@ public class UploadController {
     }
 
     @GetMapping("/assets")
+    @PreAuthorize("hasAuthority('MEDIA_MANAGE')")
     public ResponseEntity<ApiResult<CloudinaryStorageService.AssetsResult>> assets(
             @RequestParam(required = false) String folder,
             @RequestParam(defaultValue = "50") int maxResults,

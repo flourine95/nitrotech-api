@@ -37,29 +37,31 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
         );
 
         List<PermissionSeed> permissions = List.of(
-                new PermissionSeed("View Users", "user:view", "user", "View user list and details"),
-                new PermissionSeed("Create User", "user:create", "user", "Create new users"),
-                new PermissionSeed("Update User", "user:update", "user", "Update user information"),
-                new PermissionSeed("Delete User", "user:delete", "user", "Delete users"),
-                new PermissionSeed("View Roles", "role:view", "role", "View roles and permissions"),
-                new PermissionSeed("Manage Roles", "role:manage", "role", "Create, update, delete roles and assign permissions"),
-                new PermissionSeed("View Products", "product:view", "product", "View product list and details"),
-                new PermissionSeed("Create Product", "product:create", "product", "Create new products"),
-                new PermissionSeed("Update Product", "product:update", "product", "Update product information"),
-                new PermissionSeed("Delete Product", "product:delete", "product", "Delete products"),
-                new PermissionSeed("View Categories", "category:view", "category", "View categories"),
-                new PermissionSeed("Manage Categories", "category:manage", "category", "Create, update, delete categories"),
-                new PermissionSeed("View Brands", "brand:view", "brand", "View brands"),
-                new PermissionSeed("Manage Brands", "brand:manage", "brand", "Create, update, delete brands"),
-                new PermissionSeed("View Orders", "order:view", "order", "View all orders"),
-                new PermissionSeed("Update Order", "order:update", "order", "Update order status"),
-                new PermissionSeed("Cancel Order", "order:cancel", "order", "Cancel orders"),
-                new PermissionSeed("View Inventory", "inventory:view", "inventory", "View inventory levels"),
-                new PermissionSeed("Manage Inventory", "inventory:manage", "inventory", "Adjust inventory quantities"),
-                new PermissionSeed("View Promotions", "promotion:view", "promotion", "View promotions"),
-                new PermissionSeed("Manage Promotions", "promotion:manage", "promotion", "Create, update, delete promotions"),
-                new PermissionSeed("Manage Reviews", "review:manage", "review", "Approve or reject reviews"),
-                new PermissionSeed("Manage Banners", "banner:manage", "banner", "Create, update, delete banners")
+                new PermissionSeed("Read Users", "USER_READ", "user", "Read users"),
+                new PermissionSeed("Manage User Roles", "USER_MANAGE_ROLE", "user", "Assign roles to users"),
+                new PermissionSeed("Read Roles", "ROLE_READ", "role", "Read roles and permissions"),
+                new PermissionSeed("Manage Roles", "ROLE_MANAGE", "role", "Create, update, delete roles and assign permissions"),
+                new PermissionSeed("Read Products", "PRODUCT_READ", "product", "Read products"),
+                new PermissionSeed("Create Product", "PRODUCT_CREATE", "product", "Create products"),
+                new PermissionSeed("Update Product", "PRODUCT_UPDATE", "product", "Update products"),
+                new PermissionSeed("Delete Product", "PRODUCT_DELETE", "product", "Delete products"),
+                new PermissionSeed("Read Categories", "CATEGORY_READ", "category", "Read categories"),
+                new PermissionSeed("Create Category", "CATEGORY_CREATE", "category", "Create categories"),
+                new PermissionSeed("Update Category", "CATEGORY_UPDATE", "category", "Update categories"),
+                new PermissionSeed("Delete Category", "CATEGORY_DELETE", "category", "Delete categories"),
+                new PermissionSeed("Read Brands", "BRAND_READ", "brand", "Read brands"),
+                new PermissionSeed("Create Brand", "BRAND_CREATE", "brand", "Create brands"),
+                new PermissionSeed("Update Brand", "BRAND_UPDATE", "brand", "Update brands"),
+                new PermissionSeed("Delete Brand", "BRAND_DELETE", "brand", "Delete brands"),
+                new PermissionSeed("Read Own Orders", "ORDER_READ_OWN", "order", "Read own orders"),
+                new PermissionSeed("Read All Orders", "ORDER_READ_ALL", "order", "Read all orders"),
+                new PermissionSeed("Update Order Status", "ORDER_UPDATE_STATUS", "order", "Update order status"),
+                new PermissionSeed("Cancel Own Order", "ORDER_CANCEL_OWN", "order", "Cancel own orders"),
+                new PermissionSeed("Manage Inventory", "INVENTORY_MANAGE", "inventory", "Manage inventory"),
+                new PermissionSeed("Manage Promotions", "PROMOTION_MANAGE", "promotion", "Manage promotions"),
+                new PermissionSeed("Manage Reviews", "REVIEW_MANAGE", "review", "Manage reviews"),
+                new PermissionSeed("Manage Banners", "BANNER_MANAGE", "banner", "Manage banners"),
+                new PermissionSeed("Manage Media", "MEDIA_MANAGE", "media", "Upload and browse media assets")
         );
 
         jdbc.batchUpdate("""
@@ -94,12 +96,11 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
                 SELECT r.id, p.id
                 FROM roles r
                 JOIN permissions p ON p.slug IN (
-                    'product:view', 'product:create', 'product:update',
-                    'category:view', 'brand:view',
-                    'order:view', 'order:update',
-                    'inventory:view', 'inventory:manage',
-                    'review:manage',
-                    'promotion:view'
+                    'PRODUCT_READ', 'PRODUCT_CREATE', 'PRODUCT_UPDATE',
+                    'CATEGORY_READ', 'BRAND_READ',
+                    'ORDER_READ_ALL', 'ORDER_UPDATE_STATUS',
+                    'INVENTORY_MANAGE', 'REVIEW_MANAGE',
+                    'PROMOTION_MANAGE', 'MEDIA_MANAGE'
                 )
                 WHERE r.slug = 'staff'
                 ON CONFLICT DO NOTHING

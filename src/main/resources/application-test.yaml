@@ -20,31 +20,41 @@ spring:
   cache:
     type: simple
 
-  mail:
-    host: localhost
-    port: 25
-    username:
-    password:
-    properties:
-      mail.smtp.auth: false
-      mail.smtp.starttls.enable: false
-
 mail:
   from: noreply@test.local
 
+resend:
+  api-key: test-resend-api-key
+
 app:
   frontend-url: http://localhost:3000
+  public-api-url: http://localhost:8080
   shipping:
     default-provider: ghtk
 
 ghtk:
   api-url: http://localhost:9099
   token: mock-token
+  pickup:
+    name: Test Warehouse
+    tel: "0909000000"
+    address-id:
+    address: 590 CMT8 P.11
+    province: TP. Hồ Chí Minh
+    district: Quận 3
+    ward: Phường 1
 
 ghn:
   api-url: http://localhost:9099
   token: mock-token
   shop-id: "123456"
+  client-id: "654321"
+
+sepay:
+  payment-code-prefix: NT
+  webhook-api-key: test-sepay-webhook-key
+  account-number: "123456789"
+  bank-name: MBBank
 
 cors:
   allowed-origins: http://localhost:3000

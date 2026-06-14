@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.Normalizer;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Function;
 import java.util.regex.Pattern;
 
 @Component
@@ -122,8 +123,8 @@ public class GhnCarrierAddressResolver {
             List<T> candidates,
             String internalName,
             String internalCode,
-            java.util.function.Function<T, String> nameGetter,
-            java.util.function.Function<T, String> codeGetter,
+            Function<T, String> nameGetter,
+            Function<T, String> codeGetter,
             String level
     ) {
         String normalizedName = normalize(internalName);
