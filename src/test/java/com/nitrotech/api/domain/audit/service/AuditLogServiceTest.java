@@ -13,6 +13,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,7 +55,12 @@ class AuditLogServiceTest {
                 AuditResourceType.ROLE,
                 1L,
                 Map.of("permissionSlugs", Set.of("ROLE_READ")),
-                Map.of("permissionSlugs", Set.of("ROLE_READ", "ROLE_MANAGE"), "apiToken", "secret"),
+                Map.of(
+                        "permissionSlugs", Set.of("ROLE_READ", "ROLE_MANAGE"),
+                        "apiToken", "secret",
+                        "headers", Map.of("authorization", "Bearer abc", "traceId", "trace-1"),
+                        "events", List.of(Map.of("refreshToken", "refresh-secret", "device", "browser"))
+                ),
                 null
         ));
 
@@ -68,6 +74,12 @@ class AuditLogServiceTest {
         assertThat(data.actorRoles()).containsExactly("admin");
         assertThat(data.action()).isEqualTo("ROLE_PERMISSION_UPDATED");
         assertThat(data.afterData()).containsEntry("apiToken", "[REDACTED]");
+        assertThat(data.afterData()).containsEntry("headers", Map.of("authorization", "[REDACTED]", "traceId", "trace-1"));
+        assertThat((List<?>) data.afterData().get("events"))
+                .singleElement()
+                .asInstanceOf(org.assertj.core.api.InstanceOfAssertFactories.MAP)
+                .containsEntry("refreshToken", "[REDACTED]")
+                .containsEntry("device", "browser");
     }
 
     @Test
