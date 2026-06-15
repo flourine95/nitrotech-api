@@ -15,7 +15,7 @@ public class CreateCategoryUseCase {
     private final CategoryRepository categoryRepository;
 
     public CategoryData execute(CreateCategoryCommand command) {
-        if (categoryRepository.existsBySlug(command.slug())) {
+        if (categoryRepository.existsNotDeletedBySlug(command.slug())) {
             throw new ConflictException("CATEGORY_SLUG_EXISTS", 
                     "Slug '" + command.slug() + "' already exists");
         }

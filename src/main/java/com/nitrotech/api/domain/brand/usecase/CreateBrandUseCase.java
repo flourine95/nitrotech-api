@@ -16,7 +16,7 @@ public class CreateBrandUseCase {
 
     @Transactional
     public BrandData execute(CreateBrandCommand command) {
-        if (brandRepository.existsBySlug(command.slug())) {
+        if (brandRepository.existsNotDeletedBySlug(command.slug())) {
             throw new ConflictException("BRAND_SLUG_EXISTS", "Slug already exists");
         }
         return brandRepository.create(command);

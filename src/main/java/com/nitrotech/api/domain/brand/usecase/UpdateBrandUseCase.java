@@ -20,7 +20,7 @@ public class UpdateBrandUseCase {
         if (!brandRepository.existsById(command.id())) {
             throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
         }
-        if (command.slug() != null && brandRepository.existsBySlugAndIdNot(command.slug(), command.id())) {
+        if (command.slug() != null && brandRepository.existsNotDeletedBySlugAndIdNot(command.slug(), command.id())) {
             throw new ConflictException("BRAND_SLUG_EXISTS", "Slug already exists");
         }
         return brandRepository.update(command);

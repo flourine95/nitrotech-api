@@ -16,8 +16,11 @@ import java.util.stream.Collectors;
 public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>,
         JpaSpecificationExecutor<ProductEntity> {
 
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, Long id);
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.slug = :slug AND p.deletedAt IS NULL")
+    boolean existsNotDeletedBySlug(@Param("slug") String slug);
+
+    @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.slug = :slug AND p.deletedAt IS NULL AND p.id != :excludeId")
+    boolean existsNotDeletedBySlugAndIdNot(@Param("slug") String slug, @Param("excludeId") Long excludeId);
 
     Optional<ProductEntity> findBySlugAndDeletedAtIsNull(String slug);
 
@@ -120,6 +123,9 @@ public interface ProductJpaRepository extends JpaRepository<ProductEntity, Long>
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.categoryId = :categoryId AND p.deletedAt IS NULL")
     boolean existsAnyByCategoryId(@Param("categoryId") Long categoryId);
+
+    @Query("SELECT DISTINCT p.categoryId FROM ProductEntity p WHERE p.categoryId IN :categoryIds AND p.deletedAt IS NULL")
+    List<Long> findCategoryIdsWithProducts(@Param("categoryIds") List<Long> categoryIds);
 
     @Query("SELECT CASE WHEN COUNT(p) > 0 THEN TRUE ELSE FALSE END FROM ProductEntity p WHERE p.brandId = :brandId AND p.deletedAt IS NULL")
     boolean existsAnyByBrandId(@Param("brandId") Long brandId);

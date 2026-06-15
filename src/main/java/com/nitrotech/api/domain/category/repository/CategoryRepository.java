@@ -16,8 +16,8 @@ import java.util.Optional;
 public interface CategoryRepository {
     CategoryData create(CreateCategoryCommand command);
     CategoryData update(UpdateCategoryCommand command);
-    Optional<CategoryData> findById(Long id);
-    Optional<CategoryData> findBySlug(String slug);
+    Optional<CategoryData> findNotDeletedById(Long id);
+    Optional<CategoryData> findNotDeletedBySlug(String slug);
     Optional<CategoryData> findVisibleById(Long id);
     Optional<CategoryData> findVisibleBySlug(String slug);
     Optional<CategoryData> findDeletedById(Long id);
@@ -27,9 +27,8 @@ public interface CategoryRepository {
     boolean existsById(Long id);
     boolean hasNotDeletedChildren(Long id);
     boolean hasAnyChildren(Long id);
+    boolean existsNotDeletedBySlug(String slug);
     boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId);
-    boolean existsBySlug(String slug);
-    boolean existsBySlugAndIdNot(String slug, Long id);
     boolean isDescendantOf(Long potentialDescendantId, Long ancestorId);
     void softDelete(Long id);
     void restore(Long id);

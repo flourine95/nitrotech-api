@@ -21,7 +21,7 @@ public class UpdateCategoryUseCase {
             throw new NotFoundException("CATEGORY_NOT_FOUND", 
                     "Category with ID " + command.id() + " not found");
         }
-        if (command.slug() != null && categoryRepository.existsBySlugAndIdNot(command.slug(), command.id())) {
+        if (command.slug() != null && categoryRepository.existsNotDeletedBySlugAndIdNot(command.slug(), command.id())) {
             throw new ConflictException("CATEGORY_SLUG_EXISTS", 
                     "Slug '" + command.slug() + "' already exists");
         }

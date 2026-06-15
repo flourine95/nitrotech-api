@@ -15,14 +15,25 @@ import java.util.Set;
 public class BulkHardDeleteCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
+    private final ProductCategoryChecker productCategoryChecker;
 
     public BulkResult execute(List<Long> ids) {
-        List<Long> deleted = categoryRepository.bulkHardDelete(ids);
+        Set<Long> hasProducts = productCategoryChecker.filterHasProducts(ids);
+        List<Long> eligible = ids.stream()
+                .filter(id -> !hasProducts.contains(id))
+                .toList();
+
+        List<Long> deleted = categoryRepository.bulkHardDelete(eligible);
         Set<Long> deletedSet = Set.copyOf(deleted);
 
         Map<Long, String> failedReasons = new LinkedHashMap<>();
         for (Long id : ids) {
-            if (!deletedSet.contains(id)) {
+            if (deletedSet.contains(id)) {
+                continue;
+            }
+            if (hasProducts.contains(id)) {
+                failedReasons.put(id, "Category still has active products");
+            } else {
                 failedReasons.put(id, "Category not found, not soft-deleted yet, or has children");
             }
         }

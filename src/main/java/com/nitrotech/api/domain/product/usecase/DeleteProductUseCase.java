@@ -20,7 +20,7 @@ public class DeleteProductUseCase {
 
     @Transactional
     public void execute(Long id) {
-        ProductData product = productRepository.findById(id)
+        ProductData product = productRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
         productRepository.softDelete(id);
         auditLogService.record(AuditLogCommand.success(

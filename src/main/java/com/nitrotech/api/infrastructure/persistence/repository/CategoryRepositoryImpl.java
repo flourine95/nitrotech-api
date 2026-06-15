@@ -59,12 +59,12 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public Optional<CategoryData> findById(Long id) {
+    public Optional<CategoryData> findNotDeletedById(Long id) {
         return jpa.findNotDeletedById(id).map(this::toDataForDetail);
     }
 
     @Override
-    public Optional<CategoryData> findBySlug(String slug) {
+    public Optional<CategoryData> findNotDeletedBySlug(String slug) {
         return jpa.findBySlugAndDeletedAtIsNull(slug).map(this::toDataForDetail);
     }
 
@@ -133,18 +133,13 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     }
 
     @Override
-    public boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId) {
-        return jpa.existsNotDeletedBySlugAndIdNot(slug, excludeId);
-    }
-
-    @Override
-    public boolean existsBySlug(String slug) {
+    public boolean existsNotDeletedBySlug(String slug) {
         return jpa.existsNotDeletedBySlug(slug);
     }
 
     @Override
-    public boolean existsBySlugAndIdNot(String slug, Long id) {
-        return jpa.existsNotDeletedBySlugAndIdNot(slug, id);
+    public boolean existsNotDeletedBySlugAndIdNot(String slug, Long excludeId) {
+        return jpa.existsNotDeletedBySlugAndIdNot(slug, excludeId);
     }
 
     @Override

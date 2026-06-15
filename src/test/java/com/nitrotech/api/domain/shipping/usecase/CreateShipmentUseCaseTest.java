@@ -9,15 +9,17 @@ import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
 import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
+import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
-import com.nitrotech.api.infrastructure.shipping.ShippingProviderRegistry;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.lang.reflect.Method;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -30,17 +32,28 @@ class CreateShipmentUseCaseTest {
 
     private OrderRepository orderRepository;
     private ShipmentRepository shipmentRepository;
-    private ShippingProviderRegistry registry;
+    private ShippingProviderResolver registry;
     private AuditLogService auditLogService;
+    private CreateShipmentTransaction createShipmentTransaction;
     private CreateShipmentUseCase useCase;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
         shipmentRepository = mock(ShipmentRepository.class);
-        registry = mock(ShippingProviderRegistry.class);
+        registry = mock(ShippingProviderResolver.class);
         auditLogService = mock(AuditLogService.class);
-        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, auditLogService, "ghtk");
+        createShipmentTransaction = new CreateShipmentTransaction(shipmentRepository, auditLogService);
+        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, createShipmentTransaction, "ghtk");
+    }
+
+    @Test
+    void keepsExternalProviderCallOutsideTransactionalMethod() throws Exception {
+        Method execute = CreateShipmentUseCase.class.getDeclaredMethod("execute", Long.class, String.class);
+        Method save = CreateShipmentTransaction.class.getDeclaredMethod("save", ShipmentData.class, String.class, Long.class);
+
+        assertThat(execute.getAnnotation(Transactional.class)).isNull();
+        assertThat(save.getAnnotation(Transactional.class)).isNotNull();
     }
 
     @Test

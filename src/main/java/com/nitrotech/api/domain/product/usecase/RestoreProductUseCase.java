@@ -16,7 +16,7 @@ public class RestoreProductUseCase {
         var product = productRepository.findDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Deleted product not found"));
 
-        if (productRepository.existsBySlugAndIdNot(product.slug(), id)) {
+        if (productRepository.existsNotDeletedBySlugAndIdNot(product.slug(), id)) {
             throw new ConflictException("PRODUCT_SLUG_CONFLICT",
                     "Cannot restore: slug '" + product.slug() + "' is already used by another active product");
         }

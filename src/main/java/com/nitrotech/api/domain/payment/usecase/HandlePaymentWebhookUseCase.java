@@ -6,9 +6,8 @@ import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.order.usecase.UpdateOrderStatusUseCase;
 import com.nitrotech.api.domain.payment.dto.VerifiedPaymentWebhook;
 import com.nitrotech.api.domain.payment.provider.PaymentProvider;
-import com.nitrotech.api.infrastructure.payment.PaymentProviderRegistry;
-import com.nitrotech.api.infrastructure.persistence.entity.PaymentTransactionEntity;
-import com.nitrotech.api.infrastructure.persistence.repository.PaymentTransactionJpaRepository;
+import com.nitrotech.api.domain.payment.provider.PaymentProviderResolver;
+import com.nitrotech.api.domain.payment.repository.PaymentTransactionRepository;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -16,8 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.time.Instant;
 import java.util.Map;
 
 @Slf4j
@@ -25,9 +22,9 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class HandlePaymentWebhookUseCase {
 
-    private final PaymentProviderRegistry registry;
+    private final PaymentProviderResolver registry;
     private final OrderRepository orderRepository;
-    private final PaymentTransactionJpaRepository paymentTransactionJpa;
+    private final PaymentTransactionRepository paymentTransactionRepository;
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
 
     @Transactional
@@ -42,7 +39,7 @@ public class HandlePaymentWebhookUseCase {
             VerifiedPaymentWebhook verified = provider.parseAndVerifyWebhook(rawRequest);
 
             // 3. Deduplicate transaction by provider reference
-            if (paymentTransactionJpa.findByProviderAndProviderRef(provider.getProviderName(), verified.externalTransactionId()).isPresent()) {
+            if (paymentTransactionRepository.existsByProviderAndProviderRef(provider.getProviderName(), verified.externalTransactionId())) {
                 log.warn("Duplicate payment webhook detected for provider: {}, ref: {}", provider.getProviderName(), verified.externalTransactionId());
                 return Map.of("success", true, "message", "Duplicate transaction ignored");
             }
@@ -60,7 +57,7 @@ public class HandlePaymentWebhookUseCase {
             String outcomeStatus = isPaid ? "paid" : "mismatch";
 
             // 6. Save Payment Transaction Log
-            saveTransaction(verified, outcomeStatus);
+            paymentTransactionRepository.save(verified, outcomeStatus);
 
             // 7. Update order status if paid successfully
             if (isPaid && "pending".equals(order.status())) {
@@ -83,15 +80,4 @@ public class HandlePaymentWebhookUseCase {
         }
     }
 
-    private void saveTransaction(VerifiedPaymentWebhook verified, String status) {
-        PaymentTransactionEntity entity = new PaymentTransactionEntity();
-        entity.setOrderId(verified.orderId());
-        entity.setProvider(verified.provider());
-        entity.setAmount(verified.amount() != null ? verified.amount() : BigDecimal.ZERO);
-        entity.setStatus(status);
-        entity.setProviderRef(verified.externalTransactionId());
-        entity.setProviderData(verified.rawData());
-        entity.setPaidAt("paid".equals(status) ? Instant.now() : null);
-        paymentTransactionJpa.save(entity);
-    }
 }

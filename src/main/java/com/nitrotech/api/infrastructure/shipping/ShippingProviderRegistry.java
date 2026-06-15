@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.shipping;
 
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
+import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class ShippingProviderRegistry {
+public class ShippingProviderRegistry implements ShippingProviderResolver {
 
     private final Map<String, ShippingProvider> providers;
 
@@ -23,6 +24,7 @@ public class ShippingProviderRegistry {
                 ));
     }
 
+    @Override
     public ShippingProvider getProvider(String name) {
         return Optional.ofNullable(name)
                 .map(String::toLowerCase)

@@ -22,7 +22,7 @@ public class GetProductUseCase {
             if (parts.length == 2) {
                 try {
                     Long id = Long.parseLong(parts[1]);
-                    return productRepository.findById(id)
+                    return productRepository.findNotDeletedById(id)
                             .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", 
                                     "Product with ID " + id + " not found"));
                 } catch (NumberFormatException ignored) {
@@ -32,11 +32,11 @@ public class GetProductUseCase {
         
         try {
             Long id = Long.parseLong(idOrSlug);
-            return productRepository.findById(id)
+            return productRepository.findNotDeletedById(id)
                     .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", 
                             "Product with ID " + id + " not found"));
         } catch (NumberFormatException e) {
-            return productRepository.findBySlug(idOrSlug)
+            return productRepository.findNotDeletedBySlug(idOrSlug)
                     .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", 
                             "Product with slug '" + idOrSlug + "' not found"));
         }
