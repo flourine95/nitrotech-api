@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.payment;
 
 import com.nitrotech.api.domain.payment.provider.PaymentProvider;
+import com.nitrotech.api.domain.payment.provider.PaymentProviderResolver;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import org.springframework.stereotype.Component;
 
@@ -11,7 +12,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Component
-public class PaymentProviderRegistry {
+public class PaymentProviderRegistry implements PaymentProviderResolver {
 
     private final Map<String, PaymentProvider> providers;
 
@@ -23,6 +24,7 @@ public class PaymentProviderRegistry {
                 ));
     }
 
+    @Override
     public PaymentProvider getProvider(String name) {
         return Optional.ofNullable(name)
                 .map(String::toLowerCase)

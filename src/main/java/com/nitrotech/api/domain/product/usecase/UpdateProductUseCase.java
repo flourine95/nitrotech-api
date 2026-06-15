@@ -26,7 +26,7 @@ public class UpdateProductUseCase {
 
     @Transactional
     public ProductData execute(UpdateProductCommand command) {
-        ProductData before = productRepository.findById(command.id())
+        ProductData before = productRepository.findNotDeletedById(command.id())
                 .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
 
         if (command.categoryId() != null && !categoryRepository.existsById(command.categoryId())) {
@@ -35,7 +35,7 @@ public class UpdateProductUseCase {
         if (command.brandId() != null && !brandRepository.existsById(command.brandId())) {
             throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
         }
-        if (command.slug() != null && productRepository.existsBySlugAndIdNot(command.slug(), command.id())) {
+        if (command.slug() != null && productRepository.existsNotDeletedBySlugAndIdNot(command.slug(), command.id())) {
             throw new ConflictException("PRODUCT_SLUG_EXISTS", "Slug already exists");
         }
         ProductData after = productRepository.update(command);

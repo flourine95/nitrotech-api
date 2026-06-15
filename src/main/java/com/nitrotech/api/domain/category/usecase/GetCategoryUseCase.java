@@ -15,11 +15,11 @@ public class GetCategoryUseCase {
     public CategoryData execute(String idOrSlug) {
         try {
             Long id = Long.parseLong(idOrSlug);
-            return categoryRepository.findById(id)
+            return categoryRepository.findNotDeletedById(id)
                     .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                             "Category with ID " + id + " not found"));
         } catch (NumberFormatException e) {
-            return categoryRepository.findBySlug(idOrSlug)
+            return categoryRepository.findNotDeletedBySlug(idOrSlug)
                     .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
                             "Category with slug '" + idOrSlug + "' not found"));
         }

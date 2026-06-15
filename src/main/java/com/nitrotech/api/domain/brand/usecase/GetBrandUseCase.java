@@ -15,11 +15,11 @@ public class GetBrandUseCase {
     public BrandData execute(String idOrSlug) {
         try {
             Long id = Long.parseLong(idOrSlug);
-            return brandRepository.findById(id)
+            return brandRepository.findNotDeletedById(id)
                     .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", 
                             "Brand with ID " + id + " not found"));
         } catch (NumberFormatException e) {
-            return brandRepository.findBySlug(idOrSlug)
+            return brandRepository.findNotDeletedBySlug(idOrSlug)
                     .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", 
                             "Brand with slug '" + idOrSlug + "' not found"));
         }

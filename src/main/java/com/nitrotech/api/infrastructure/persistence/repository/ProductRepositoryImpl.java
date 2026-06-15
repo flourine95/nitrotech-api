@@ -93,12 +93,12 @@ public class ProductRepositoryImpl implements ProductRepository {
     }
 
     @Override
-    public Optional<ProductData> findById(Long id) {
+    public Optional<ProductData> findNotDeletedById(Long id) {
         return productJpa.findActiveByIdWithRelations(id).map(this::toDetailData);
     }
 
     @Override
-    public Optional<ProductData> findBySlug(String slug) {
+    public Optional<ProductData> findNotDeletedBySlug(String slug) {
         return productJpa.findBySlugWithRelations(slug).map(this::toDetailData);
     }
 
@@ -222,10 +222,10 @@ public class ProductRepositoryImpl implements ProductRepository {
     public boolean existsById(Long id) { return productJpa.existsActiveById(id); }
 
     @Override
-    public boolean existsBySlug(String slug) { return productJpa.existsBySlug(slug); }
+    public boolean existsNotDeletedBySlug(String slug) { return productJpa.existsNotDeletedBySlug(slug); }
 
     @Override
-    public boolean existsBySlugAndIdNot(String slug, Long id) { return productJpa.existsBySlugAndIdNot(slug, id); }
+    public boolean existsNotDeletedBySlugAndIdNot(String slug, Long id) { return productJpa.existsNotDeletedBySlugAndIdNot(slug, id); }
 
     @Override
     public void softDelete(Long id) {

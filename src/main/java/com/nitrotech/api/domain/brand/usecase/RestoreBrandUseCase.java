@@ -16,7 +16,7 @@ public class RestoreBrandUseCase {
         var brand = brandRepository.findDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Deleted brand not found"));
 
-        if (brandRepository.existsBySlugAndIdNot(brand.slug(), id)) {
+        if (brandRepository.existsNotDeletedBySlugAndIdNot(brand.slug(), id)) {
             throw new ConflictException("BRAND_SLUG_CONFLICT",
                     "Cannot restore: slug '" + brand.slug() + "' is already used by another active brand");
         }

@@ -49,12 +49,12 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
-    public Optional<BrandData> findById(Long id) {
+    public Optional<BrandData> findNotDeletedById(Long id) {
         return jpa.findNotDeletedById(id).map(this::toData);
     }
 
     @Override
-    public Optional<BrandData> findBySlug(String slug) {
+    public Optional<BrandData> findNotDeletedBySlug(String slug) {
         return jpa.findBySlugAndDeletedAtIsNull(slug).map(this::toData);
     }
 
@@ -100,12 +100,12 @@ public class BrandRepositoryImpl implements BrandRepository {
     }
 
     @Override
-    public boolean existsBySlug(String slug) {
+    public boolean existsNotDeletedBySlug(String slug) {
         return jpa.existsNotDeletedBySlug(slug);
     }
 
     @Override
-    public boolean existsBySlugAndIdNot(String slug, Long id) {
+    public boolean existsNotDeletedBySlugAndIdNot(String slug, Long id) {
         return jpa.existsNotDeletedBySlugAndIdNot(slug, id);
     }
 

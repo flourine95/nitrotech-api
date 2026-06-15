@@ -32,7 +32,7 @@ public class CreateProductUseCase {
         if (command.brandId() != null && !brandRepository.existsById(command.brandId())) {
             throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
         }
-        if (productRepository.existsBySlug(command.slug())) {
+        if (productRepository.existsNotDeletedBySlug(command.slug())) {
             throw new ConflictException("PRODUCT_SLUG_EXISTS", "Slug already exists");
         }
         if (command.variants() != null) {

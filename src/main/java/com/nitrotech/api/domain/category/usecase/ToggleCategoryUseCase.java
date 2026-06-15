@@ -16,7 +16,7 @@ public class ToggleCategoryUseCase {
 
     @Transactional
     public CategoryData execute(Long id) {
-        CategoryData category = categoryRepository.findById(id)
+        CategoryData category = categoryRepository.findNotDeletedById(id)
                 .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
         
         // Toggle active status
