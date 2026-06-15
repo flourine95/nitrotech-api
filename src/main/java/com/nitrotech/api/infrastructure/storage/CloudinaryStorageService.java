@@ -2,6 +2,7 @@ package com.nitrotech.api.infrastructure.storage;
 
 import com.cloudinary.Cloudinary;
 import com.cloudinary.api.ApiResponse;
+import com.nitrotech.api.shared.exception.StorageException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -55,7 +56,8 @@ public class CloudinaryStorageService {
             String cursor = (String) response.get("next_cursor");
             return new AssetsResult(resources, cursor);
         } catch (Exception e) {
-            throw new RuntimeException("Failed to list Cloudinary assets: " + e.getMessage(), e);
+            throw new StorageException("CLOUDINARY_ASSETS_UNAVAILABLE",
+                    "Failed to list Cloudinary assets", e);
         }
     }
 
@@ -67,7 +69,8 @@ public class CloudinaryStorageService {
                     : cloudinary.api().subFolders(parentFolder, new HashMap<>());
             return (List<Map<String, Object>>) response.get("folders");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to list Cloudinary folders: " + e.getMessage(), e);
+            throw new StorageException("CLOUDINARY_FOLDERS_UNAVAILABLE",
+                    "Failed to list Cloudinary folders", e);
         }
     }
 

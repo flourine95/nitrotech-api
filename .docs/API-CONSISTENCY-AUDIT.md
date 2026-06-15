@@ -25,16 +25,15 @@ Use this checklist to keep consistency work scoped. Each item must name the rule
 - [x] Align bulk restore and hard-delete checks with single-item operations
 - [x] Add an automated domain boundary guard test
 - [x] Standardize deleted slug reuse with partial unique indexes
+- [x] Replace generic storage runtime exceptions with structured storage errors
+- [x] Limit mutable query request DTOs to getter/setter binding
+- [x] Add repository tests for soft-deleted slug reuse checks
+- [x] Audit entity-to-DTO mapping helpers and keep existing private repository mappers
+- [x] Audit helper placement and keep focused provider/repository helpers as-is
 
 ## Next audit passes
 
-- [ ] Decide whether deleted brand, product, and category slugs can be reused
-- [ ] Rename soft delete repository methods to make record scope explicit
-- [ ] Add tests for soft-deleted slug reuse behavior
-- [ ] Audit generic `RuntimeException` usage
-- [ ] Audit request DTO style: `record` vs mutable Lombok classes
-- [ ] Audit duplicate mapping helpers between entities and DTOs
-- [ ] Audit helpers that are public or shared but used by one class
+- No open audit passes in this checklist.
 
 ## Current findings
 
@@ -44,8 +43,8 @@ Brand, product, and category repositories now state slug check scope in the doma
 
 - `existsNotDeletedBySlugAndIdNot`
 - `existsNotDeletedBySlug`
-- `existsAnyBySlugAndIdNot`
-- `existsAnyBySlug`
+- `existsNotDeletedBySlugAndIdNot`
+- `existsNotDeletedBySlug`
 
 Decision: deleted brand, product, and category slugs can be reused. Database uniqueness is enforced only for records where `deleted_at IS NULL`. Restore use cases must check conflict with non-deleted records before clearing `deleted_at`.
 
