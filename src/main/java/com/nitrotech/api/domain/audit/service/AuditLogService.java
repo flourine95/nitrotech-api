@@ -23,11 +23,13 @@ public class AuditLogService {
 
     private static final Set<String> BACK_OFFICE_ROLES = Set.of("admin", "super_admin", "staff");
     private static final Set<String> SENSITIVE_KEYS = Set.of(
-            "password", "token", "apiKey", "api_key", "secret", "authorization", "cookie"
+            "password", "token", "apiKey", "api_key", "secret", "authorization", "cookie",
+            "accessToken", "refreshToken", "bearer", "session", "set-cookie", "credential", "privateKey"
     );
 
     private final AuditLogRepository auditLogRepository;
 
+    // Audit entries are committed with the business transaction; rolled-back work should not leave success audit rows.
     @Transactional(propagation = Propagation.MANDATORY)
     public void record(AuditLogCommand command) {
         AuditActor actor = resolveActor(command);
@@ -109,14 +111,41 @@ public class AuditLogService {
             return null;
         }
         Map<String, Object> sanitized = new LinkedHashMap<>();
-        data.forEach((key, value) -> {
-            if (isSensitive(key)) {
-                sanitized.put(key, "[REDACTED]");
-            } else {
-                sanitized.put(key, value);
-            }
-        });
+        data.forEach((key, value) -> sanitized.put(key, sanitizeValue(key, value)));
         return sanitized;
+    }
+
+    private Object sanitizeValue(String key, Object value) {
+        if (isSensitive(key)) {
+            return "[REDACTED]";
+        }
+        if (value instanceof Map<?, ?> map) {
+            Map<String, Object> sanitized = new LinkedHashMap<>();
+            map.forEach((nestedKey, nestedValue) ->
+                    sanitized.put(String.valueOf(nestedKey), sanitizeValue(String.valueOf(nestedKey), nestedValue)));
+            return sanitized;
+        }
+        if (value instanceof List<?> list) {
+            return list.stream()
+                    .map(item -> sanitizeNestedItem(item))
+                    .toList();
+        }
+        return value;
+    }
+
+    private Object sanitizeNestedItem(Object item) {
+        if (item instanceof Map<?, ?> map) {
+            Map<String, Object> sanitized = new LinkedHashMap<>();
+            map.forEach((key, value) ->
+                    sanitized.put(String.valueOf(key), sanitizeValue(String.valueOf(key), value)));
+            return sanitized;
+        }
+        if (item instanceof List<?> list) {
+            return list.stream()
+                    .map(this::sanitizeNestedItem)
+                    .toList();
+        }
+        return item;
     }
 
     private boolean isSensitive(String key) {
