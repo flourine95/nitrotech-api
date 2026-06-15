@@ -1,8 +1,14 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
@@ -14,6 +20,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Optional;
 
 @Slf4j
@@ -23,17 +30,20 @@ public class CreateShipmentUseCase {
     private final OrderRepository orderRepository;
     private final ShipmentRepository shipmentRepository;
     private final ShippingProviderRegistry shippingProviderRegistry;
+    private final AuditLogService auditLogService;
     private final String defaultProvider;
 
     public CreateShipmentUseCase(
             OrderRepository orderRepository,
             ShipmentRepository shipmentRepository,
             ShippingProviderRegistry shippingProviderRegistry,
+            AuditLogService auditLogService,
             @Value("${app.shipping.default-provider:ghtk}") String defaultProvider
     ) {
         this.orderRepository = orderRepository;
         this.shipmentRepository = shipmentRepository;
         this.shippingProviderRegistry = shippingProviderRegistry;
+        this.auditLogService = auditLogService;
         this.defaultProvider = defaultProvider;
     }
 
@@ -46,7 +56,8 @@ public class CreateShipmentUseCase {
         Optional<ShipmentData> existing = shipmentRepository.findByOrderId(orderId);
         if (existing.isPresent()) {
             log.warn("Shipment already exists for orderId: {}", orderId);
-            return existing.get();
+            throw new DomainException("SHIPMENT_ALREADY_EXISTS",
+                    "Shipment already exists for order " + orderId) {};
         }
 
         // Retrieve order details
@@ -72,7 +83,7 @@ public class CreateShipmentUseCase {
                 .orderId(orderId)
                 .provider(resolvedProvider.toLowerCase())
                 .trackingCode(result.getTrackingCode())
-                .status("ready_to_pick")
+                .status(ShipmentStatus.READY_TO_PICK)
                 .fee(result.getFee())
                 .estimatedAt(result.getEstimatedAt())
                 .build();
@@ -82,10 +93,25 @@ public class CreateShipmentUseCase {
         // Create initial shipment status log
         shipmentRepository.addLog(
                 savedShipment.getId(),
-                "ready_to_pick",
+                ShipmentStatus.READY_TO_PICK,
+                ShipmentStatus.READY_TO_PICK.value(),
+                ShipmentLogSource.ADMIN,
                 null,
                 "Vận đơn được khởi tạo thành công qua đối tác " + provider.getProviderName().toUpperCase()
         );
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.SHIPMENT_CREATED,
+                AuditResourceType.SHIPMENT,
+                savedShipment.getId(),
+                null,
+                Map.of(
+                        "orderId", savedShipment.getOrderId(),
+                        "provider", savedShipment.getProvider(),
+                        "trackingCode", savedShipment.getTrackingCode(),
+                        "status", savedShipment.getStatus().value()
+                ),
+                Map.of("orderId", orderId)
+        ));
 
         log.info("Shipment created successfully: {}", savedShipment);
         return savedShipment;

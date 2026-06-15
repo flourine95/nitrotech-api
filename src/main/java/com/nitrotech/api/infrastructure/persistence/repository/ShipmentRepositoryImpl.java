@@ -1,14 +1,20 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentLogEntity;
+import com.nitrotech.api.infrastructure.persistence.mapper.ShipmentLogMapper;
+import com.nitrotech.api.infrastructure.persistence.mapper.ShipmentMapper;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
@@ -17,6 +23,8 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
 
     private final ShipmentJpaRepository shipmentJpa;
     private final ShipmentLogJpaRepository logJpa;
+    private final ShipmentMapper shipmentMapper;
+    private final ShipmentLogMapper shipmentLogMapper;
 
     @Override
     @Transactional
@@ -26,62 +34,47 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
             entity = shipmentJpa.findById(data.getId())
                     .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
                             "Shipment with ID " + data.getId() + " not found"));
+            shipmentMapper.updateEntity(entity, data);
         } else {
-            entity = new ShipmentEntity();
+            entity = shipmentMapper.toEntity(data);
         }
 
-        entity.setOrderId(data.getOrderId());
-        entity.setProvider(data.getProvider());
-        entity.setTrackingCode(data.getTrackingCode());
-        entity.setStatus(data.getStatus());
-        entity.setFee(data.getFee());
-        entity.setEstimatedAt(data.getEstimatedAt());
-        entity.setShippedAt(data.getShippedAt());
-        entity.setDeliveredAt(data.getDeliveredAt());
-
         ShipmentEntity saved = shipmentJpa.save(entity);
-        return toData(saved);
+        return shipmentMapper.toData(saved);
     }
 
     @Override
     public Optional<ShipmentData> findByOrderId(Long orderId) {
-        return shipmentJpa.findByOrderId(orderId).map(this::toData);
+        return shipmentJpa.findByOrderId(orderId).map(shipmentMapper::toData);
     }
 
     @Override
     public Optional<ShipmentData> findByProviderAndTrackingCode(String provider, String trackingCode) {
-        return shipmentJpa.findByProviderIgnoreCaseAndTrackingCode(provider, trackingCode).map(this::toData);
+        return shipmentJpa.findByProviderIgnoreCaseAndTrackingCode(provider, trackingCode).map(shipmentMapper::toData);
+    }
+
+    @Override
+    public List<ShipmentLogData> findLogsByShipmentId(Long shipmentId) {
+        return logJpa.findByShipment_IdOrderByCreatedAtAsc(shipmentId).stream()
+                .map(shipmentLogMapper::toData)
+                .toList();
     }
 
     @Override
     @Transactional
-    public void addLog(Long shipmentId, String status, String location, String note) {
+    public void addLog(Long shipmentId, ShipmentStatus status, String rawStatus, ShipmentLogSource source, String location, String note) {
         ShipmentEntity shipment = shipmentJpa.findById(shipmentId)
                 .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
                         "Shipment with ID " + shipmentId + " not found"));
 
         ShipmentLogEntity log = new ShipmentLogEntity();
         log.setShipment(shipment);
-        log.setStatus(status);
+        log.setStatus(status.value());
+        log.setRawStatus(rawStatus);
+        log.setSource(source.name());
         log.setLocation(location);
         log.setNote(note);
 
-        logJpa.save(log);
-    }
-
-    private ShipmentData toData(ShipmentEntity entity) {
-        return ShipmentData.builder()
-                .id(entity.getId())
-                .orderId(entity.getOrderId())
-                .provider(entity.getProvider())
-                .trackingCode(entity.getTrackingCode())
-                .status(entity.getStatus())
-                .fee(entity.getFee())
-                .estimatedAt(entity.getEstimatedAt())
-                .shippedAt(entity.getShippedAt())
-                .deliveredAt(entity.getDeliveredAt())
-                .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getUpdatedAt())
-                .build();
+        shipment.addLog(log);
     }
 }

@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -19,12 +20,14 @@ import static org.mockito.Mockito.*;
 class UpdateOrderStatusUseCaseTest {
 
     private OrderRepository orderRepository;
+    private AuditLogService auditLogService;
     private UpdateOrderStatusUseCase useCase;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
-        useCase = new UpdateOrderStatusUseCase(orderRepository);
+        auditLogService = mock(AuditLogService.class);
+        useCase = new UpdateOrderStatusUseCase(orderRepository, auditLogService);
     }
 
     @Test
@@ -36,6 +39,7 @@ class UpdateOrderStatusUseCaseTest {
 
         assertThat(result.status()).isEqualTo("confirmed");
         verify(orderRepository).updateStatus(123L, "confirmed");
+        verify(auditLogService).record(any());
     }
 
     @Test
@@ -47,6 +51,7 @@ class UpdateOrderStatusUseCaseTest {
 
         assertThat(result.status()).isEqualTo("shipped");
         verify(orderRepository).updateStatus(123L, "shipped");
+        verify(auditLogService).record(any());
     }
 
     @Test

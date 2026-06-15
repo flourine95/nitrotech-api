@@ -1,8 +1,12 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
+import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
+import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
@@ -27,6 +31,7 @@ class CreateShipmentUseCaseTest {
     private OrderRepository orderRepository;
     private ShipmentRepository shipmentRepository;
     private ShippingProviderRegistry registry;
+    private AuditLogService auditLogService;
     private CreateShipmentUseCase useCase;
 
     @BeforeEach
@@ -34,7 +39,8 @@ class CreateShipmentUseCaseTest {
         orderRepository = mock(OrderRepository.class);
         shipmentRepository = mock(ShipmentRepository.class);
         registry = mock(ShippingProviderRegistry.class);
-        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, "ghtk");
+        auditLogService = mock(AuditLogService.class);
+        useCase = new CreateShipmentUseCase(orderRepository, shipmentRepository, registry, auditLogService, "ghtk");
     }
 
     @Test
@@ -64,7 +70,7 @@ class CreateShipmentUseCaseTest {
                 .orderId(orderId)
                 .provider(providerName)
                 .trackingCode("S12345.6789")
-                .status("ready_to_pick")
+                .status(ShipmentStatus.READY_TO_PICK)
                 .fee(new BigDecimal("35000"))
                 .estimatedAt(estTime)
                 .build();
@@ -82,26 +88,29 @@ class CreateShipmentUseCaseTest {
         assertThat(captured.getOrderId()).isEqualTo(orderId);
         assertThat(captured.getProvider()).isEqualTo(providerName);
         assertThat(captured.getTrackingCode()).isEqualTo("S12345.6789");
-        assertThat(captured.getStatus()).isEqualTo("ready_to_pick");
+        assertThat(captured.getStatus()).isEqualTo(ShipmentStatus.READY_TO_PICK);
 
-        verify(shipmentRepository).addLog(eq(1L), eq("ready_to_pick"), isNull(), anyString());
+        verify(shipmentRepository).addLog(eq(1L), eq(ShipmentStatus.READY_TO_PICK), eq("ready_to_pick"),
+                eq(ShipmentLogSource.ADMIN), isNull(), anyString());
+        verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
     @Test
-    void returnsExistingShipmentWithoutRecreating() {
+    void throwsWhenShipmentAlreadyExists() {
         Long orderId = 123L;
         ShipmentData existing = ShipmentData.builder()
                 .id(1L)
                 .orderId(orderId)
                 .provider("ghtk")
                 .trackingCode("S12345.6789")
-                .status("ready_to_pick")
+                .status(ShipmentStatus.READY_TO_PICK)
                 .build();
         when(shipmentRepository.findByOrderId(orderId)).thenReturn(Optional.of(existing));
 
-        ShipmentData result = useCase.execute(orderId, "ghtk");
+        assertThatThrownBy(() -> useCase.execute(orderId, "ghtk"))
+                .isInstanceOf(DomainException.class)
+                .hasMessageContaining("Shipment already exists for order 123");
 
-        assertThat(result).isEqualTo(existing);
         verify(orderRepository, never()).findById(anyLong());
         verify(registry, never()).getProvider(anyString());
         verify(shipmentRepository, never()).save(any());
@@ -145,7 +154,7 @@ class CreateShipmentUseCaseTest {
                 .orderId(orderId)
                 .provider("ghtk")
                 .trackingCode("S12345.6789")
-                .status("ready_to_pick")
+                .status(ShipmentStatus.READY_TO_PICK)
                 .fee(new BigDecimal("35000"))
                 .estimatedAt(estTime)
                 .build();

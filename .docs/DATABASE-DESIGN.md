@@ -1,476 +1,464 @@
-# Database Design — Nitrotech API
+# Database design
 
-## Design Principles
+Nitrotech API uses PostgreSQL with Flyway migrations. This document explains the current schema shape, the main relationships, and the conventions that matter when changing persistence code.
 
-- All tables have `created_at`, `updated_at` timestamps
-- Important tables have `deleted_at` for soft delete
-- No `is_` prefix for boolean columns
-- Use `BIGSERIAL` for primary keys (PostgreSQL)
-- Boolean status fields consistently named `active`
-- Enums use `VARCHAR` or JPA `@Enumerated(EnumType.STRING)`
-- Product variants use `JSONB` for attributes with GIN index
+The migration source of truth is `src/main/resources/db/migration`. Keep this document in sync when adding, removing, or reshaping tables.
 
----
+## Design principles
 
-## Soft Delete
+- Use `BIGSERIAL` primary keys for entity tables
+- Store timestamps as `TIMESTAMPTZ` after the timestamp normalization migrations
+- Use `deleted_at` for soft-deleted aggregate roots
+- Use `active` for boolean enablement flags
+- Store flexible product, address, payment, audit, and review snapshots in `JSONB`
+- Keep request validation in application DTOs, not database entities
+- Use partial unique indexes where soft-deleted records should not reserve unique values
+- Prefer explicit foreign keys for ownership and lifecycle rules
+
+## Soft delete
+
+Soft-deleted records keep their row and set `deleted_at`.
 
 | Table | Soft delete |
-|-------|-------------|
+|------|-------------|
 | `users` | Yes |
+| `roles` | Yes |
+| `permissions` | Yes |
+| `brands` | Yes |
+| `categories` | Yes |
 | `products` | Yes |
 | `product_variants` | Yes |
-| `categories` | Yes |
-| `brands` | Yes |
 | `orders` | Yes |
 | `reviews` | Yes |
-| Other tables | No |
 
----
+Queries for active records should filter `deleted_at IS NULL`. Repository methods should make that scope visible with names such as `findActiveById`, `findDeletedById`, and `existsActiveBySlug`.
 
-## Schema
+## Timestamp columns
 
-### users
-```sql
-CREATE TABLE users (
-    id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    email       VARCHAR(255) NOT NULL UNIQUE,
-    password    VARCHAR(255),
-    phone       VARCHAR(20),
-    avatar      VARCHAR(500),
-    status      VARCHAR(20)  NOT NULL DEFAULT 'inactive',  -- inactive, active, banned, suspended
-    provider    VARCHAR(20)  NOT NULL DEFAULT 'local',     -- local, google, facebook
-    provider_id VARCHAR(100),
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP
-);
-```
+Most tables started with `TIMESTAMP` columns and later migrated to `TIMESTAMPTZ`. Migrations `V31` through `V36` normalize order, payment, token, cart, wishlist, inventory, catalog, user, review, promotion, banner, role, permission, and shipping timestamps.
 
----
+New timestamp columns should use `TIMESTAMPTZ` unless there is a specific reason to store local time.
 
-### user_tokens
-```sql
-CREATE TABLE user_tokens (
-    id         BIGSERIAL    PRIMARY KEY,
-    user_id    BIGINT       NOT NULL,
-    token      VARCHAR(255) NOT NULL UNIQUE,
-    type       VARCHAR(30)  NOT NULL,           -- password_reset, email_verification
-    expires_at TIMESTAMP    NOT NULL,
-    used       BOOLEAN      NOT NULL DEFAULT FALSE,
-    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_token_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+## Identity and access
 
-CREATE INDEX idx_token_lookup ON user_tokens (token, type) WHERE NOT used;
-```
+### `users`
 
----
+Stores customer, staff, and admin accounts.
 
-### roles & permissions (not implemented)
-```sql
-CREATE TABLE roles (
-    id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,
-    slug        VARCHAR(100) NOT NULL UNIQUE,
-    description VARCHAR(500),
-    active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP
-);
+Important columns:
 
-CREATE TABLE permissions (
-    id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(100) NOT NULL,
-    slug        VARCHAR(100) NOT NULL UNIQUE,   -- product:create, order:delete
-    description VARCHAR(500),
-    group_name  VARCHAR(100),                   -- product, order, user, etc.
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP
-);
+- `email`: unique login identifier
+- `status`: account state such as `inactive`, `active`, `banned`, or `suspended`
+- `provider` and `provider_id`: local or external auth provider metadata
+- `deleted_at`: soft-delete marker
 
-CREATE TABLE role_permissions (
-    role_id       BIGINT NOT NULL,
-    permission_id BIGINT NOT NULL,
-    PRIMARY KEY (role_id, permission_id),
-    CONSTRAINT fk_rp_role       FOREIGN KEY (role_id)       REFERENCES roles(id)       ON DELETE CASCADE,
-    CONSTRAINT fk_rp_permission FOREIGN KEY (permission_id) REFERENCES permissions(id) ON DELETE CASCADE
-);
+Relationships:
 
-CREATE TABLE user_roles (
-    user_id BIGINT NOT NULL,
-    role_id BIGINT NOT NULL,
-    PRIMARY KEY (user_id, role_id),
-    CONSTRAINT fk_ur_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    CONSTRAINT fk_ur_role FOREIGN KEY (role_id) REFERENCES roles(id) ON DELETE CASCADE
-);
-```
+- One user has many `addresses`
+- One user has one `cart`
+- One user has many `orders`
+- One user can have many `roles` through `user_roles`
+- One user can have many `wishlists`, `reviews`, and `promotion_usages`
 
----
+### `user_tokens`
 
-### addresses
-```sql
-CREATE TABLE addresses (
-    id              BIGSERIAL    PRIMARY KEY,
-    user_id         BIGINT       NOT NULL,
-    receiver        VARCHAR(255) NOT NULL,
-    phone           VARCHAR(20)  NOT NULL,
-    province        VARCHAR(100) NOT NULL,
-    province_code   VARCHAR(20)  NOT NULL,
-    district        VARCHAR(100) NOT NULL,
-    district_code   VARCHAR(20)  NOT NULL,
-    ward            VARCHAR(100) NOT NULL,
-    ward_code       VARCHAR(20)  NOT NULL,
-    street          VARCHAR(255) NOT NULL,
-    default_address BOOLEAN      NOT NULL DEFAULT FALSE,
-    created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_address_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
-```
+Stores one-time account tokens such as email verification and password reset tokens.
 
----
+Important columns:
 
-### brands
-```sql
-CREATE TABLE brands (
-    id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    slug        VARCHAR(255) NOT NULL UNIQUE,
-    logo        VARCHAR(500),
-    description TEXT,
-    active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP
-);
-```
+- `token`: unique token value
+- `type`: token purpose
+- `expires_at`: token expiry
+- `used`: prevents token reuse
 
----
+Index:
 
-### categories
-```sql
-CREATE TABLE categories (
-    id          BIGSERIAL    PRIMARY KEY,
-    name        VARCHAR(255) NOT NULL,
-    slug        VARCHAR(255) NOT NULL UNIQUE,
-    description TEXT,
-    image       VARCHAR(500),
-    parent_id   BIGINT,
-    active      BOOLEAN      NOT NULL DEFAULT TRUE,
-    sort_order  INT          NOT NULL DEFAULT 0,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at  TIMESTAMP,
-    CONSTRAINT fk_category_parent FOREIGN KEY (parent_id) REFERENCES categories(id) ON DELETE SET NULL
-);
-```
+- `idx_token_lookup` on `(token, type)` where `used = false`
 
----
+### `roles`, `permissions`, `role_permissions`, and `user_roles`
 
-### products & variants
-```sql
-CREATE TABLE products (
-    id                        BIGSERIAL    PRIMARY KEY,
-    category_id               BIGINT       NOT NULL,
-    brand_id                  BIGINT,
-    name                      VARCHAR(255) NOT NULL,
-    slug                      VARCHAR(255) NOT NULL UNIQUE,
-    description               TEXT,
-    thumbnail                 VARCHAR(500),
-    specs                     JSONB,                          -- general specifications
-    active                    BOOLEAN      NOT NULL DEFAULT TRUE,
-    manual_badge              VARCHAR(50),                    -- manual badge: "HOT", "NEW", "SALE"
-    manual_badge_expires_at   TIMESTAMP,                      -- badge expiration time
-    created_at                TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at                TIMESTAMP    NOT NULL DEFAULT NOW(),
-    deleted_at                TIMESTAMP,
-    CONSTRAINT fk_product_category FOREIGN KEY (category_id) REFERENCES categories(id),
-    CONSTRAINT fk_product_brand    FOREIGN KEY (brand_id)    REFERENCES brands(id)
-);
+These tables implement role-based access control (RBAC).
 
-CREATE TABLE product_images (
-    id         BIGSERIAL    PRIMARY KEY,
-    product_id BIGINT       NOT NULL,
-    url        VARCHAR(500) NOT NULL,
-    sort_order INT          NOT NULL DEFAULT 0,
-    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_image_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
+Important columns:
 
-CREATE TABLE product_variants (
-    id         BIGSERIAL      PRIMARY KEY,
-    product_id BIGINT         NOT NULL,
-    sku        VARCHAR(100)   NOT NULL UNIQUE,
-    name       VARCHAR(255)   NOT NULL,         -- "i7 / 32GB / 512GB / Silver"
-    price      DECIMAL(15, 2) NOT NULL,
-    attributes JSONB,                           -- {"cpu": "i7-13700H", "ram_gb": 32, "storage_gb": 512}
-    image_id   BIGINT,                          -- variant thumbnail image
-    active     BOOLEAN        NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP,
-    CONSTRAINT fk_variant_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
-    CONSTRAINT fk_variant_image   FOREIGN KEY (image_id)   REFERENCES product_images(id) ON DELETE SET NULL
-);
+- `roles.slug`: stable role identifier such as `admin`, `staff`, or `customer`
+- `roles.system_role`: protects system roles from unsafe edits
+- `permissions.slug`: authority string such as `PRODUCT_READ` or `ORDER_UPDATE_STATUS`
+- `permissions.group_name`: permission grouping for dashboard display
+- `permissions.system_permission`: protects built-in permissions
 
-CREATE INDEX idx_variant_attributes ON product_variants USING GIN (attributes);
-```
+Join tables:
 
----
+- `role_permissions`: many-to-many role to permission mapping
+- `user_roles`: many-to-many user to role mapping
 
-### reviews
-```sql
-CREATE TABLE reviews (
-    id         BIGSERIAL PRIMARY KEY,
-    product_id BIGINT    NOT NULL,
-    user_id    BIGINT    NOT NULL,
-    order_id   BIGINT    NOT NULL,              -- only users who purchased can review
-    rating     SMALLINT  NOT NULL CHECK (rating BETWEEN 1 AND 5),
-    comment    TEXT,
-    images     JSONB,                            -- review image URLs: ["url1", "url2"]
-    status     VARCHAR(20) NOT NULL DEFAULT 'pending',  -- pending, approved, rejected
-    created_at TIMESTAMP   NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP   NOT NULL DEFAULT NOW(),
-    deleted_at TIMESTAMP,
-    UNIQUE (product_id, user_id, order_id),     -- one review per order
-    CONSTRAINT fk_review_product FOREIGN KEY (product_id) REFERENCES products(id),
-    CONSTRAINT fk_review_user    FOREIGN KEY (user_id)    REFERENCES users(id),
-    CONSTRAINT fk_review_order   FOREIGN KEY (order_id)   REFERENCES orders(id)
-);
-```
+Migration notes:
 
----
+- `V38` adds system role and permission flags, seeds current authorities, and assigns defaults
+- `V39` normalizes legacy permission slugs to the current `SCREAMING_SNAKE_CASE` format
+- `V40` adds media management permission
+- `V43` adds audit log read permission
 
-### carts
-```sql
-CREATE TABLE carts (
-    id         BIGSERIAL PRIMARY KEY,
-    user_id    BIGINT    NOT NULL UNIQUE,       -- one cart per user
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_cart_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-);
+## Customer profile and addresses
 
-CREATE TABLE cart_items (
-    id         BIGSERIAL      PRIMARY KEY,
-    cart_id    BIGINT         NOT NULL,
-    variant_id BIGINT         NOT NULL,
-    quantity   INT            NOT NULL DEFAULT 1,
-    created_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    UNIQUE (cart_id, variant_id),
-    CONSTRAINT fk_ci_cart    FOREIGN KEY (cart_id)    REFERENCES carts(id)            ON DELETE CASCADE,
-    CONSTRAINT fk_ci_variant FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE
-);
-```
+### `addresses`
 
----
+Stores user shipping addresses and province/district/ward codes.
 
-### orders & order_items
-```sql
-CREATE TABLE orders (
-    id               BIGSERIAL      PRIMARY KEY,
-    user_id          BIGINT         NOT NULL,
-    shipping_address JSONB          NOT NULL,   -- address snapshot at order time
-    status           VARCHAR(20)    NOT NULL DEFAULT 'pending',
-    -- pending, confirmed, processing, shipped, delivered, cancelled, refunded
-    payment_method   VARCHAR(20)    NOT NULL DEFAULT 'cod',  -- cod, vnpay, momo
-    total_amount     DECIMAL(15, 2) NOT NULL,
-    discount_amount  DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    shipping_fee     DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    final_amount     DECIMAL(15, 2) NOT NULL,
-    promotion_code   VARCHAR(50),
-    note             TEXT,
-    created_at       TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at       TIMESTAMP      NOT NULL DEFAULT NOW(),
-    deleted_at       TIMESTAMP,
-    CONSTRAINT fk_order_user FOREIGN KEY (user_id) REFERENCES users(id)
-);
+Important columns:
 
-CREATE TABLE order_items (
-    id         BIGSERIAL      PRIMARY KEY,
-    order_id   BIGINT         NOT NULL,
-    variant_id BIGINT         NOT NULL,
-    name       VARCHAR(255)   NOT NULL,         -- variant name snapshot
-    sku        VARCHAR(100)   NOT NULL,         -- SKU snapshot
-    quantity   INT            NOT NULL,
-    unit_price DECIMAL(15, 2) NOT NULL,
-    subtotal   DECIMAL(15, 2) NOT NULL,
-    created_at TIMESTAMP      NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_item_order   FOREIGN KEY (order_id)   REFERENCES orders(id)           ON DELETE CASCADE,
-    CONSTRAINT fk_item_variant FOREIGN KEY (variant_id) REFERENCES product_variants(id)
-);
-```
+- `user_id`: owner
+- `receiver` and `phone`: recipient contact
+- `province_code`, `district_code`, `ward_code`: address codes used by shipping integrations
+- `default_address`: marks the default address
 
----
+Migration note:
 
-### payments (not implemented)
-```sql
-CREATE TABLE payment_transactions (
-    id              BIGSERIAL      PRIMARY KEY,
-    order_id        BIGINT         NOT NULL,
-    provider        VARCHAR(20)    NOT NULL,    -- cod, vnpay, momo
-    amount          DECIMAL(15, 2) NOT NULL,
-    status          VARCHAR(20)    NOT NULL DEFAULT 'pending',
-    -- pending, success, failed, refunded
-    provider_ref    VARCHAR(255),               -- transaction ID from VNPay/MoMo
-    provider_data   JSONB,                      -- raw response from provider
-    paid_at         TIMESTAMP,
-    created_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_payment_order FOREIGN KEY (order_id) REFERENCES orders(id)
-);
-```
+- `V29` allows `district` and `district_code` to be nullable for address data that does not include district-level values.
 
----
+## Catalog
 
-### shipments (not implemented)
-```sql
-CREATE TABLE shipments (
-    id           BIGSERIAL      PRIMARY KEY,
-    order_id     BIGINT         NOT NULL UNIQUE,
-    provider     VARCHAR(20)    NOT NULL,       -- ghn, ghtk, self
-    tracking_code VARCHAR(100),
-    status       VARCHAR(30)    NOT NULL DEFAULT 'pending',
-    -- pending, picked_up, in_transit, delivered, failed, returned
-    fee          DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    estimated_at TIMESTAMP,
-    shipped_at   TIMESTAMP,
-    delivered_at TIMESTAMP,
-    created_at   TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at   TIMESTAMP      NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_shipment_order FOREIGN KEY (order_id) REFERENCES orders(id)
-);
+### `brands`
 
-CREATE TABLE shipment_logs (
-    id          BIGSERIAL    PRIMARY KEY,
-    shipment_id BIGINT       NOT NULL,
-    status      VARCHAR(30)  NOT NULL,
-    note        TEXT,
-    created_at  TIMESTAMP    NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_log_shipment FOREIGN KEY (shipment_id) REFERENCES shipments(id) ON DELETE CASCADE
-);
-```
+Stores product brands.
 
----
+Important columns:
 
-### promotions
-```sql
-CREATE TABLE promotions (
-    id                  BIGSERIAL      PRIMARY KEY,
-    name                VARCHAR(255)   NOT NULL,
-    description         TEXT,
-    code                VARCHAR(50)    UNIQUE,          -- NULL = auto sale, value = voucher code
-    type                VARCHAR(20)    NOT NULL,        -- percentage, fixed, freeship
-    discount_value      DECIMAL(15, 2) NOT NULL,
-    min_order_amount    DECIMAL(15, 2) NOT NULL DEFAULT 0,
-    max_discount_amount DECIMAL(15, 2),                -- max discount cap, important for percentage
-    stackable           BOOLEAN        NOT NULL DEFAULT FALSE,
-    priority            INT            NOT NULL DEFAULT 0,
-    usage_limit         INT,                           -- NULL = unlimited
-    usage_per_user      INT            NOT NULL DEFAULT 1,
-    start_at            TIMESTAMP      NOT NULL,
-    end_at              TIMESTAMP      NOT NULL,
-    status              VARCHAR(20)    NOT NULL DEFAULT 'draft',  -- draft, active, paused, ended
-    created_at          TIMESTAMP      NOT NULL DEFAULT NOW(),
-    updated_at          TIMESTAMP      NOT NULL DEFAULT NOW()
-);
+- `slug`: public identifier
+- `logo`: brand logo URL
+- `active`: visibility flag
+- `deleted_at`: soft-delete marker
 
-CREATE TABLE promotion_targets (not implemented)
--- This table is designed but has no entity yet
--- Used to apply promotions to specific products/categories/brands
+Indexes:
 
-CREATE TABLE promotion_usages (
-    id              BIGSERIAL      PRIMARY KEY,
-    promotion_id    BIGINT         NOT NULL,
-    user_id         BIGINT         NOT NULL,
-    order_id        BIGINT         NOT NULL,
-    used_code       VARCHAR(50),                       -- store used code if any
-    discount_amount DECIMAL(15, 2) NOT NULL,
-    created_at      TIMESTAMP      NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_pu_promotion FOREIGN KEY (promotion_id) REFERENCES promotions(id),
-    CONSTRAINT fk_pu_user      FOREIGN KEY (user_id)      REFERENCES users(id),
-    CONSTRAINT fk_pu_order     FOREIGN KEY (order_id)     REFERENCES orders(id)
-);
+- `idx_brands_slug_active`: unique `slug` for active rows only
+- `idx_brands_slug`: slug lookup for active rows
 
-CREATE INDEX idx_pu_lookup ON promotion_usages (promotion_id, user_id);
-```
+### `categories`
 
----
+Stores hierarchical product categories.
 
-### banners
-```sql
-CREATE TABLE banners (
-    id         BIGSERIAL    PRIMARY KEY,
-    title      VARCHAR(255) NOT NULL,
-    image      VARCHAR(500) NOT NULL,
-    url        VARCHAR(500),
-    position   VARCHAR(50)  NOT NULL,           -- home_hero, home_secondary, sidebar
-    active     BOOLEAN      NOT NULL DEFAULT TRUE,
-    start_date TIMESTAMP,
-    end_date   TIMESTAMP,
-    sort_order INT          NOT NULL DEFAULT 0,
-    created_at TIMESTAMP    NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP    NOT NULL DEFAULT NOW()
-);
-```
+Important columns:
 
----
+- `parent_id`: self-reference for category trees
+- `sort_order`: order among siblings
+- `active`: visibility flag
+- `deleted_at`: soft-delete marker
 
-### inventories
-```sql
-CREATE TABLE inventories (
-    id                  BIGSERIAL PRIMARY KEY,
-    variant_id          BIGINT    NOT NULL UNIQUE,
-    quantity            INT       NOT NULL DEFAULT 0,
-    low_stock_threshold INT       NOT NULL DEFAULT 5,
-    created_at          TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at          TIMESTAMP NOT NULL DEFAULT NOW(),
-    CONSTRAINT fk_inventory_variant FOREIGN KEY (variant_id) REFERENCES product_variants(id) ON DELETE CASCADE
-);
-```
+Indexes:
 
----
+- `idx_categories_slug_active`: unique `slug` for active rows only
+- `idx_categories_slug`: slug lookup for active rows
+- `idx_categories_parent_sort`: `(parent_id, sort_order)` for active rows
 
-### wishlists
-```sql
-CREATE TABLE wishlists (
-    user_id    BIGINT    NOT NULL,
-    product_id BIGINT    NOT NULL,
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    PRIMARY KEY (user_id, product_id),
-    CONSTRAINT fk_wl_user    FOREIGN KEY (user_id)    REFERENCES users(id)    ON DELETE CASCADE,
-    CONSTRAINT fk_wl_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
-);
-```
+### `products`
 
----
+Stores product-level catalog information.
 
-## Implemented Tables
+Important columns:
 
-The following tables have entities and are operational:
+- `category_id`: required category
+- `brand_id`: optional brand
+- `slug`: public product identifier
+- `description`: rich product description
+- `short_description`: summary text derived from description when migrated
+- `thumbnail`: default product image
+- `specs`: `JSONB` product specifications
+- `manual_badge` and `manual_badge_expires_at`: admin-controlled merchandising badge
+- `active` and `deleted_at`: visibility and soft-delete state
 
-- users, user_tokens
-- addresses
-- brands
-- categories
-- products, product_images, product_variants
-- reviews
-- carts, cart_items
-- orders, order_items
-- promotions, promotion_usages
-- banners
-- inventories
-- wishlists
+Indexes:
 
-## Not Implemented Tables
+- `idx_products_name_lower`: case-insensitive name search
+- `idx_products_active_deleted`: active product filtering
+- `idx_products_search`: combined filter index for active, deleted, category, and brand
 
-The following tables are designed in docs but have no entities yet:
+### `product_images`
 
-- roles, permissions, role_permissions, user_roles
-- payment_transactions
-- shipments, shipment_logs
-- promotion_targets
+Stores product gallery images.
+
+Important columns:
+
+- `product_id`: owning product
+- `url`: image URL
+- `sort_order`: gallery order
+
+Lifecycle:
+
+- Deleted products cascade to product images through `ON DELETE CASCADE`
+
+### `product_variants`
+
+Stores purchasable stock keeping units (SKUs).
+
+Important columns:
+
+- `product_id`: owning product
+- `sku`: unique variant identifier
+- `name`: variant display name
+- `price`: current variant price
+- `attributes`: `JSONB` variant attributes such as CPU, RAM, storage, or color
+- `image_id`: optional main image from `product_images`
+- `active` and `deleted_at`: visibility and soft-delete state
+
+Indexes:
+
+- `idx_variant_attributes`: GIN index for `attributes`
+- `idx_variant_image`: lookup by variant image
+- `idx_product_variants_product_price`: active price aggregation by product
+
+## Cart, orders, and inventory
+
+### `carts` and `cart_items`
+
+Each user has one cart. Cart items reference product variants.
+
+Important constraints:
+
+- `carts.user_id` is unique
+- `cart_items` has a unique `(cart_id, variant_id)` pair
+- Deleting a cart cascades to its items
+- Deleting a variant cascades to cart items
+
+### `orders` and `order_items`
+
+Orders store checkout snapshots and order totals.
+
+Important `orders` columns:
+
+- `user_id`: customer
+- `shipping_address`: `JSONB` address snapshot at checkout
+- `status`: order lifecycle state
+- `payment_method`: selected payment method
+- `total_amount`, `discount_amount`, `shipping_fee`, `final_amount`: monetary totals
+- `promotion_code`: code applied at checkout
+- `deleted_at`: soft-delete marker
+
+Important `order_items` columns:
+
+- `order_id`: owning order
+- `variant_id`: purchased variant
+- `name` and `sku`: item snapshot
+- `quantity`, `unit_price`, and `subtotal`: order-time pricing
+
+Indexes:
+
+- `idx_orders_status`
+- `idx_orders_user_id`
+
+### `inventories`
+
+Stores stock quantity per variant.
+
+Important constraints:
+
+- `variant_id` is unique
+- Deleting a variant cascades to inventory
+
+Important columns:
+
+- `quantity`: available stock
+- `low_stock_threshold`: threshold for low-stock warnings
+
+## Payment
+
+### `payment_transactions`
+
+Stores payment attempts and provider responses.
+
+Important columns:
+
+- `order_id`: owning order
+- `provider`: payment provider such as `cod` or `sepay`
+- `amount`: payment amount
+- `status`: transaction state
+- `provider_ref`: provider transaction reference
+- `provider_data`: `JSONB` raw provider payload
+- `paid_at`: payment completion time
+
+Index:
+
+- `uq_payment_transactions_provider_ref`: unique `(provider, provider_ref)` where `provider_ref IS NOT NULL`
+
+## Shipping
+
+### `shipments`
+
+Stores one shipment per order.
+
+Important columns:
+
+- `order_id`: unique order reference
+- `provider`: carrier such as `ghn`, `ghtk`, or internal fulfillment
+- `tracking_code`: carrier tracking code
+- `status`: shipment lifecycle state
+- `fee`: shipping fee
+- `estimated_at`, `shipped_at`, `delivered_at`: shipping timeline
+
+### `shipment_logs`
+
+Stores shipment status history.
+
+Important columns:
+
+- `shipment_id`: owning shipment
+- `status`: normalized status
+- `raw_status`: carrier-provided status from webhook or API
+- `source`: source of the event, defaults to `SYSTEM`
+- `location` and `note`: status context
+
+Lifecycle:
+
+- Deleting a shipment cascades to shipment logs
+
+### `carrier_address_mappings`
+
+Maps local address codes to carrier-specific address identifiers.
+
+Important columns:
+
+- `provider`: carrier name
+- `province_code`, `district_code`, `ward_code`: local address identifiers
+- `carrier_province_id`, `carrier_district_id`, `carrier_ward_code`: carrier identifiers
+- `confidence`: mapping quality, defaults to `verified`
+- `active`: whether the mapping can be used
+
+Constraints and indexes:
+
+- Unique `(provider, province_code, district_code, ward_code)`
+- `idx_carrier_address_mappings_provider_active`
+
+## Promotions and marketing
+
+### `promotions`
+
+Stores discount and campaign rules.
+
+Important columns:
+
+- `code`: voucher code, nullable for automatic promotions
+- `type`: discount type such as percentage, fixed amount, or freeship
+- `discount_value`, `min_order_amount`, `max_discount_amount`: discount calculation fields
+- `stackable`: whether it can combine with other promotions
+- `priority`: conflict resolution ordering
+- `usage_limit` and `usage_per_user`: usage caps
+- `start_at`, `end_at`, `status`: availability window and state
+
+### `promotion_targets`
+
+Stores product, category, or brand targeting rules for promotions.
+
+Important columns:
+
+- `promotion_id`: owning promotion
+- `target_type`: target kind
+- `target_id`: target identifier
+- `excluded`: whether the target is excluded instead of included
+
+Index:
+
+- `idx_pt_lookup` on `(promotion_id, target_type, target_id)`
+
+### `promotion_usages`
+
+Stores each applied promotion.
+
+Important columns:
+
+- `promotion_id`: promotion used
+- `user_id`: user who used it
+- `order_id`: order where it was applied
+- `used_code`: code used at checkout
+- `discount_amount`: discount applied
+
+Index:
+
+- `idx_pu_lookup` on `(promotion_id, user_id)`
+
+### `banners`
+
+Stores homepage and promotional banners.
+
+Important columns:
+
+- `title`, `image`, `url`: banner content
+- `position`: placement key such as hero or sidebar
+- `active`: visibility flag
+- `start_date`, `end_date`: display window
+- `sort_order`: display order
+
+## Reviews and wishlist
+
+### `reviews`
+
+Stores product reviews tied to completed purchases.
+
+Important columns:
+
+- `product_id`, `user_id`, `order_id`: review ownership and purchase proof
+- `rating`: value from 1 to 5
+- `images`: `JSONB` review image URLs
+- `status`: moderation state
+- `deleted_at`: soft-delete marker
+
+Constraint:
+
+- Unique `(product_id, user_id, order_id)` to keep one review per product per order
+
+### `wishlists`
+
+Stores saved products per user.
+
+Important constraints:
+
+- Primary key `(user_id, product_id)`
+- Deleting the user or product cascades to wishlist rows
+
+## Audit
+
+### `audit_logs`
+
+Stores administrative and system audit events.
+
+Important columns:
+
+- `correlation_id`: request or operation correlation key
+- `actor_type`, `actor_id`, `actor_email`, `actor_roles`: actor snapshot
+- `action`: operation name
+- `resource_type`, `resource_id`: affected resource
+- `outcome`: result such as success or failure
+- `before_data`, `after_data`, `metadata`: `JSONB` event context
+- `ip_address`, `user_agent`: request metadata
+- `created_at`: event time
+
+Indexes:
+
+- `idx_audit_logs_resource`
+- `idx_audit_logs_actor`
+- `idx_audit_logs_correlation`
+- `idx_audit_logs_created_at`
+
+## Migration history highlights
+
+| Migration range | Purpose |
+|-----------------|---------|
+| `V1` to `V14` | Initial identity, access, catalog, cart, order, payment, shipping, promotion, review, banner, inventory, and wishlist schema |
+| `V15` to `V18` | Seed refactor and token table cleanup |
+| `V19` to `V28` | Catalog slug, category order, variant image, manual badge, search index, and short description changes |
+| `V29` to `V30` | Nullable district support and payment provider reference uniqueness |
+| `V31` to `V36` | Timestamp normalization to `TIMESTAMPTZ` |
+| `V37` | Carrier address mapping |
+| `V38` to `V40` | RBAC authority normalization and media permission |
+| `V41` | Shipment log source and raw status metadata |
+| `V42` | Audit log table and indexes |
+| `V43` | Audit log read permission |
+
+## Maintenance checklist
+
+When changing the schema:
+
+- Add a Flyway migration under `src/main/resources/db/migration`
+- Update entity mappings and repository queries
+- Update this document for table, relationship, index, and lifecycle changes
+- Keep `deleted_at IS NULL` filters in active-record queries
+- Add or update tests for repository behavior when the change affects business rules

@@ -1,5 +1,9 @@
 package com.nitrotech.api.domain.access.usecase;
 
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.access.dto.PermissionData;
 import com.nitrotech.api.domain.access.dto.RoleData;
 import com.nitrotech.api.domain.access.dto.UserAccessData;
@@ -12,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 @Service
@@ -21,6 +26,7 @@ public class AccessManagementUseCase {
     private static final Set<String> CRITICAL_PERMISSIONS = Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE");
 
     private final AccessManagementRepository accessRepository;
+    private final AuditLogService auditLogService;
 
     public List<PermissionData> listPermissions() {
         return accessRepository.findPermissions();
@@ -61,17 +67,35 @@ public class AccessManagementUseCase {
         guardRolePermissionChange(actorId, roleId, permissionSlugs);
 
         accessRepository.replaceRolePermissions(roleId, permissionIds);
-        return getRole(roleId);
+        RoleData updated = getRole(roleId);
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.ROLE_PERMISSION_UPDATED,
+                AuditResourceType.ROLE,
+                roleId,
+                Map.of("permissionSlugs", role.permissionSlugs()),
+                Map.of("permissionSlugs", updated.permissionSlugs()),
+                Map.of("roleSlug", role.slug())
+        ));
+        return updated;
     }
 
     @Transactional
     public UserAccessData updateUserRoles(Long actorId, Long userId, Set<String> roleSlugs) {
-        requireUser(userId);
+        UserAccessData user = getUser(userId);
         Set<Long> roleIds = roleIds(roleSlugs);
         guardUserRoleChange(actorId, userId, roleSlugs);
 
         accessRepository.replaceUserRoles(userId, roleIds);
-        return getUser(userId);
+        UserAccessData updated = getUser(userId);
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.USER_ROLE_UPDATED,
+                AuditResourceType.USER,
+                userId,
+                Map.of("roleSlugs", user.roleSlugs()),
+                Map.of("roleSlugs", updated.roleSlugs()),
+                Map.of("targetEmail", user.email())
+        ));
+        return updated;
     }
 
     private RoleData getRole(Long id) {
@@ -98,10 +122,6 @@ public class AccessManagementUseCase {
             throw new BadRequestException("ROLE_NOT_FOUND", "One or more roles were not found");
         }
         return ids;
-    }
-
-    private void requireUser(Long userId) {
-        getUser(userId);
     }
 
     private void guardRolePermissionChange(Long actorId, Long roleId, Set<String> newPermissionSlugs) {

@@ -17,7 +17,7 @@ public class ShipmentData {
     private Long orderId;
     private String provider;
     private String trackingCode;
-    private String status;
+    private ShipmentStatus status;
     private BigDecimal fee;
     private Instant estimatedAt;
     private Instant shippedAt;

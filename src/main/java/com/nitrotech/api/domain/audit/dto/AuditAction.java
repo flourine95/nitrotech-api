@@ -1,0 +1,13 @@
+package com.nitrotech.api.domain.audit.dto;
+
+public enum AuditAction {
+    ROLE_PERMISSION_UPDATED,
+    USER_ROLE_UPDATED,
+    SHIPMENT_CREATED,
+    SHIPMENT_WEBHOOK_RECEIVED,
+    ORDER_STATUS_UPDATED,
+    ORDER_CANCELLED,
+    PRODUCT_CREATED,
+    PRODUCT_UPDATED,
+    PRODUCT_DELETED
+}

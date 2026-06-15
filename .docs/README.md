@@ -1,75 +1,50 @@
-# Documentation
+# Documentation index
 
-This directory contains comprehensive documentation for the Nitrotech API project.
+This directory contains backend documentation for Nitrotech API. Start with the project root [README](../README.md) when you only need setup and runtime instructions.
 
-## Files
+## Documents
 
-### ARCHITECTURE.md
-System architecture and design patterns.
+### Architecture
 
-Contents:
-- Layered architecture overview
-- Project structure and data flow
-- Layer responsibilities with code examples
-- Key patterns (Soft Delete, Pagination, Validation, Exception Hierarchy)
-- Module checklist
-- Technology stack
+[ARCHITECTURE.md](./ARCHITECTURE.md) explains the layered Spring Boot structure, data flow, module responsibilities, and shared architectural patterns.
 
-Target audience: Developers, architects
+Use it when you need to understand where a controller, use case, repository, mapper, provider, or shared utility belongs.
 
-### CODING-STANDARDS.md
-Coding conventions and best practices.
+### Coding standards
 
-Contents:
-- Core rules (imports, type safety, streams, logging)
-- Java standards (Lombok, dependency injection, null safety)
-- Database and JPA standards (entity design, soft delete, transactions, batch queries)
-- API conventions (URL design, validation, error codes, controller patterns)
-- Exception handling with GlobalExceptionHandler
-- Testing strategy
-- Naming conventions
-- Validation checklist
+[CODING-STANDARDS.md](./CODING-STANDARDS.md) explains Java, Spring, API, persistence, exception, naming, and testing conventions.
 
-Target audience: All developers
+Use it when you need examples or rationale behind the shorter rules in [AGENTS.md](../AGENTS.md).
 
-### DATABASE-DESIGN.md
-Database schema and design principles.
+### Database design
 
-Contents:
-- Design principles
-- Soft delete pattern
-- Complete schema for all 18 tables
-- Relationships and foreign keys
-- Migration order
+[DATABASE-DESIGN.md](./DATABASE-DESIGN.md) describes schema principles, soft-delete behavior, table relationships, and migration notes.
 
-Target audience: Backend developers, database administrators
+This file should be synced with Flyway migrations before it is used as a source of truth. The current schema has evolved through migrations in `src/main/resources/db/migration`.
 
-## Quick Reference
+## Reading order
 
-### For New Developers
-1. Read [ARCHITECTURE.md](./ARCHITECTURE.md) - Understand system design
-2. Study [CODING-STANDARDS.md](./CODING-STANDARDS.md) - Learn coding conventions
-3. Reference [DATABASE-DESIGN.md](./DATABASE-DESIGN.md) - Understand data model
+New backend developers should read:
 
-### For Frontend Developers
-1. Swagger UI at `http://localhost:8080/swagger-ui.html` - Interactive API documentation
-2. [DATABASE-DESIGN.md](./DATABASE-DESIGN.md) - Data structure and relationships
+1. [README.md](../README.md)
+2. [ARCHITECTURE.md](./ARCHITECTURE.md)
+3. [CODING-STANDARDS.md](./CODING-STANDARDS.md)
+4. [DATABASE-DESIGN.md](./DATABASE-DESIGN.md)
 
-### For DevOps
-1. [ARCHITECTURE.md](./ARCHITECTURE.md) - System components and technology stack
-2. `README.md` in project root - Environment variables and configuration
+Frontend developers usually need:
 
-## Documentation Standards
+1. Swagger UI at `http://localhost:8080/swagger-ui.html`
+2. [DATABASE-DESIGN.md](./DATABASE-DESIGN.md) for entity relationships and response context
 
-When updating documentation:
+DevOps or deployment work usually starts with:
 
-1. No icons or emojis
-2. Clear, concise language
-3. Code examples where helpful
-4. Keep content focused and avoid duplication
-5. Update this README when adding new documentation files
+1. [README.md](../README.md)
+2. [ARCHITECTURE.md](./ARCHITECTURE.md)
 
-## Related Files
+## Maintenance rules
 
-- `README.md` (project root) - Quick start guide and setup instructions
-- `.kiro/steering/` - Kiro AI steering files (coding rules for AI assistant)
+- Keep setup instructions in the root `README.md`
+- Keep agent-facing rules in `AGENTS.md`
+- Keep long-form explanations in this directory
+- Update this index when adding or removing documentation files
+- Sync database documentation after schema migrations

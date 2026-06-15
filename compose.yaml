@@ -5,8 +5,7 @@ services:
       - 'POSTGRES_DB=nitrotech'
       - 'POSTGRES_USER=nitrotech'
       - 'POSTGRES_PASSWORD=nitrotech'
-      - 'PGTZ=Asia/Ho_Chi_Minh'
-      - 'TZ=Asia/Ho_Chi_Minh'
+      - 'TZ=UTC'
     ports:
       - '${POSTGRES_PORT:-5432}:5432'
     volumes:
@@ -15,7 +14,7 @@ services:
   redis:
     image: 'redis:7-alpine'
     environment:
-      - 'TZ=Asia/Ho_Chi_Minh'
+      - 'TZ=UTC'
     ports:
       - '${REDIS_PORT:-6379}:6379'
     volumes:
