@@ -1,12 +1,14 @@
 package com.nitrotech.api.application.product.request;
 
 import jakarta.validation.constraints.Size;
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@Data
+@Getter
+@Setter
 public class ProductFacetsRequest {
 
     @Size(max = 100, message = "Search query must not exceed 100 characters")
