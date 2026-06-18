@@ -1,20 +1,26 @@
 package com.nitrotech.api.application.order.controller;
 
 import com.nitrotech.api.application.order.request.CreateOrderRequest;
+import com.nitrotech.api.application.order.request.OrderListRequest;
 import com.nitrotech.api.application.order.request.UpdateOrderStatusRequest;
 import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
-import com.nitrotech.api.domain.order.dto.OrderListQuery;
+import com.nitrotech.api.domain.order.dto.OrderListItemData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.usecase.*;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
+import com.nitrotech.api.shared.validation.ValidSortFields;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +28,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/orders")
 @RequiredArgsConstructor
+@Validated
 public class OrderController {
 
     private final PlaceOrderUseCase placeOrderUseCase;
@@ -32,14 +39,15 @@ public class OrderController {
 
     @GetMapping
     @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
-    public ResponseEntity<ApiResult<List<OrderData>>> list(
+    public ResponseEntity<ApiResult<List<OrderListItemData>>> list(
             @AuthenticationPrincipal UserPrincipal principal,
-            @RequestParam(required = false) String status,
-            @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int size
+            @Valid @ModelAttribute OrderListRequest filter,
+            @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC)
+            @ValidSortFields({"id", "status", "paymentMethod", "finalAmount", "createdAt", "updatedAt"})
+            Pageable pageable
     ) {
-        return ResponseEntity.ok(getOrdersUseCase.execute(
-                new OrderListQuery(principal.id(), status, page, size)));
+        return ResponseEntity.ok(ApiResult.paged(getOrdersUseCase.execute(
+                filter.toCustomerFilter(principal.id()), pageable)));
     }
 
     @GetMapping("/{id}")

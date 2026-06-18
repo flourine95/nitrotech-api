@@ -7,7 +7,6 @@ import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,10 +63,23 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public Page<OrderData> findAll(OrderListQuery query) {
-        return orderJpa.findAllFiltered(query.userId(), query.status(),
-                        PageRequest.of(query.page(), query.size()))
-                .map(this::toData);
+    public Page<OrderListItemData> findList(OrderFilter filter, org.springframework.data.domain.Pageable pageable) {
+        return orderJpa.findList(filter, pageable);
+    }
+
+    @Override
+    public long countFacetsTotal(OrderFilter filter) {
+        return orderJpa.countFacetsTotal(filter);
+    }
+
+    @Override
+    public List<Object[]> countStatuses(OrderFilter filter) {
+        return orderJpa.countStatusFacets(filter);
+    }
+
+    @Override
+    public List<Object[]> countPaymentMethods(OrderFilter filter) {
+        return orderJpa.countPaymentMethodFacets(filter);
     }
 
     @Override
