@@ -91,6 +91,7 @@ class UpdateOrderStatusUseCaseTest {
         return new OrderData(
                 123L,
                 10L,
+                "SO-123",
                 null,
                 status,
                 "sepay",
