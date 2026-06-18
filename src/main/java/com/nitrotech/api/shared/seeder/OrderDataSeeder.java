@@ -100,9 +100,9 @@ public class OrderDataSeeder implements CommandLineRunner {
         jdbc.batchUpdate("""
                 INSERT INTO orders (
                     user_id, shipping_address, status, payment_method, total_amount,
-                    discount_amount, shipping_fee, final_amount, note, created_at, updated_at
+                    discount_amount, shipping_fee, final_amount, note, created_at, updated_at, order_code
                 )
-                VALUES (?, ?::jsonb, ?, 'cod', ?, 0, ?, ?, ?, ?, ?)
+                VALUES (?, ?::jsonb, ?, 'cod', ?, 0, ?, ?, ?, ?, ?, ?)
                 """, orders, BATCH_SIZE, (ps, order) -> {
             ps.setLong(1, order.userId());
             ps.setString(2, order.shippingAddressJson());
@@ -113,6 +113,7 @@ public class OrderDataSeeder implements CommandLineRunner {
             ps.setString(7, order.note());
             ps.setTimestamp(8, Timestamp.valueOf(order.createdAt()));
             ps.setTimestamp(9, Timestamp.valueOf(order.createdAt()));
+            ps.setString(10, "SO-" + String.format("%03d", order.index() + 1));
         });
     }
 
