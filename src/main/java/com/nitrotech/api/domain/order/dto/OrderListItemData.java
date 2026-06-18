@@ -2,6 +2,7 @@ package com.nitrotech.api.domain.order.dto;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 public record OrderListItemData(
         Long id,
@@ -16,6 +17,7 @@ public record OrderListItemData(
         Boolean hasShipment,
         String shipmentStatus,
         String trackingCode,
+        List<String> availableActions,
         BigDecimal finalAmount,
         Long itemCount,
         Instant createdAt,
@@ -34,13 +36,15 @@ public record OrderListItemData(
             Boolean hasShipment,
             String shipmentStatus,
             String trackingCode,
+            List<String> availableActions,
             BigDecimal finalAmount,
             Long itemCount,
             Instant createdAt,
             Instant updatedAt
     ) {
         this(id, userId, orderCode, stringValue(receiver), stringValue(phone), stringValue(email), status, paymentMethod,
-                paymentStatus, hasShipment, shipmentStatus, trackingCode, finalAmount, itemCount, createdAt, updatedAt);
+                paymentStatus, hasShipment, shipmentStatus, trackingCode, availableActions,
+                finalAmount, itemCount, createdAt, updatedAt);
     }
 
     private static String stringValue(Object value) {

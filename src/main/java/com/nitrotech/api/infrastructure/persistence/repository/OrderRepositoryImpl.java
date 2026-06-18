@@ -144,11 +144,27 @@ public class OrderRepositoryImpl implements OrderRepository {
                 shipment != null,
                 shipment == null ? null : shipment.getStatus(),
                 shipment == null ? null : shipment.getTrackingCode(),
+                availableActions(e.getStatus(), shipment != null),
                 e.getFinalAmount(),
                 itemCount,
                 e.getCreatedAt(),
                 e.getUpdatedAt()
         );
+    }
+
+    private List<String> availableActions(String status, boolean hasShipment) {
+        return switch (status) {
+            case "pending" -> List.of("view_detail", "confirm", "cancel");
+            case "confirmed" -> hasShipment
+                    ? List.of("view_detail", "mark_processing", "cancel")
+                    : List.of("view_detail", "create_shipment", "mark_processing", "cancel");
+            case "processing" -> hasShipment
+                    ? List.of("view_detail", "view_shipment", "mark_shipped")
+                    : List.of("view_detail", "create_shipment", "mark_shipped");
+            case "shipped" -> List.of("view_detail", "track_shipment", "mark_delivered");
+            case "delivered" -> List.of("view_detail", "refund");
+            default -> List.of("view_detail");
+        };
     }
 
     @Override
