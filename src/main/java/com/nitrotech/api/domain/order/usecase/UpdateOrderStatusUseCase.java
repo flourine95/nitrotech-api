@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.LinkedHashMap;
 
 @Service
 @RequiredArgsConstructor
@@ -30,8 +31,12 @@ public class UpdateOrderStatusUseCase {
     private final OrderRepository orderRepository;
     private final AuditLogService auditLogService;
 
-    @Transactional
     public OrderData execute(Long id, String newStatus) {
+        return execute(id, newStatus, null, null);
+    }
+
+    @Transactional
+    public OrderData execute(Long id, String newStatus, String reason, String note) {
         OrderData order = orderRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
 
@@ -41,14 +46,26 @@ public class UpdateOrderStatusUseCase {
                     "Cannot transition from " + order.status() + " to " + newStatus) {};
         }
         OrderData updated = orderRepository.updateStatus(id, newStatus);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("userId", order.userId());
+        if (hasText(reason)) {
+            metadata.put("reason", reason.trim());
+        }
+        if (hasText(note)) {
+            metadata.put("note", note.trim());
+        }
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.ORDER_STATUS_UPDATED,
                 AuditResourceType.ORDER,
                 id,
                 Map.of("status", order.status()),
                 Map.of("status", updated.status()),
-                Map.of("userId", order.userId())
+                metadata
         ));
         return updated;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

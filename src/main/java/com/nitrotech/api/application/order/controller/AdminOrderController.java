@@ -72,7 +72,7 @@ public class AdminOrderController {
             @PathVariable Long id,
             @Valid @RequestBody UpdateOrderStatusRequest req
     ) {
-        return ResponseEntity.ok(ApiResult.ok(updateOrderStatusUseCase.execute(id, req.status())));
+        return ResponseEntity.ok(ApiResult.ok(updateOrderStatusUseCase.execute(id, req.status(), req.reason(), req.note())));
     }
 
     @GetMapping("/{id}/shipment")

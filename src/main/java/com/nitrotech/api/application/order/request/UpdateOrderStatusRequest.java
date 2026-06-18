@@ -7,5 +7,7 @@ public record UpdateOrderStatusRequest(
         @NotBlank(message = "Status is required")
         @Pattern(regexp = "^(confirmed|processing|shipped|delivered|cancelled|refunded)$",
                 message = "Invalid status")
-        String status
+        String status,
+        String reason,
+        String note
 ) {}
