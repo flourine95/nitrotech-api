@@ -4,9 +4,13 @@ import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
+import com.nitrotech.api.infrastructure.persistence.spec.OrderSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +18,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -21,6 +26,7 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private final OrderJpaRepository orderJpa;
     private final OrderItemJpaRepository itemJpa;
+    private final EntityManager em;
 
     @Override
     @Transactional
@@ -35,11 +41,14 @@ public class OrderRepositoryImpl implements OrderRepository {
         entity.setDiscountAmount(data.discountAmount());
         entity.setShippingFee(data.shippingFee());
         entity.setFinalAmount(data.finalAmount());
+        entity.setOrderCode(java.util.UUID.randomUUID().toString());
         OrderEntity saved = orderJpa.save(entity);
+        saved.setOrderCode("SO-" + String.format("%03d", saved.getId()));
+        final OrderEntity finalSaved = orderJpa.saveAndFlush(saved);
 
         data.items().forEach(item -> {
             OrderItemEntity itemEntity = new OrderItemEntity();
-            itemEntity.setOrder(saved);
+            itemEntity.setOrder(finalSaved);
             itemEntity.setVariantId(item.variantId());
             itemEntity.setName(item.name());
             itemEntity.setSku(item.sku());
@@ -49,7 +58,7 @@ public class OrderRepositoryImpl implements OrderRepository {
             itemJpa.save(itemEntity);
         });
 
-        return toData(saved);
+        return toData(finalSaved);
     }
 
     @Override
@@ -63,23 +72,110 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    public Page<OrderListItemData> findList(OrderFilter filter, org.springframework.data.domain.Pageable pageable) {
-        return orderJpa.findList(filter, pageable);
+    public Page<OrderListItemData> findList(OrderFilter filter, Pageable pageable) {
+        Specification<OrderEntity> spec = OrderSpecification.from(filter);
+        Page<OrderEntity> page = orderJpa.findAll(spec, pageable);
+        if (page.isEmpty()) {
+            return Page.empty(pageable);
+        }
+
+        List<Long> orderIds = page.getContent().stream().map(OrderEntity::getId).toList();
+        List<Object[]> countRows = orderJpa.countItemsForOrders(orderIds);
+        Map<Long, Long> itemCountMap = countRows.stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+
+        return page.map(e -> toListItemData(e, itemCountMap.getOrDefault(e.getId(), 0L)));
+    }
+
+    private OrderListItemData toListItemData(OrderEntity e, Long itemCount) {
+        String receiver = null;
+        String phone = null;
+        if (e.getShippingAddress() != null) {
+            Object rec = e.getShippingAddress().get("receiver");
+            if (rec == null) {
+                rec = e.getShippingAddress().get("name");
+            }
+            if (rec != null) receiver = rec.toString();
+            Object ph = e.getShippingAddress().get("phone");
+            if (ph != null) phone = ph.toString();
+        }
+        return new OrderListItemData(
+                e.getId(),
+                e.getUserId(),
+                e.getOrderCode(),
+                receiver,
+                phone,
+                e.getStatus(),
+                e.getPaymentMethod(),
+                e.getFinalAmount(),
+                itemCount,
+                e.getCreatedAt(),
+                e.getUpdatedAt()
+        );
     }
 
     @Override
     public long countFacetsTotal(OrderFilter filter) {
-        return orderJpa.countFacetsTotal(filter);
+        OrderFilter totalFilter = new OrderFilter(
+                filter.userId(),
+                filter.search(),
+                null, // Exclude status from total facet query
+                filter.paymentMethod(),
+                filter.createdFrom(),
+                filter.createdToExclusive(),
+                filter.amountMin(),
+                filter.amountMax()
+        );
+        Specification<OrderEntity> spec = OrderSpecification.from(totalFilter);
+        return orderJpa.count(spec);
     }
 
     @Override
     public List<Object[]> countStatuses(OrderFilter filter) {
-        return orderJpa.countStatusFacets(filter);
+        OrderFilter statusFilter = new OrderFilter(
+                filter.userId(),
+                filter.search(),
+                null, // Exclude status from status facet query
+                filter.paymentMethod(),
+                filter.createdFrom(),
+                filter.createdToExclusive(),
+                filter.amountMin(),
+                filter.amountMax()
+        );
+        return countFacetsGroupedBy(statusFilter, "status");
     }
 
     @Override
     public List<Object[]> countPaymentMethods(OrderFilter filter) {
-        return orderJpa.countPaymentMethodFacets(filter);
+        OrderFilter pmFilter = new OrderFilter(
+                filter.userId(),
+                filter.search(),
+                filter.status(),
+                null, // Exclude paymentMethod from paymentMethod facet query
+                filter.createdFrom(),
+                filter.createdToExclusive(),
+                filter.amountMin(),
+                filter.amountMax()
+        );
+        return countFacetsGroupedBy(pmFilter, "paymentMethod");
+    }
+
+    private List<Object[]> countFacetsGroupedBy(OrderFilter filter, String attributeName) {
+        Specification<OrderEntity> spec = OrderSpecification.from(filter);
+        var cb = em.getCriteriaBuilder();
+        var query = cb.createQuery(Object[].class);
+        var root = query.from(OrderEntity.class);
+
+        var predicate = spec.toPredicate(root, query, cb);
+
+        query.multiselect(root.get(attributeName), cb.count(root.get("id")))
+                .where(predicate)
+                .groupBy(root.get(attributeName));
+
+        return em.createQuery(query).getResultList();
     }
 
     @Override
@@ -114,8 +210,12 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     @SuppressWarnings("unchecked")
     private ShippingAddressSnapshot mapToSnapshot(Map<String, Object> m) {
+        String receiver = (String) m.get("receiver");
+        if (receiver == null) {
+            receiver = (String) m.get("name");
+        }
         return new ShippingAddressSnapshot(
-                (String) m.get("receiver"), (String) m.get("phone"),
+                receiver, (String) m.get("phone"),
                 (String) m.get("province"), (String) m.get("provinceCode"),
                 (String) m.get("district"), (String) m.get("districtCode"),
                 (String) m.get("ward"), (String) m.get("wardCode"),
@@ -129,7 +229,7 @@ public class OrderRepositoryImpl implements OrderRepository {
                         i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal()))
                 .toList();
         return new OrderData(
-                e.getId(), e.getUserId(), mapToSnapshot(e.getShippingAddress()),
+                e.getId(), e.getUserId(), e.getOrderCode(), mapToSnapshot(e.getShippingAddress()),
                 e.getStatus(), e.getPaymentMethod(),
                 e.getTotalAmount(), e.getDiscountAmount(), e.getShippingFee(), e.getFinalAmount(),
                 e.getPromotionCode(), e.getNote(), items,

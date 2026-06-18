@@ -6,6 +6,7 @@ import java.time.Instant;
 public record OrderListItemData(
         Long id,
         Long userId,
+        String orderCode,
         String receiver,
         String phone,
         String status,
@@ -18,6 +19,7 @@ public record OrderListItemData(
     public OrderListItemData(
             Long id,
             Long userId,
+            String orderCode,
             Object receiver,
             Object phone,
             String status,
@@ -27,7 +29,7 @@ public record OrderListItemData(
             Instant createdAt,
             Instant updatedAt
     ) {
-        this(id, userId, stringValue(receiver), stringValue(phone), status, paymentMethod,
+        this(id, userId, orderCode, stringValue(receiver), stringValue(phone), status, paymentMethod,
                 finalAmount, itemCount, createdAt, updatedAt);
     }
 

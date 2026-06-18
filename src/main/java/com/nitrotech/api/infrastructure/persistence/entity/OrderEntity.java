@@ -27,6 +27,9 @@ public class OrderEntity {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
+    @Column(name = "order_code", nullable = false, unique = true)
+    private String orderCode;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> shippingAddress;

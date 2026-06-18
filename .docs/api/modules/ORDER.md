@@ -56,10 +56,13 @@ Supported parameters:
 
 Allowed sort fields:
 
+- `id`
+- `userId`
+- `status`
+- `paymentMethod`
+- `finalAmount`
 - `createdAt`
 - `updatedAt`
-- `finalAmount`
-- `status`
 
 ## Admin order list response
 
@@ -71,6 +74,7 @@ Target list item:
 OrderListItemData(
   id,
   userId,
+  orderCode,
   receiver,
   phone,
   status,
@@ -220,7 +224,8 @@ The `search` parameter on `GET /api/admin/orders` matches multiple fields with a
 Search should include these fields:
 
 - `orders.id`
-- `orders.shipping_address.receiver`
+- `orders.order_code`
+- `orders.shipping_address.receiver` (also searches `orders.shipping_address.name` as a fallback for legacy/seeded data)
 - `orders.shipping_address.phone`
 - `users.email`
 
