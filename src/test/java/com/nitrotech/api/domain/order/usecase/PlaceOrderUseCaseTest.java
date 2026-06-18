@@ -191,6 +191,7 @@ class PlaceOrderUseCaseTest {
         return new OrderData(
                 777L,
                 data.userId(),
+                "SO-777",
                 data.shippingAddress(),
                 "pending",
                 data.paymentMethod(),

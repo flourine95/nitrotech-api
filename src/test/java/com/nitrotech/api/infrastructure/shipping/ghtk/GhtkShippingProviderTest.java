@@ -143,7 +143,7 @@ class GhtkShippingProviderTest {
                 1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000")
         );
         return new OrderData(
-                123L, 10L, addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now()
+                123L, 10L, "SO-123", addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now()
         );
     }
 }
