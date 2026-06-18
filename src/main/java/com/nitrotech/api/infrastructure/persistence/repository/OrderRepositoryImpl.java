@@ -4,6 +4,9 @@ import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.PaymentTransactionEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
+import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.OrderSpecification;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
@@ -26,6 +29,9 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private final OrderJpaRepository orderJpa;
     private final OrderItemJpaRepository itemJpa;
+    private final UserJpaRepository userJpa;
+    private final PaymentTransactionJpaRepository paymentJpa;
+    private final ShipmentJpaRepository shipmentJpa;
     private final EntityManager em;
 
     @Override
@@ -80,17 +86,40 @@ public class OrderRepositoryImpl implements OrderRepository {
         }
 
         List<Long> orderIds = page.getContent().stream().map(OrderEntity::getId).toList();
+        List<Long> userIds = page.getContent().stream().map(OrderEntity::getUserId).distinct().toList();
         List<Object[]> countRows = orderJpa.countItemsForOrders(orderIds);
         Map<Long, Long> itemCountMap = countRows.stream()
                 .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (Long) row[1]
                 ));
+        Map<Long, String> userEmailMap = userJpa.findAllById(userIds).stream()
+                .collect(Collectors.toMap(UserEntity::getId, UserEntity::getEmail));
+        Map<Long, String> paymentStatusMap = paymentJpa.findByOrderIdInOrderByCreatedAtDesc(orderIds).stream()
+                .collect(Collectors.toMap(
+                        PaymentTransactionEntity::getOrderId,
+                        PaymentTransactionEntity::getStatus,
+                        (existing, ignored) -> existing
+                ));
+        Map<Long, ShipmentEntity> shipmentMap = shipmentJpa.findByOrderIdIn(orderIds).stream()
+                .collect(Collectors.toMap(ShipmentEntity::getOrderId, shipment -> shipment));
 
-        return page.map(e -> toListItemData(e, itemCountMap.getOrDefault(e.getId(), 0L)));
+        return page.map(e -> toListItemData(
+                e,
+                itemCountMap.getOrDefault(e.getId(), 0L),
+                userEmailMap.get(e.getUserId()),
+                paymentStatusMap.get(e.getId()),
+                shipmentMap.get(e.getId())
+        ));
     }
 
-    private OrderListItemData toListItemData(OrderEntity e, Long itemCount) {
+    private OrderListItemData toListItemData(
+            OrderEntity e,
+            Long itemCount,
+            String email,
+            String paymentStatus,
+            ShipmentEntity shipment
+    ) {
         String receiver = null;
         String phone = null;
         if (e.getShippingAddress() != null) {
@@ -108,8 +137,13 @@ public class OrderRepositoryImpl implements OrderRepository {
                 e.getOrderCode(),
                 receiver,
                 phone,
+                email,
                 e.getStatus(),
                 e.getPaymentMethod(),
+                paymentStatus,
+                shipment != null,
+                shipment == null ? null : shipment.getStatus(),
+                shipment == null ? null : shipment.getTrackingCode(),
                 e.getFinalAmount(),
                 itemCount,
                 e.getCreatedAt(),
@@ -225,15 +259,29 @@ public class OrderRepositoryImpl implements OrderRepository {
 
     private OrderData toData(OrderEntity e) {
         List<OrderItemData> items = itemJpa.findByOrder_Id(e.getId()).stream()
-                .map(i -> new OrderItemData(i.getId(), i.getVariantId(), i.getName(),
-                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal()))
+                .map(i -> new OrderItemData(
+                        i.getId(), i.getVariantId(), i.getName(),
+                        i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal(),
+                        null // imageUrl: populated by variant→image join when needed
+                ))
                 .toList();
+
+        UserSummaryData userSummary = userJpa.findById(e.getUserId())
+                .map(u -> new UserSummaryData(u.getName(), u.getEmail(), u.getPhone(), u.getAvatar()))
+                .orElse(null);
+
+        PaymentSummaryData paymentSummary = paymentJpa
+                .findTopByOrderIdOrderByCreatedAtDesc(e.getId())
+                .map(p -> new PaymentSummaryData(p.getProvider(), p.getStatus(), p.getAmount(), p.getPaidAt()))
+                .orElse(null);
+
         return new OrderData(
                 e.getId(), e.getUserId(), e.getOrderCode(), mapToSnapshot(e.getShippingAddress()),
                 e.getStatus(), e.getPaymentMethod(),
                 e.getTotalAmount(), e.getDiscountAmount(), e.getShippingFee(), e.getFinalAmount(),
                 e.getPromotionCode(), e.getNote(), items,
-                e.getCreatedAt(), e.getUpdatedAt()
+                e.getCreatedAt(), e.getUpdatedAt(),
+                userSummary, paymentSummary
         );
     }
 }

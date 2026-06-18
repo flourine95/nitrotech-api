@@ -19,5 +19,7 @@ public record OrderData(
         String note,
         List<OrderItemData> items,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        UserSummaryData user,
+        PaymentSummaryData payment
 ) {}
