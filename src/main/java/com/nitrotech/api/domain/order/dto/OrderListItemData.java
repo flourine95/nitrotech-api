@@ -18,6 +18,10 @@ public record OrderListItemData(
         String shipmentStatus,
         String trackingCode,
         List<String> availableActions,
+        Long ageMinutes,
+        Instant slaDueAt,
+        String slaStatus,
+        String slaLabel,
         BigDecimal finalAmount,
         Long itemCount,
         Instant createdAt,
@@ -37,6 +41,10 @@ public record OrderListItemData(
             String shipmentStatus,
             String trackingCode,
             List<String> availableActions,
+            Long ageMinutes,
+            Instant slaDueAt,
+            String slaStatus,
+            String slaLabel,
             BigDecimal finalAmount,
             Long itemCount,
             Instant createdAt,
@@ -44,6 +52,7 @@ public record OrderListItemData(
     ) {
         this(id, userId, orderCode, stringValue(receiver), stringValue(phone), stringValue(email), status, paymentMethod,
                 paymentStatus, hasShipment, shipmentStatus, trackingCode, availableActions,
+                ageMinutes, slaDueAt, slaStatus, slaLabel,
                 finalAmount, itemCount, createdAt, updatedAt);
     }
 

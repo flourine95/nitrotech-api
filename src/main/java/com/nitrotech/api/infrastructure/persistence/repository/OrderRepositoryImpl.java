@@ -17,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
@@ -145,6 +146,10 @@ public class OrderRepositoryImpl implements OrderRepository {
                 shipment == null ? null : shipment.getStatus(),
                 shipment == null ? null : shipment.getTrackingCode(),
                 availableActions(e.getStatus(), shipment != null),
+                Duration.between(e.getCreatedAt(), Instant.now()).toMinutes(),
+                slaDueAt(e, shipment != null),
+                slaStatus(e, shipment != null),
+                slaLabel(e.getStatus(), shipment != null),
                 e.getFinalAmount(),
                 itemCount,
                 e.getCreatedAt(),
@@ -164,6 +169,44 @@ public class OrderRepositoryImpl implements OrderRepository {
             case "shipped" -> List.of("view_detail", "track_shipment", "mark_delivered");
             case "delivered" -> List.of("view_detail", "refund");
             default -> List.of("view_detail");
+        };
+    }
+
+    private Instant slaDueAt(OrderEntity order, boolean hasShipment) {
+        Instant base = order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt();
+        return switch (order.getStatus()) {
+            case "pending" -> order.getCreatedAt().plus(Duration.ofMinutes(60));
+            case "confirmed" -> hasShipment ? null : base.plus(Duration.ofHours(4));
+            case "processing" -> base.plus(Duration.ofHours(24));
+            case "shipped" -> base.plus(Duration.ofDays(3));
+            default -> null;
+        };
+    }
+
+    private String slaStatus(OrderEntity order, boolean hasShipment) {
+        Instant dueAt = slaDueAt(order, hasShipment);
+        if (dueAt == null) {
+            return "normal";
+        }
+        Instant now = Instant.now();
+        if (!now.isBefore(dueAt)) {
+            return "critical";
+        }
+        Instant base = "pending".equals(order.getStatus())
+                ? order.getCreatedAt()
+                : (order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt());
+        long totalSeconds = Math.max(1, Duration.between(base, dueAt).getSeconds());
+        long elapsedSeconds = Math.max(0, Duration.between(base, now).getSeconds());
+        return elapsedSeconds * 100 / totalSeconds >= 75 ? "warning" : "normal";
+    }
+
+    private String slaLabel(String status, boolean hasShipment) {
+        return switch (status) {
+            case "pending" -> "Chờ xác nhận";
+            case "confirmed" -> hasShipment ? null : "Chờ tạo vận đơn";
+            case "processing" -> "Chờ bàn giao";
+            case "shipped" -> "Chờ giao thành công";
+            default -> null;
         };
     }
 
