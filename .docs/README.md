@@ -16,6 +16,14 @@ Use it when you need to understand where a controller, use case, repository, map
 
 Use it when you need examples or rationale behind the shorter rules in [AGENTS.md](../AGENTS.md).
 
+### API conventions
+
+[api/CONVENTIONS.md](./api/CONVENTIONS.md) defines shared API shapes, query parameter names, pagination, sorting, facets, and the `{{module}}` admin list pattern.
+
+[api/modules/ORDER.md](./api/modules/ORDER.md) defines the order API contract for customer and admin surfaces.
+
+[API-CONSISTENCY-AUDIT.md](./API-CONSISTENCY-AUDIT.md) gives checks for controller boundaries, response wrappers, pagination, soft delete scope, provider transactions, and exception shape.
+
 ### Database design
 
 [DATABASE-DESIGN.md](./DATABASE-DESIGN.md) describes schema principles, soft-delete behavior, table relationships, and migration notes.
@@ -29,7 +37,8 @@ New backend developers should read:
 1. [README.md](../README.md)
 2. [ARCHITECTURE.md](./ARCHITECTURE.md)
 3. [CODING-STANDARDS.md](./CODING-STANDARDS.md)
-4. [DATABASE-DESIGN.md](./DATABASE-DESIGN.md)
+4. [api/CONVENTIONS.md](./api/CONVENTIONS.md)
+5. [DATABASE-DESIGN.md](./DATABASE-DESIGN.md)
 
 Frontend developers usually need:
 

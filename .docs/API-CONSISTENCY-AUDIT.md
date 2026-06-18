@@ -1,84 +1,141 @@
+---
+meta:
+  contentType: Reference
+---
+
 # Audit API consistency
 
-Use this checklist to keep consistency work scoped. Each item must name the rule, the files affected, and the verification command before code changes start.
+Use this checklist to verify API consistency before and after backend changes. Each check states the rule, the signal to inspect, and the command or file pattern that helps verify it.
 
-## Rules
+## Layer boundaries
 
-- **Domain boundary**: domain code must not import `com.nitrotech.api.infrastructure`
-- **Transaction boundary**: external provider calls must not run inside database transactions
-- **Soft delete scope**: repository method names must state whether they read visible, deleted, or all records
-- **Slug checks**: slug uniqueness must define whether deleted records still reserve the slug
-- **DTO style**: request DTOs should use `record` unless mutable binding is required
-- **Helper placement**: keep one-class helpers private; extract shared helpers only after repeated equivalent usage
-- **Exception shape**: use structured domain exceptions instead of generic `RuntimeException`
+Domain code must not import infrastructure classes.
 
-## Done
-
-- [x] Move shipment provider calls outside transactional persistence
-- [x] Remove domain imports of infrastructure classes
-- [x] Add provider resolver ports for payment and shipping
-- [x] Add a payment transaction repository port
-- [x] Rename brand slug checks to state the non-deleted scope
-- [x] Rename product slug checks to state the non-deleted scope
-- [x] Remove duplicate category slug checks and keep non-deleted names
-- [x] Rename brand, product, and category detail lookups to state the non-deleted scope
-- [x] Align bulk restore and hard-delete checks with single-item operations
-- [x] Add an automated domain boundary guard test
-- [x] Standardize deleted slug reuse with partial unique indexes
-- [x] Replace generic storage runtime exceptions with structured storage errors
-- [x] Limit mutable query request DTOs to getter/setter binding
-- [x] Add repository tests for soft-deleted slug reuse checks
-- [x] Audit entity-to-DTO mapping helpers and keep existing private repository mappers
-- [x] Audit helper placement and keep focused provider/repository helpers as-is
-
-## Next audit passes
-
-- No open audit passes in this checklist.
-
-## Current findings
-
-### Soft delete and slug checks
-
-Brand, product, and category repositories now state slug check scope in the domain contract:
-
-- `existsNotDeletedBySlugAndIdNot`
-- `existsNotDeletedBySlug`
-- `existsNotDeletedBySlugAndIdNot`
-- `existsNotDeletedBySlug`
-
-Decision: deleted brand, product, and category slugs can be reused. Database uniqueness is enforced only for records where `deleted_at IS NULL`. Restore use cases must check conflict with non-deleted records before clearing `deleted_at`.
-
-### Payment and shipping boundaries
-
-Payment and shipping now depend on domain ports instead of infrastructure classes. Keep this rule in place with a guard command:
+Check imports with:
 
 ```powershell
 rg -n "import com\.nitrotech\.api\.infrastructure" src/main/java/com/nitrotech/api/domain
 ```
 
-The command should return no matches.
+Expected result: no matches.
 
-### Transaction boundary
+Run the boundary test after domain-layer changes:
 
-`CreateShipmentUseCase.execute` calls the shipping provider outside transactional persistence. `CreateShipmentTransaction.save` owns the database write, shipment log, and audit record.
+```powershell
+.\gradlew.bat test --tests com.nitrotech.api.architecture.DomainBoundaryTest
+```
 
-Keep this pattern for future provider calls:
+## Controller boundaries
 
-- Validate local state before the external call
-- Call the provider outside a transaction
-- Save local state in a small transactional method
+Controllers should map requests, call use cases, and wrap responses. Controllers should not call repositories directly.
 
-## Verification commands
+Check controller dependencies with:
 
-Run the focused tests after payment or shipping consistency changes:
+```powershell
+rg -n "Repository" src/main/java/com/nitrotech/api/application
+```
+
+Allowed result: no repository fields in controllers unless a documented exception exists.
+
+## Response wrappers
+
+Controllers should return `ResponseEntity<ApiResult<T>>`. Use cases should not return `ApiResult`.
+
+Check use cases with:
+
+```powershell
+rg -n "ApiResult" src/main/java/com/nitrotech/api/domain
+```
+
+Expected result: no matches in use case return types.
+
+## Paginated lists
+
+Admin table endpoints should follow the module list pattern in `.docs/api/CONVENTIONS.md`.
+
+Check for these signals:
+
+- `Pageable` parameter
+- `@PageableDefault`
+- `@ValidSortFields`
+- `ApiResult.paged(page)` for list data
+- `ApiResult.ok(facets)` for filter metadata
+- Repeatable Spring `sort` instead of custom `sortBy` and `sortDir`
+
+Legacy endpoints can keep older shapes until touched, but new admin table endpoints should use the module list pattern.
+
+## Query parameter names
+
+Use shared parameter names when the meaning matches:
+
+- `page`
+- `size`
+- `sort`
+- `search`
+- `createdFrom`
+- `createdTo`
+- `status`
+
+Flag aliases such as `limit`, `q`, `from`, `to`, `sortBy`, and `sortDir` unless the endpoint documents an exception.
+
+## Soft delete scope
+
+Repository method names must state whether they read active, deleted, or all records.
+
+Use names that expose scope:
+
+- `findActive*`
+- `findDeleted*`
+- `findNotDeleted*`
+- `existsActive*`
+- `existsNotDeleted*`
+- `countActive*`
+
+Custom queries for active records must filter `deletedAt IS NULL`.
+
+## Slug reuse
+
+Brand, product, and category slugs can be reused after soft delete. Database uniqueness should apply only where `deleted_at IS NULL`.
+
+Restore use cases must check conflicts with non-deleted records before clearing `deleted_at`.
+
+## External provider transactions
+
+External provider calls must run outside database transactions.
+
+Use this flow:
+
+1. Validate local state before the external call
+2. Call the provider outside a transaction
+3. Save local state in a small transactional method
+
+Run focused tests after payment or shipping consistency changes:
 
 ```powershell
 .\gradlew.bat test --tests com.nitrotech.api.domain.payment.usecase.HandlePaymentWebhookUseCaseTest
 .\gradlew.bat test --tests com.nitrotech.api.domain.shipping.usecase.* --tests com.nitrotech.api.infrastructure.shipping.*
 ```
 
-Run the automated boundary guard after domain-layer changes:
+## Request DTO style
 
-```powershell
-.\gradlew.bat test --tests com.nitrotech.api.architecture.DomainBoundaryTest
-```
+Use request `record` types for JSON bodies unless mutable binding is required. Use mutable request classes for `@ModelAttribute` query binding.
+
+Limit mutable request DTOs to getter and setter binding.
+
+## Exception shape
+
+Business failures should use structured domain exceptions with stable error codes. Do not throw generic `RuntimeException` for expected domain failures.
+
+## Completed consistency fixes
+
+These fixes already landed and should stay true:
+
+- Domain code no longer imports infrastructure classes
+- Payment and shipping use domain provider ports
+- Shipment provider calls run outside transactional persistence
+- Payment transaction persistence uses a repository port
+- Brand, product, and category slug checks state non-deleted scope
+- Deleted slugs can be reused through partial unique indexes
+- Restore and hard-delete checks align with single-item operations
+- Storage failures use structured storage errors
+- Domain boundary has an automated guard test
