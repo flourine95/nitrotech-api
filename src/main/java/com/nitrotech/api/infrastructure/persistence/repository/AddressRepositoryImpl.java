@@ -63,15 +63,14 @@ public class AddressRepositoryImpl implements AddressRepository {
 
     @Override
     @Transactional
-    public void delete(Long id) {
-        jpa.deleteById(id);
+    public boolean deleteNonDefault(Long id) {
+        return jpa.deleteNonDefaultById(id) == 1;
     }
 
     @Override
     @Transactional
     public void setAsDefault(Long userId, Long addressId) {
-        jpa.unsetAllDefaultAddresses(userId);
-        jpa.setAsDefault(addressId);
+        jpa.unsetAllDefaultAddresses(userId, addressId);
     }
 
     @Override

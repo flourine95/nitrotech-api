@@ -25,7 +25,7 @@ class UpdateAddressUseCaseTest {
 
     @Test
     void keepsAnExistingDefaultAddressDefaultWhenDefaultAddressIsNotChanged() {
-        AddressData address = addressRepository.create(1L, createCommand(true, "Phi Long"));
+        AddressData address = createDefaultAddress("Phi Long");
 
         updateAddressUseCase.execute(1L, address.id(), updateCommand(null, "Phi Long Nguyen"));
 
@@ -36,7 +36,7 @@ class UpdateAddressUseCaseTest {
 
     @Test
     void rejectsUnsettingTheCurrentDefaultAddress() {
-        AddressData address = addressRepository.create(1L, createCommand(true, "Phi Long"));
+        AddressData address = createDefaultAddress("Phi Long");
 
         assertThatThrownBy(() -> updateAddressUseCase.execute(1L, address.id(), updateCommand(false, "Phi Long")))
                 .isInstanceOf(CannotUnsetDefaultAddressException.class);
@@ -46,7 +46,7 @@ class UpdateAddressUseCaseTest {
 
     @Test
     void makesTheUpdatedAddressDefaultWhenRequested() {
-        AddressData defaultAddress = addressRepository.create(1L, createCommand(true, "Phi Long"));
+        AddressData defaultAddress = createDefaultAddress("Phi Long");
         AddressData secondaryAddress = addressRepository.create(1L, createCommand(false, "Mai Anh"));
 
         updateAddressUseCase.execute(1L, secondaryAddress.id(), updateCommand(true, "Mai Anh Nguyen"));
@@ -59,6 +59,12 @@ class UpdateAddressUseCaseTest {
         return new CreateAddressCommand(
                 receiver, "0901000000", "Ho Chi Minh", "79", "District 1", "760",
                 "Ben Nghe", "26734", "1 Nguyen Hue", defaultAddress);
+    }
+
+    private AddressData createDefaultAddress(String receiver) {
+        AddressData address = addressRepository.create(1L, createCommand(false, receiver));
+        addressRepository.setAsDefault(1L, address.id());
+        return address;
     }
 
     private UpdateAddressCommand updateCommand(Boolean defaultAddress, String receiver) {

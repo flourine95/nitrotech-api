@@ -22,10 +22,8 @@ public class DeleteAddressUseCase {
             throw new AddressAccessDeniedException();
         }
 
-        if (address.defaultAddress()) {
+        if (address.defaultAddress() || !addressRepository.deleteNonDefault(addressId)) {
             throw new CannotDeleteDefaultAddressException();
         }
-
-        addressRepository.delete(addressId);
     }
 }
