@@ -40,10 +40,4 @@ public record UpdateAddressRequest(
     String street,
 
     Boolean defaultAddress
-) {
-    public UpdateAddressRequest {
-        if (defaultAddress == null) {
-            defaultAddress = false;
-        }
-    }
-}
+) {}

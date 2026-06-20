@@ -22,6 +22,7 @@ public interface AddressMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "defaultAddress", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
     void updateEntity(@MappingTarget AddressEntity entity, UpdateAddressCommand command);

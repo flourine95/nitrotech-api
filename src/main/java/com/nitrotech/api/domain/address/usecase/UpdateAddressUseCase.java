@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.address.dto.AddressData;
 import com.nitrotech.api.domain.address.dto.UpdateAddressCommand;
 import com.nitrotech.api.domain.address.exception.AddressAccessDeniedException;
 import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
+import com.nitrotech.api.domain.address.exception.CannotUnsetDefaultAddressException;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,12 +25,17 @@ public class UpdateAddressUseCase {
             throw new AddressAccessDeniedException();
         }
 
-        AddressData updatedAddress = addressRepository.update(addressId, command);
+        if (existingAddress.defaultAddress() && Boolean.FALSE.equals(command.defaultAddress())) {
+            throw new CannotUnsetDefaultAddressException();
+        }
 
-        if (command.defaultAddress() && !existingAddress.defaultAddress()) {
+        addressRepository.update(addressId, command);
+
+        if (Boolean.TRUE.equals(command.defaultAddress()) && !existingAddress.defaultAddress()) {
             addressRepository.setAsDefault(userId, addressId);
         }
 
-        return updatedAddress;
+        return addressRepository.findById(addressId)
+                .orElseThrow(() -> AddressNotFoundException.withId(addressId));
     }
 }
