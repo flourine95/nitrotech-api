@@ -36,6 +36,12 @@ public class ShipmentLogEntity {
     @Column(columnDefinition = "TEXT")
     private String note;
 
+    @Column(name = "occurred_at")
+    private Instant occurredAt;
+
+    @Column(name = "reason_code")
+    private String reasonCode;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

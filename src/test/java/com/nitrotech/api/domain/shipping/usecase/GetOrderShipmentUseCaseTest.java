@@ -48,7 +48,7 @@ class GetOrderShipmentUseCaseTest {
         ShipmentData shipment = ShipmentData.builder().id(10L).orderId(123L).build();
         ShipmentLogData log = new ShipmentLogData(
                 1L, 10L, ShipmentStatus.READY_TO_PICK, "ready_to_pick", "ADMIN",
-                null, "Created", Instant.now());
+                null, "Created", null, null, Instant.now());
         when(orderRepository.findById(123L)).thenReturn(Optional.of(mock(OrderData.class)));
         when(shipmentRepository.findByOrderId(123L)).thenReturn(Optional.of(shipment));
         when(shipmentRepository.findLogsByShipmentId(10L)).thenReturn(List.of(log));

@@ -10,5 +10,7 @@ public record ShipmentLogData(
         String source,
         String location,
         String note,
+        Instant occurredAt,
+        String reasonCode,
         Instant createdAt
 ) {}

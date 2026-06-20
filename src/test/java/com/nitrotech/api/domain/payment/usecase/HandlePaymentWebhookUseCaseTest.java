@@ -229,7 +229,9 @@ class HandlePaymentWebhookUseCaseTest {
                 null,
                 List.of(),
                 Instant.now(),
-                Instant.now()
+                Instant.now(),
+                null,
+                null
         );
     }
 }

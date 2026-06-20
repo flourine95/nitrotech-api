@@ -164,9 +164,9 @@ public class OrderRepositoryImpl implements OrderRepository {
                     ? List.of("view_detail", "mark_processing", "cancel")
                     : List.of("view_detail", "create_shipment", "mark_processing", "cancel");
             case "processing" -> hasShipment
-                    ? List.of("view_detail", "view_shipment", "mark_shipped")
+                    ? List.of("view_detail", "mark_shipped")
                     : List.of("view_detail", "create_shipment", "mark_shipped");
-            case "shipped" -> List.of("view_detail", "track_shipment", "mark_delivered");
+            case "shipped" -> List.of("view_detail", "mark_delivered");
             case "delivered" -> List.of("view_detail", "refund");
             default -> List.of("view_detail");
         };

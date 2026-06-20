@@ -203,7 +203,9 @@ class PlaceOrderUseCaseTest {
                 data.note(),
                 data.items(),
                 Instant.now(),
-                Instant.now()
+                Instant.now(),
+                null,
+                null
         );
     }
 }

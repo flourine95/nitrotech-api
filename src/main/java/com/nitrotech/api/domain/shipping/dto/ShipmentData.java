@@ -22,6 +22,7 @@ public class ShipmentData {
     private Instant estimatedAt;
     private Instant shippedAt;
     private Instant deliveredAt;
+    private Instant lastOfficialEventAt;
     private Instant createdAt;
     private Instant updatedAt;
 }
