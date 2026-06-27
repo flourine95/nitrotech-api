@@ -1,17 +1,11 @@
 package com.nitrotech.api.domain.promotion.usecase;
 
-import com.nitrotech.api.domain.promotion.exception.PromotionCodeExistsException;
-
-import com.nitrotech.api.domain.shared.exception.InvalidDateRangeException;
-
-import com.nitrotech.api.domain.promotion.exception.PromotionNotFoundException;
-
 import com.nitrotech.api.domain.promotion.dto.CreatePromotionCommand;
 import com.nitrotech.api.domain.promotion.dto.PromotionData;
+import com.nitrotech.api.domain.promotion.exception.PromotionCodeExistsException;
+import com.nitrotech.api.domain.promotion.exception.PromotionNotFoundException;
 import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
-import com.nitrotech.api.shared.exception.DomainException;
-import com.nitrotech.api.shared.exception.NotFoundException;
+import com.nitrotech.api.domain.shared.exception.InvalidDateRangeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;

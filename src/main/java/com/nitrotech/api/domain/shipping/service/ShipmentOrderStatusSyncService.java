@@ -4,8 +4,8 @@ import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.order.usecase.UpdateOrderStatusUseCase;
-import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

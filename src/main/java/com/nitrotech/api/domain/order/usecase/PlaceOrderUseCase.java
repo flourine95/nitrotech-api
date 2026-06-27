@@ -1,10 +1,10 @@
 package com.nitrotech.api.domain.order.usecase;
 
+import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
 import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.domain.cart.dto.CartData;
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
-import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
 import com.nitrotech.api.domain.inventory.exception.InsufficientStockException;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.order.OrderStatus;

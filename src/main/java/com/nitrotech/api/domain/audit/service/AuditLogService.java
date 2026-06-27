@@ -1,9 +1,9 @@
 package com.nitrotech.api.domain.audit.service;
 
+import com.nitrotech.api.domain.audit.AuditActorType;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.dto.AuditLogData;
 import com.nitrotech.api.domain.audit.repository.AuditLogRepository;
-import com.nitrotech.api.domain.audit.AuditActorType;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
@@ -153,6 +153,9 @@ public class AuditLogService {
         return SENSITIVE_KEYS.stream().anyMatch(normalized::contains);
     }
 
-    private record AuditActor(String type, Long id, String email, List<String> roles) {}
-    private record RequestSnapshot(String correlationId, String ipAddress, String userAgent) {}
+    private record AuditActor(String type, Long id, String email, List<String> roles) {
+    }
+
+    private record RequestSnapshot(String correlationId, String ipAddress, String userAgent) {
+    }
 }

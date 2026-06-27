@@ -21,15 +21,15 @@ public class CreateAddressUseCase {
         boolean shouldBeDefault = addressCount == 0 || command.defaultAddress();
 
         CreateAddressCommand finalCommand = new CreateAddressCommand(
-            command.receiver(),
-            command.phone(),
-            command.province(),
-            command.provinceCode(),
-            command.district(),
-            command.districtCode(),
-            command.ward(),
-            command.wardCode(),
-            command.street(), false
+                command.receiver(),
+                command.phone(),
+                command.province(),
+                command.provinceCode(),
+                command.district(),
+                command.districtCode(),
+                command.ward(),
+                command.wardCode(),
+                command.street(), false
         );
 
         AddressData address = addressRepository.create(userId, finalCommand);

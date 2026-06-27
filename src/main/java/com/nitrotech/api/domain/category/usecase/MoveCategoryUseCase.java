@@ -1,10 +1,9 @@
 package com.nitrotech.api.domain.category.usecase;
 
-import com.nitrotech.api.domain.category.exception.CategoryCircularReferenceException;
-import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
-
 import com.nitrotech.api.domain.category.dto.MoveCategoryCommand;
 import com.nitrotech.api.domain.category.dto.MoveCategoryResult;
+import com.nitrotech.api.domain.category.exception.CategoryCircularReferenceException;
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

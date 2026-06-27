@@ -1,11 +1,9 @@
 package com.nitrotech.api.domain.banner.usecase;
 
-import com.nitrotech.api.domain.shared.exception.InvalidDateRangeException;
-
 import com.nitrotech.api.domain.banner.dto.BannerData;
 import com.nitrotech.api.domain.banner.dto.CreateBannerCommand;
 import com.nitrotech.api.domain.banner.repository.BannerRepository;
-import com.nitrotech.api.shared.exception.DomainException;
+import com.nitrotech.api.domain.shared.exception.InvalidDateRangeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

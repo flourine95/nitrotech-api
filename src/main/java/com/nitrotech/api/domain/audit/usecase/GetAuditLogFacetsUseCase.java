@@ -1,9 +1,9 @@
 package com.nitrotech.api.domain.audit.usecase;
 
 import com.nitrotech.api.domain.audit.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditLogFacetsData;
 import com.nitrotech.api.domain.audit.AuditOutcome;
 import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogFacetsData;
 import org.springframework.stereotype.Service;
 
 import java.util.Arrays;

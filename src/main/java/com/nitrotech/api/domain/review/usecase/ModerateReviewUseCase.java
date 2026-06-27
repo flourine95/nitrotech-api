@@ -1,10 +1,8 @@
 package com.nitrotech.api.domain.review.usecase;
 
-import com.nitrotech.api.domain.review.exception.ReviewNotFoundException;
-
 import com.nitrotech.api.domain.review.dto.ReviewData;
+import com.nitrotech.api.domain.review.exception.ReviewNotFoundException;
 import com.nitrotech.api.domain.review.repository.ReviewRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service

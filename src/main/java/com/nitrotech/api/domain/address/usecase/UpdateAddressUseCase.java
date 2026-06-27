@@ -19,7 +19,7 @@ public class UpdateAddressUseCase {
     @Transactional
     public AddressData execute(Long userId, Long addressId, UpdateAddressCommand command) {
         AddressData existingAddress = addressRepository.findById(addressId)
-            .orElseThrow(() -> AddressNotFoundException.withId(addressId));
+                .orElseThrow(() -> AddressNotFoundException.withId(addressId));
 
         if (!existingAddress.userId().equals(userId)) {
             throw new AddressAccessDeniedException();

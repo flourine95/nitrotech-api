@@ -1,11 +1,9 @@
 package com.nitrotech.api.domain.brand.usecase;
 
-import com.nitrotech.api.domain.brand.exception.BrandSlugExistsException;
-
 import com.nitrotech.api.domain.brand.dto.BrandData;
 import com.nitrotech.api.domain.brand.dto.CreateBrandCommand;
+import com.nitrotech.api.domain.brand.exception.BrandSlugExistsException;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

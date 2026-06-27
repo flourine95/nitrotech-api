@@ -5,5 +5,6 @@ import java.util.Set;
 
 public interface ProductBrandChecker {
     boolean hasProducts(Long brandId);
+
     Set<Long> filterHasProducts(List<Long> brandIds); // batch check, tránh N+1
 }

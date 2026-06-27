@@ -1,10 +1,8 @@
 package com.nitrotech.api.domain.wishlist.usecase;
 
 import com.nitrotech.api.domain.product.exception.ProductNotFoundException;
-
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.domain.wishlist.repository.WishlistRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service

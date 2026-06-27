@@ -1,16 +1,15 @@
 package com.nitrotech.api.domain.access.usecase;
 
-import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
-
-import com.nitrotech.api.domain.access.exception.RoleNotFoundException;
-import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.AuditAction;
-import com.nitrotech.api.domain.audit.AuditResourceType;
-import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.access.dto.PermissionData;
 import com.nitrotech.api.domain.access.dto.RoleData;
 import com.nitrotech.api.domain.access.dto.UserAccessData;
+import com.nitrotech.api.domain.access.exception.RoleNotFoundException;
 import com.nitrotech.api.domain.access.repository.AccessManagementRepository;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;

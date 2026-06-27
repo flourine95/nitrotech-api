@@ -1,12 +1,11 @@
 package com.nitrotech.api.domain.promotion.usecase;
 
-import com.nitrotech.api.domain.promotion.exception.PromotionNotFoundException;
-import com.nitrotech.api.domain.promotion.exception.OrderAmountTooLowException;
-import com.nitrotech.api.domain.promotion.exception.PromotionUsageLimitReachedException;
-import com.nitrotech.api.domain.promotion.exception.PromotionUserLimitReachedException;
-
 import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
 import com.nitrotech.api.domain.promotion.dto.PromotionData;
+import com.nitrotech.api.domain.promotion.exception.OrderAmountTooLowException;
+import com.nitrotech.api.domain.promotion.exception.PromotionNotFoundException;
+import com.nitrotech.api.domain.promotion.exception.PromotionUsageLimitReachedException;
+import com.nitrotech.api.domain.promotion.exception.PromotionUserLimitReachedException;
 import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

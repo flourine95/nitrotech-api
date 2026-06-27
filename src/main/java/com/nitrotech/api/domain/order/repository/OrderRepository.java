@@ -13,13 +13,22 @@ import java.util.Optional;
 
 public interface OrderRepository {
     OrderData place(PlaceOrderData data);
+
     Optional<OrderData> findByIdAndUserId(Long id, Long userId);
+
     Optional<OrderData> findById(Long id);
+
     Page<OrderListItemData> findList(OrderFilter filter, Pageable pageable);
+
     long countFacetsTotal(OrderFilter filter);
+
     List<Object[]> countStatuses(OrderFilter filter);
+
     List<Object[]> countPaymentMethods(OrderFilter filter);
+
     OrderData updateStatus(Long id, String status);
+
     boolean existsByIdAndUserId(Long id, Long userId);
+
     List<OrderData> findPendingCreatedAtOrBefore(Instant cutoff);
 }

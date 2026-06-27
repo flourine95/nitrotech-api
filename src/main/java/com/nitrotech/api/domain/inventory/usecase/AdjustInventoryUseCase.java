@@ -1,13 +1,11 @@
 package com.nitrotech.api.domain.inventory.usecase;
 
-import com.nitrotech.api.domain.product.exception.VariantNotFoundException;
-
 import com.nitrotech.api.domain.inventory.dto.InventoryData;
 import com.nitrotech.api.domain.inventory.exception.InsufficientStockException;
 import com.nitrotech.api.domain.inventory.exception.InvalidInventoryQuantityException;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.product.exception.VariantNotFoundException;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

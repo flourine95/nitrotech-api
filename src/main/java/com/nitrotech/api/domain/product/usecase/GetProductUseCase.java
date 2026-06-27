@@ -28,7 +28,7 @@ public class GetProductUseCase {
                 }
             }
         }
-        
+
         try {
             Long id = Long.parseLong(idOrSlug);
             return productRepository.findNotDeletedById(id)

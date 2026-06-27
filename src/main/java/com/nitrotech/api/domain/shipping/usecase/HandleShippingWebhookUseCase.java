@@ -1,14 +1,14 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
-import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.AuditActorType;
 import com.nitrotech.api.domain.audit.AuditOutcome;
 import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.exception.ShipmentNotFoundException;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
