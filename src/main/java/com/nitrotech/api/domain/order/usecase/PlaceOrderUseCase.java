@@ -4,14 +4,18 @@ import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.domain.cart.dto.CartData;
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
+import com.nitrotech.api.domain.address.exception.AddressNotFoundException;
+import com.nitrotech.api.domain.inventory.exception.InsufficientStockException;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.*;
+import com.nitrotech.api.domain.order.exception.CartEmptyException;
+import com.nitrotech.api.domain.order.exception.PaymentMethodUnsupportedException;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.payment.PaymentMethod;
 import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
 import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
-import com.nitrotech.api.shared.exception.DomainException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,40 +43,25 @@ public class PlaceOrderUseCase {
 
     @Transactional
     public OrderData execute(CreateOrderCommand command) {
-        if (!List.of("cod", "sepay").contains(command.paymentMethod())) {
-            throw new DomainException("PAYMENT_METHOD_UNSUPPORTED",
-                    "Payment method is not supported yet: " + command.paymentMethod()) {};
+        PaymentMethod paymentMethod = PaymentMethod.fromValue(command.paymentMethod());
+        if (paymentMethod == null || !List.of(PaymentMethod.COD, PaymentMethod.SEPAY).contains(paymentMethod)) {
+            throw new PaymentMethodUnsupportedException(command.paymentMethod());
         }
 
         CartData cart = cartRepository.getOrCreateCart(command.userId());
         if (cart.items().isEmpty()) {
-            throw new DomainException("CART_EMPTY", "Cart is empty") {};
+            throw new CartEmptyException();
         }
-
-        // Check tồn kho từng item
-        cart.items().forEach(item -> {
-            if (!inventoryRepository.hasSufficientStock(item.variantId(), item.quantity())) {
-                int available = inventoryRepository.getQuantity(item.variantId());
-                throw new DomainException("INSUFFICIENT_STOCK",
-                        "Insufficient stock for " + item.variant().name() + ". Available: " + available) {};
-            }
-        });
 
         ShippingAddressSnapshot snapshot = command.shippingAddress();
         if (snapshot == null) {
             if (command.addressId() == null) {
-                throw new NotFoundException("ADDRESS_NOT_FOUND", "Address not found");
+                throw AddressNotFoundException.missing();
             }
             var address = addressRepository.findByIdAndUserId(command.addressId(), command.userId())
-                    .orElseThrow(() -> new NotFoundException("ADDRESS_NOT_FOUND", "Address not found"));
+                    .orElseThrow(() -> AddressNotFoundException.withId(command.addressId()));
 
-            snapshot = new ShippingAddressSnapshot(
-                    address.receiver(), address.phone(),
-                    address.province(), address.provinceCode(),
-                    address.district(), address.districtCode(),
-                    address.ward(), address.wardCode(),
-                    address.street()
-            );
+            snapshot = ShippingAddressSnapshot.from(address);
         }
 
         List<OrderItemData> items = cart.items().stream().map(this::toOrderItem).toList();
@@ -104,14 +93,18 @@ public class PlaceOrderUseCase {
             );
         }
 
-        // Trừ tồn kho
-        cart.items().forEach(item ->
-                inventoryRepository.adjust(item.variantId(), -item.quantity()));
+        cart.items().forEach(this::deductStock);
 
         cartRepository.clearCart(command.userId());
-        return "cod".equals(command.paymentMethod())
-                ? orderRepository.updateStatus(order.id(), "confirmed")
+        return paymentMethod == PaymentMethod.COD
+                ? orderRepository.updateStatus(order.id(), OrderStatus.CONFIRMED.value())
                 : order;
+    }
+
+    private void deductStock(CartItemData item) {
+        if (!inventoryRepository.deductIfEnough(item.variantId(), item.quantity())) {
+            throw new InsufficientStockException(item.variant().name(), inventoryRepository.getQuantity(item.variantId()));
+        }
     }
 
     private OrderItemData toOrderItem(CartItemData item) {

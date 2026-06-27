@@ -11,4 +11,8 @@ public class AddressNotFoundException extends NotFoundException {
     public static AddressNotFoundException withId(Long id) {
         return new AddressNotFoundException("Address with ID " + id + " not found");
     }
+
+    public static AddressNotFoundException missing() {
+        return new AddressNotFoundException("Address not found");
+    }
 }

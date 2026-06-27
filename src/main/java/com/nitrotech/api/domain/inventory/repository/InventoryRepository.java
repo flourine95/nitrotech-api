@@ -14,4 +14,5 @@ public interface InventoryRepository {
     List<InventoryData> findLowStock();
     int getQuantity(Long variantId);
     boolean hasSufficientStock(Long variantId, int required);
+    boolean deductIfEnough(Long variantId, int quantity);
 }
