@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.banner.exception.BannerNotFoundException;
+
 import com.nitrotech.api.domain.banner.dto.BannerData;
 import com.nitrotech.api.domain.banner.dto.CreateBannerCommand;
 import com.nitrotech.api.domain.banner.dto.UpdateBannerCommand;
@@ -36,7 +38,7 @@ public class BannerRepositoryImpl implements BannerRepository {
     @Override
     public BannerData update(UpdateBannerCommand command) {
         BannerEntity entity = jpa.findById(command.id())
-                .orElseThrow(() -> new NotFoundException("BANNER_NOT_FOUND", "Banner not found"));
+                .orElseThrow(() -> new BannerNotFoundException());
         if (command.title() != null) entity.setTitle(command.title());
         if (command.image() != null) entity.setImage(command.image());
         if (command.url() != null) entity.setUrl(command.url());

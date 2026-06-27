@@ -5,7 +5,7 @@ import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.OrderShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;

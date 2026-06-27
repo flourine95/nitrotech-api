@@ -1,5 +1,9 @@
 package com.nitrotech.api.domain.banner.usecase;
 
+import com.nitrotech.api.domain.shared.exception.InvalidDateRangeException;
+
+import com.nitrotech.api.domain.banner.exception.BannerNotFoundException;
+
 import com.nitrotech.api.domain.banner.dto.BannerData;
 import com.nitrotech.api.domain.banner.dto.UpdateBannerCommand;
 import com.nitrotech.api.domain.banner.repository.BannerRepository;
@@ -16,11 +20,11 @@ public class UpdateBannerUseCase {
 
     public BannerData execute(UpdateBannerCommand command) {
         if (!bannerRepository.existsById(command.id())) {
-            throw new NotFoundException("BANNER_NOT_FOUND", "Banner not found");
+            throw new BannerNotFoundException();
         }
         if (command.startDate() != null && command.endDate() != null
                 && command.startDate().isAfter(command.endDate())) {
-            throw new DomainException("INVALID_DATE_RANGE", "Start date must be before end date") {};
+            throw new InvalidDateRangeException();
         }
         return bannerRepository.update(command);
     }

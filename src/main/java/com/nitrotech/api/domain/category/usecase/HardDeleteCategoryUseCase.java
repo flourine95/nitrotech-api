@@ -1,8 +1,10 @@
 package com.nitrotech.api.domain.category.usecase;
 
+import com.nitrotech.api.domain.category.exception.CategoryHasChildrenException;
+import com.nitrotech.api.domain.category.exception.CategoryHasProductsException;
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,19 +18,16 @@ public class HardDeleteCategoryUseCase {
     public void execute(Long id) {
         // Chỉ cho hard delete record đã soft deleted
         categoryRepository.findDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND",
-                        "Deleted category not found. Soft delete first before permanent delete."));
+                .orElseThrow(CategoryNotFoundException::deletedForHardDelete);
 
         // Block nếu còn children (kể cả deleted)
         if (categoryRepository.hasAnyChildren(id)) {
-            throw new ConflictException("CATEGORY_HAS_CHILDREN",
-                    "Cannot permanently delete category with subcategories.");
+            throw new CategoryHasChildrenException("Cannot permanently delete category with subcategories.");
         }
 
         // Block nếu có product đang dùng category này
         if (productCategoryChecker.hasProducts(id)) {
-            throw new ConflictException("CATEGORY_HAS_PRODUCTS",
-                    "Cannot permanently delete category that has products.");
+            throw new CategoryHasProductsException();
         }
 
         categoryRepository.hardDelete(id);

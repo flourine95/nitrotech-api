@@ -1,7 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.mapper;
 
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;

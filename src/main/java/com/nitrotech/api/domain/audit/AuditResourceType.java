@@ -1,4 +1,4 @@
-package com.nitrotech.api.domain.audit.dto;
+package com.nitrotech.api.domain.audit;
 
 public enum AuditResourceType {
     ROLE,

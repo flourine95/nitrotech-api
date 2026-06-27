@@ -3,7 +3,7 @@ package com.nitrotech.api.domain.shipping.repository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 
 import java.util.List;
 import java.util.Optional;

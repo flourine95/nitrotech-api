@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.auth.usecase;
 
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
+
 import com.nitrotech.api.domain.auth.dto.UserProfileData;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -14,11 +16,11 @@ public class GetProfileUseCase {
 
     public UserProfileData execute(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
     public UserProfileData executeByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 }

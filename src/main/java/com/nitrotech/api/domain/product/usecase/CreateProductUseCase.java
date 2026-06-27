@@ -1,8 +1,16 @@
 package com.nitrotech.api.domain.product.usecase;
 
+import com.nitrotech.api.domain.product.exception.VariantSkuExistsException;
+
+import com.nitrotech.api.domain.product.exception.ProductSlugExistsException;
+
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
+
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
@@ -27,18 +35,18 @@ public class CreateProductUseCase {
     @Transactional
     public ProductData execute(CreateProductCommand command) {
         if (!categoryRepository.existsById(command.categoryId())) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", "Category not found");
+            throw new CategoryNotFoundException();
         }
         if (command.brandId() != null && !brandRepository.existsById(command.brandId())) {
-            throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
+            throw new BrandNotFoundException();
         }
         if (productRepository.existsNotDeletedBySlug(command.slug())) {
-            throw new ConflictException("PRODUCT_SLUG_EXISTS", "Slug already exists");
+            throw new ProductSlugExistsException();
         }
         if (command.variants() != null) {
             command.variants().forEach(v -> {
                 if (productRepository.existsBySku(v.sku())) {
-                    throw new ConflictException("VARIANT_SKU_EXISTS", "SKU already exists: " + v.sku());
+                    throw new VariantSkuExistsException(v.sku());
                 }
             });
         }

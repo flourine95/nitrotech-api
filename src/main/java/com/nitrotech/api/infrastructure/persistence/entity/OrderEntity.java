@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.entity;
 
+import com.nitrotech.api.domain.order.OrderStatus;
+import com.nitrotech.api.domain.payment.PaymentMethod;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -35,10 +37,10 @@ public class OrderEntity {
     private Map<String, Object> shippingAddress;
 
     @Column(nullable = false)
-    private String status = "pending";
+    private String status = OrderStatus.PENDING.value();
 
     @Column(name = "payment_method", nullable = false)
-    private String paymentMethod = "cod";
+    private String paymentMethod = PaymentMethod.COD.value();
 
     @Column(name = "total_amount", nullable = false, precision = 15, scale = 2)
     private BigDecimal totalAmount;

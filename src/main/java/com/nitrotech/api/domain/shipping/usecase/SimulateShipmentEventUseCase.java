@@ -1,12 +1,14 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
-import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.shipping.exception.ShipmentNotFoundException;
+
+import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
 import com.nitrotech.api.shared.exception.BadRequestException;
@@ -91,7 +93,7 @@ public class SimulateShipmentEventUseCase {
         }
 
         ShipmentData shipment = shipmentRepository.findById(shipmentId)
-                .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", "Shipment not found"));
+                .orElseThrow(() -> new ShipmentNotFoundException());
         ShipmentStatus currentStatus = shipment.getStatus();
 
         if (currentStatus == nextStatus) {

@@ -3,7 +3,7 @@ package com.nitrotech.api.domain.audit.service;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.dto.AuditLogData;
 import com.nitrotech.api.domain.audit.repository.AuditLogRepository;
-import com.nitrotech.api.domain.audit.dto.AuditActorType;
+import com.nitrotech.api.domain.audit.AuditActorType;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.auth.usecase;
 
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
+
 import com.nitrotech.api.domain.auth.dto.ChangePasswordCommand;
 import com.nitrotech.api.domain.auth.exception.InvalidCredentialsException;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
@@ -18,7 +20,7 @@ public class ChangePasswordUseCase {
     public void execute(ChangePasswordCommand command) {
         UserRepository.UserCredential credential = userRepository.findCredentialByEmail(
                 userRepository.findById(command.userId())
-                        .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"))
+                        .orElseThrow(() -> new UserNotFoundException())
                         .email()
         ).orElseThrow(InvalidCredentialsException::new);
 

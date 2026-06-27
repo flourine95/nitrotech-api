@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.wishlist.usecase;
 
+import com.nitrotech.api.domain.product.exception.ProductNotFoundException;
+
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.domain.wishlist.repository.WishlistRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -19,7 +21,7 @@ public class ToggleWishlistUseCase {
     // Trả về true nếu đã thêm, false nếu đã xóa
     public boolean execute(Long userId, Long productId) {
         if (!productRepository.existsById(productId)) {
-            throw new NotFoundException("PRODUCT_NOT_FOUND", "Product not found");
+            throw new ProductNotFoundException();
         }
         if (wishlistRepository.exists(userId, productId)) {
             wishlistRepository.remove(userId, productId);

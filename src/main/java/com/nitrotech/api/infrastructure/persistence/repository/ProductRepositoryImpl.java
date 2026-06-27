@@ -1,5 +1,9 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.product.exception.VariantNotFoundException;
+
+import com.nitrotech.api.domain.product.exception.ProductNotFoundException;
+
 import com.nitrotech.api.domain.product.dto.*;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.*;
@@ -68,7 +72,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Transactional
     public ProductData update(UpdateProductCommand command) {
         ProductEntity entity = productJpa.findActiveById(command.id())
-                .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException());
         if (command.categoryId() != null) entity.setCategoryId(command.categoryId());
         if (command.brandId() != null) entity.setBrandId(command.brandId());
         if (command.name() != null) entity.setName(command.name());
@@ -243,7 +247,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public ProductVariantData updateVariant(UpdateVariantCommand command) {
         ProductVariantEntity entity = variantJpa.findActiveById(command.id())
-                .orElseThrow(() -> new NotFoundException("VARIANT_NOT_FOUND", "Variant not found"));
+                .orElseThrow(() -> new VariantNotFoundException());
         if (command.sku() != null) entity.setSku(command.sku());
         if (command.name() != null) entity.setName(command.name());
         if (command.price() != null) entity.setPrice(command.price());
@@ -316,7 +320,7 @@ public class ProductRepositoryImpl implements ProductRepository {
     @Override
     public List<ProductData> findRelated(Long productId, int limit) {
         ProductEntity current = productJpa.findVisibleByIdWithRelations(productId)
-                .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException());
 
         List<ProductEntity> related = new ArrayList<>();
         List<Long> excludeIds = new ArrayList<>();

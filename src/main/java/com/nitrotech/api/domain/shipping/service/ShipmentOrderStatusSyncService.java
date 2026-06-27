@@ -1,10 +1,11 @@
 package com.nitrotech.api.domain.shipping.service;
 
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.order.usecase.UpdateOrderStatusUseCase;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -25,21 +26,25 @@ public class ShipmentOrderStatusSyncService {
     }
 
     private boolean isTerminalOrderStatus(String status) {
-        return "cancelled".equals(status) || "refunded".equals(status) || "expired".equals(status);
+        OrderStatus orderStatus = OrderStatus.fromValue(status);
+        return orderStatus == OrderStatus.CANCELLED
+                || orderStatus == OrderStatus.REFUNDED
+                || orderStatus == OrderStatus.EXPIRED;
     }
 
     private void advanceToDelivered(OrderData order, String note) {
-        switch (order.status()) {
-            case "confirmed" -> {
-                updateOrderStatusUseCase.execute(order.id(), "processing", "shipping_webhook", note);
-                updateOrderStatusUseCase.execute(order.id(), "shipped", "shipping_webhook", note);
-                updateOrderStatusUseCase.execute(order.id(), "delivered", "shipping_webhook", note);
+        switch (OrderStatus.fromValue(order.status())) {
+            case CONFIRMED -> {
+                updateOrderStatusUseCase.execute(order.id(), OrderStatus.PROCESSING.value(), "shipping_webhook", note);
+                updateOrderStatusUseCase.execute(order.id(), OrderStatus.SHIPPED.value(), "shipping_webhook", note);
+                updateOrderStatusUseCase.execute(order.id(), OrderStatus.DELIVERED.value(), "shipping_webhook", note);
             }
-            case "processing" -> {
-                updateOrderStatusUseCase.execute(order.id(), "shipped", "shipping_webhook", note);
-                updateOrderStatusUseCase.execute(order.id(), "delivered", "shipping_webhook", note);
+            case PROCESSING -> {
+                updateOrderStatusUseCase.execute(order.id(), OrderStatus.SHIPPED.value(), "shipping_webhook", note);
+                updateOrderStatusUseCase.execute(order.id(), OrderStatus.DELIVERED.value(), "shipping_webhook", note);
             }
-            case "shipped" -> updateOrderStatusUseCase.execute(order.id(), "delivered", "shipping_webhook", note);
+            case SHIPPED ->
+                    updateOrderStatusUseCase.execute(order.id(), OrderStatus.DELIVERED.value(), "shipping_webhook", note);
             default -> {
                 // A shipment cannot be created for any other active order state.
             }

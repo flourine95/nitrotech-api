@@ -1,18 +1,18 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditActorType;
-import com.nitrotech.api.domain.audit.dto.AuditOutcome;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditActorType;
+import com.nitrotech.api.domain.audit.AuditOutcome;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.exception.ShipmentNotFoundException;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
 import com.nitrotech.api.shared.exception.BadRequestException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,8 +52,7 @@ public class HandleShippingWebhookUseCase {
         }
 
         ShipmentData shipment = shipmentRepository.findByProviderAndTrackingCode(normalizedProvider, trackingCode)
-                .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND",
-                        "Shipment with tracking code " + trackingCode + " not found"));
+                .orElseThrow(() -> ShipmentNotFoundException.withTrackingCode(trackingCode));
 
         ShipmentStatus status = mapStatus(normalizedProvider, providerStatus);
         ShipmentStatus previousStatus = shipment.getStatus();

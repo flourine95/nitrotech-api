@@ -2,16 +2,16 @@ package com.nitrotech.api.domain.shipping.usecase;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
+import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.exception.ShipmentNotFoundException;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
 import com.nitrotech.api.shared.exception.BadRequestException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -70,8 +70,7 @@ public class GhtkWebhookProcessor {
         int statusId = parseStatusId(rawStatus);
 
         ShipmentData shipment = shipmentRepository.findByProviderAndTrackingCode("ghtk", trackingCode)
-                .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND",
-                        "Shipment with tracking code " + trackingCode + " not found"));
+                .orElseThrow(() -> ShipmentNotFoundException.withTrackingCode(trackingCode));
 
         ShipmentStatus officialStatus = officialStatus(statusId);
         ShipmentStatus logStatus = officialStatus == null ? shipment.getStatus() : officialStatus;

@@ -1,8 +1,9 @@
 package com.nitrotech.api.domain.brand.usecase;
 
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
+import com.nitrotech.api.domain.brand.exception.BrandSlugConflictException;
+
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,11 +15,10 @@ public class RestoreBrandUseCase {
 
     public void execute(Long id) {
         var brand = brandRepository.findDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Deleted brand not found"));
+                .orElseThrow(() -> BrandNotFoundException.deleted());
 
         if (brandRepository.existsNotDeletedBySlugAndIdNot(brand.slug(), id)) {
-            throw new ConflictException("BRAND_SLUG_CONFLICT",
-                    "Cannot restore: slug '" + brand.slug() + "' is already used by another active brand");
+            throw new BrandSlugConflictException(brand.slug());
         }
 
         brandRepository.restore(id);

@@ -1,5 +1,10 @@
 package com.nitrotech.api.domain.audit.dto;
 
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditActorType;
+import com.nitrotech.api.domain.audit.AuditOutcome;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+
 import java.util.Map;
 
 public record AuditLogCommand(

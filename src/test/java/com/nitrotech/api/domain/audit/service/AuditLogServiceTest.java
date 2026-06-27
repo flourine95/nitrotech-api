@@ -2,8 +2,8 @@ package com.nitrotech.api.domain.audit.service;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.dto.AuditLogData;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.repository.AuditLogRepository;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import org.junit.jupiter.api.AfterEach;

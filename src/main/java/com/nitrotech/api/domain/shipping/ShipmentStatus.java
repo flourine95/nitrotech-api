@@ -1,4 +1,4 @@
-package com.nitrotech.api.domain.shipping.dto;
+package com.nitrotech.api.domain.shipping;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;

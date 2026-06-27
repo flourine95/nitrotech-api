@@ -1,6 +1,7 @@
 package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
@@ -30,7 +31,7 @@ public class ExpirePendingOrdersUseCase {
     }
 
     private void expire(OrderData order) {
-        orderRepository.updateStatus(order.id(), "expired");
+        orderRepository.updateStatus(order.id(), OrderStatus.EXPIRED.value());
         order.items().forEach(item -> inventoryRepository.adjust(item.variantId(), item.quantity()));
     }
 }

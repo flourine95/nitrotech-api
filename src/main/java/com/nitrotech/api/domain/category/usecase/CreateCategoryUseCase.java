@@ -2,9 +2,9 @@ package com.nitrotech.api.domain.category.usecase;
 
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.CreateCategoryCommand;
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+import com.nitrotech.api.domain.category.exception.CategorySlugExistsException;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,10 @@ public class CreateCategoryUseCase {
 
     public CategoryData execute(CreateCategoryCommand command) {
         if (categoryRepository.existsNotDeletedBySlug(command.slug())) {
-            throw new ConflictException("CATEGORY_SLUG_EXISTS", 
-                    "Slug '" + command.slug() + "' already exists");
+            throw new CategorySlugExistsException(command.slug());
         }
         if (command.parentId() != null && !categoryRepository.existsById(command.parentId())) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", 
-                    "Parent category with ID " + command.parentId() + " not found");
+            throw CategoryNotFoundException.parentWithId(command.parentId());
         }
         return categoryRepository.create(command);
     }

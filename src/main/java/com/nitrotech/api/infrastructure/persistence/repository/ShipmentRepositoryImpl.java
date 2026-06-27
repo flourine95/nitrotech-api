@@ -1,9 +1,11 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.shipping.exception.ShipmentNotFoundException;
+
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentLogEntity;
@@ -36,8 +38,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
         ShipmentEntity entity;
         if (data.getId() != null) {
             entity = shipmentJpa.findById(data.getId())
-                    .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
-                            "Shipment with ID " + data.getId() + " not found"));
+                    .orElseThrow(() -> ShipmentNotFoundException.withId(data.getId()));
             shipmentMapper.updateEntity(entity, data);
         } else {
             entity = shipmentMapper.toEntity(data);
@@ -73,8 +74,7 @@ public class ShipmentRepositoryImpl implements ShipmentRepository {
     @Transactional
     public void addLog(Long shipmentId, ShipmentStatus status, String rawStatus, ShipmentLogSource source, String location, String note) {
         ShipmentEntity shipment = shipmentJpa.findById(shipmentId)
-                .orElseThrow(() -> new NotFoundException("SHIPMENT_NOT_FOUND", 
-                        "Shipment with ID " + shipmentId + " not found"));
+                .orElseThrow(() -> ShipmentNotFoundException.withId(shipmentId));
 
         ShipmentLogEntity log = new ShipmentLogEntity();
         log.setShipment(shipment);

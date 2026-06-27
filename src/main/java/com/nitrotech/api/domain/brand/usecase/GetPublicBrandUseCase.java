@@ -1,8 +1,8 @@
 package com.nitrotech.api.domain.brand.usecase;
 
 import com.nitrotech.api.domain.brand.dto.BrandData;
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,10 @@ public class GetPublicBrandUseCase {
         try {
             Long id = Long.parseLong(idOrSlug);
             return brandRepository.findVisibleById(id)
-                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND",
-                            "Brand with ID " + id + " not found"));
+                    .orElseThrow(() -> BrandNotFoundException.withId(id));
         } catch (NumberFormatException e) {
             return brandRepository.findVisibleBySlug(idOrSlug)
-                    .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND",
-                            "Brand with slug '" + idOrSlug + "' not found"));
+                    .orElseThrow(() -> BrandNotFoundException.withSlug(idOrSlug));
         }
     }
 }

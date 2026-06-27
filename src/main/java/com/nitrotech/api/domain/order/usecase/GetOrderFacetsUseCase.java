@@ -1,9 +1,11 @@
 package com.nitrotech.api.domain.order.usecase;
 
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderFacetItemData;
 import com.nitrotech.api.domain.order.dto.OrderFacetsData;
 import com.nitrotech.api.domain.order.dto.OrderFilter;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.payment.PaymentMethod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,21 +18,21 @@ import java.util.Map;
 public class GetOrderFacetsUseCase {
 
     private static final List<OrderFacetItemData> STATUSES = List.of(
-            new OrderFacetItemData("pending", "Chờ xác nhận", 0),
-            new OrderFacetItemData("confirmed", "Đã xác nhận", 0),
-            new OrderFacetItemData("processing", "Đang xử lý", 0),
-            new OrderFacetItemData("shipped", "Đang giao", 0),
-            new OrderFacetItemData("delivered", "Hoàn thành", 0),
-            new OrderFacetItemData("cancelled", "Đã hủy", 0),
-            new OrderFacetItemData("refunded", "Đã hoàn tiền", 0),
-            new OrderFacetItemData("expired", "Đã hết hạn", 0)
+            new OrderFacetItemData(OrderStatus.PENDING.value(), "Chờ xác nhận", 0),
+            new OrderFacetItemData(OrderStatus.CONFIRMED.value(), "Đã xác nhận", 0),
+            new OrderFacetItemData(OrderStatus.PROCESSING.value(), "Đang xử lý", 0),
+            new OrderFacetItemData(OrderStatus.SHIPPED.value(), "Đang giao", 0),
+            new OrderFacetItemData(OrderStatus.DELIVERED.value(), "Hoàn thành", 0),
+            new OrderFacetItemData(OrderStatus.CANCELLED.value(), "Đã hủy", 0),
+            new OrderFacetItemData(OrderStatus.REFUNDED.value(), "Đã hoàn tiền", 0),
+            new OrderFacetItemData(OrderStatus.EXPIRED.value(), "Đã hết hạn", 0)
     );
 
     private static final List<OrderFacetItemData> PAYMENT_METHODS = List.of(
-            new OrderFacetItemData("cod", "COD", 0),
+            new OrderFacetItemData(PaymentMethod.COD.value(), "COD", 0),
             new OrderFacetItemData("vnpay", "VNPay", 0),
             new OrderFacetItemData("momo", "MoMo", 0),
-            new OrderFacetItemData("sepay", "SePay", 0)
+            new OrderFacetItemData(PaymentMethod.SEPAY.value(), "SePay", 0)
     );
 
     private final OrderRepository orderRepository;

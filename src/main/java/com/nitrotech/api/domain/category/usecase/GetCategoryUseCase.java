@@ -1,8 +1,8 @@
 package com.nitrotech.api.domain.category.usecase;
 
 import com.nitrotech.api.domain.category.dto.CategoryData;
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -16,12 +16,10 @@ public class GetCategoryUseCase {
         try {
             Long id = Long.parseLong(idOrSlug);
             return categoryRepository.findNotDeletedById(id)
-                    .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                            "Category with ID " + id + " not found"));
+                    .orElseThrow(() -> CategoryNotFoundException.withId(id));
         } catch (NumberFormatException e) {
             return categoryRepository.findNotDeletedBySlug(idOrSlug)
-                    .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                            "Category with slug '" + idOrSlug + "' not found"));
+                    .orElseThrow(() -> CategoryNotFoundException.withSlug(idOrSlug));
         }
     }
 }

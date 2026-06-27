@@ -1,10 +1,10 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.order.exception.OrderNotFoundException;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.OrderShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,7 +19,7 @@ public class GetOrderShipmentUseCase {
 
     public OrderShipmentData execute(Long orderId) {
         orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
 
         return shipmentRepository.findByOrderId(orderId)
                 .map(this::withLogs)

@@ -1,6 +1,8 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.*;
+import com.nitrotech.api.domain.order.exception.OrderNotFoundException;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderItemEntity;
@@ -8,7 +10,6 @@ import com.nitrotech.api.infrastructure.persistence.entity.PaymentTransactionEnt
 import com.nitrotech.api.infrastructure.persistence.entity.ShipmentEntity;
 import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.OrderSpecification;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -158,27 +159,35 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     private List<String> availableActions(String status, boolean hasShipment) {
-        return switch (status) {
-            case "pending" -> List.of("view_detail", "confirm", "cancel");
-            case "confirmed" -> hasShipment
+        OrderStatus orderStatus = OrderStatus.fromValue(status);
+        if (orderStatus == null) {
+            return List.of("view_detail");
+        }
+        return switch (orderStatus) {
+            case PENDING -> List.of("view_detail", "confirm", "cancel");
+            case CONFIRMED -> hasShipment
                     ? List.of("view_detail", "mark_processing", "cancel")
                     : List.of("view_detail", "create_shipment", "mark_processing", "cancel");
-            case "processing" -> hasShipment
+            case PROCESSING -> hasShipment
                     ? List.of("view_detail", "mark_shipped")
                     : List.of("view_detail", "create_shipment", "mark_shipped");
-            case "shipped" -> List.of("view_detail", "mark_delivered");
-            case "delivered" -> List.of("view_detail", "refund");
+            case SHIPPED -> List.of("view_detail", "mark_delivered");
+            case DELIVERED -> List.of("view_detail", "refund");
             default -> List.of("view_detail");
         };
     }
 
     private Instant slaDueAt(OrderEntity order, boolean hasShipment) {
         Instant base = order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt();
-        return switch (order.getStatus()) {
-            case "pending" -> order.getCreatedAt().plus(Duration.ofMinutes(60));
-            case "confirmed" -> hasShipment ? null : base.plus(Duration.ofHours(4));
-            case "processing" -> base.plus(Duration.ofHours(24));
-            case "shipped" -> base.plus(Duration.ofDays(3));
+        OrderStatus status = OrderStatus.fromValue(order.getStatus());
+        if (status == null) {
+            return null;
+        }
+        return switch (status) {
+            case PENDING -> order.getCreatedAt().plus(Duration.ofMinutes(60));
+            case CONFIRMED -> hasShipment ? null : base.plus(Duration.ofHours(4));
+            case PROCESSING -> base.plus(Duration.ofHours(24));
+            case SHIPPED -> base.plus(Duration.ofDays(3));
             default -> null;
         };
     }
@@ -192,7 +201,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (!now.isBefore(dueAt)) {
             return "critical";
         }
-        Instant base = "pending".equals(order.getStatus())
+        Instant base = OrderStatus.PENDING.value().equals(order.getStatus())
                 ? order.getCreatedAt()
                 : (order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt());
         long totalSeconds = Math.max(1, Duration.between(base, dueAt).getSeconds());
@@ -201,11 +210,15 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     private String slaLabel(String status, boolean hasShipment) {
-        return switch (status) {
-            case "pending" -> "Chờ xác nhận";
-            case "confirmed" -> hasShipment ? null : "Chờ tạo vận đơn";
-            case "processing" -> "Chờ bàn giao";
-            case "shipped" -> "Chờ giao thành công";
+        OrderStatus orderStatus = OrderStatus.fromValue(status);
+        if (orderStatus == null) {
+            return null;
+        }
+        return switch (orderStatus) {
+            case PENDING -> "Chờ xác nhận";
+            case CONFIRMED -> hasShipment ? null : "Chờ tạo vận đơn";
+            case PROCESSING -> "Chờ bàn giao";
+            case SHIPPED -> "Chờ giao thành công";
             default -> null;
         };
     }
@@ -275,7 +288,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Transactional
     public OrderData updateStatus(Long id, String status) {
         OrderEntity entity = orderJpa.findActiveById(id)
-                .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
         entity.setStatus(status);
         return toData(orderJpa.save(entity));
     }

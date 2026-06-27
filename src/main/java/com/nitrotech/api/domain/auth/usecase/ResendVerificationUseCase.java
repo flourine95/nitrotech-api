@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.auth.usecase;
 
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
+
 import com.nitrotech.api.domain.auth.repository.EmailVerificationTokenRepository;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -22,7 +24,7 @@ public class ResendVerificationUseCase {
     @Transactional
     public void execute(String email) {
         var user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
 
         verificationTokenRepository.deleteByUserId(user.id());
         String token = verificationTokenRepository.createVerification(user.id(), 24 * 60);

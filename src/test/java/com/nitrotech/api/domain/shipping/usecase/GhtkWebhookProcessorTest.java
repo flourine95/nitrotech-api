@@ -3,7 +3,7 @@ package com.nitrotech.api.domain.shipping.usecase;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
 import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
 import org.junit.jupiter.api.BeforeEach;

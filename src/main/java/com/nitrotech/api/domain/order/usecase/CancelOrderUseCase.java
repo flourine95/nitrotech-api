@@ -1,26 +1,24 @@
 package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.exception.OrderCannotCancelException;
+import com.nitrotech.api.domain.order.exception.OrderNotFoundException;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
-import com.nitrotech.api.shared.exception.DomainException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Map;
-import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CancelOrderUseCase {
-
-    private static final Set<String> CANCELLABLE = Set.of("pending", "confirmed");
 
     private final OrderRepository orderRepository;
     private final AuditLogService auditLogService;
@@ -29,13 +27,13 @@ public class CancelOrderUseCase {
     @Transactional
     public OrderData execute(Long id, Long userId) {
         OrderData order = orderRepository.findByIdAndUserId(id, userId)
-                .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", "Order not found"));
+                .orElseThrow(OrderNotFoundException::new);
 
-        if (!CANCELLABLE.contains(order.status())) {
-            throw new DomainException("ORDER_CANNOT_CANCEL",
-                    "Order cannot be cancelled in status: " + order.status()) {};
+        OrderStatus status = OrderStatus.fromValue(order.status());
+        if (status != OrderStatus.PENDING && status != OrderStatus.CONFIRMED) {
+            throw new OrderCannotCancelException(order.status());
         }
-        OrderData updated = orderRepository.updateStatus(id, "cancelled");
+        OrderData updated = orderRepository.updateStatus(id, OrderStatus.CANCELLED.value());
         order.items().forEach(item -> inventoryRepository.adjust(item.variantId(), item.quantity()));
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.ORDER_CANCELLED,

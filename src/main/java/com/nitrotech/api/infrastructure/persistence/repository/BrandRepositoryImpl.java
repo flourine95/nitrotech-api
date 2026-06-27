@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
+
 import com.nitrotech.api.domain.brand.dto.BrandData;
 import com.nitrotech.api.domain.brand.dto.BrandFacets;
 import com.nitrotech.api.domain.brand.dto.BrandFilter;
@@ -39,7 +41,7 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     public BrandData update(UpdateBrandCommand command) {
         BrandEntity entity = jpa.findNotDeletedById(command.id())
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
+                .orElseThrow(() -> new BrandNotFoundException());
         if (command.name() != null) entity.setName(command.name());
         if (command.slug() != null) entity.setSlug(command.slug());
         if (command.logo() != null) entity.setLogo(command.logo());
@@ -112,7 +114,7 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     public void softDelete(Long id) {
         BrandEntity entity = jpa.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Brand not found"));
+                .orElseThrow(() -> new BrandNotFoundException());
         entity.setDeletedAt(Instant.now());
         jpa.save(entity);
     }
@@ -120,7 +122,7 @@ public class BrandRepositoryImpl implements BrandRepository {
     @Override
     public void restore(Long id) {
         BrandEntity entity = jpa.findDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND", "Deleted brand not found"));
+                .orElseThrow(() -> BrandNotFoundException.deleted());
         entity.setDeletedAt(null);
         jpa.save(entity);
     }

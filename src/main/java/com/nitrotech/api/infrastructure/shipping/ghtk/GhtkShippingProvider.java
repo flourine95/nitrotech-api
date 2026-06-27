@@ -1,6 +1,7 @@
 package com.nitrotech.api.infrastructure.shipping.ghtk;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.payment.PaymentMethod;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderRequest;
@@ -78,7 +79,7 @@ public class GhtkShippingProvider implements ShippingProvider {
 
         // If payment method is COD, pick_money (amount to collect from buyer) is the finalAmount.
         // If prepaid (sepay, etc.), pick_money is 0.
-        BigDecimal pickMoney = "cod".equalsIgnoreCase(order.paymentMethod()) 
+        BigDecimal pickMoney = PaymentMethod.COD.value().equalsIgnoreCase(order.paymentMethod())
                 ? order.finalAmount() 
                 : BigDecimal.ZERO;
 

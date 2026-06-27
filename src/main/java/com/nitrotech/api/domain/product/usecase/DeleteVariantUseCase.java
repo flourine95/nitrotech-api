@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.product.usecase;
 
+import com.nitrotech.api.domain.product.exception.VariantNotFoundException;
+
 import com.nitrotech.api.domain.product.repository.ProductRepository;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +15,7 @@ public class DeleteVariantUseCase {
 
     public void execute(Long id) {
         if (!productRepository.existsVariantById(id)) {
-            throw new NotFoundException("VARIANT_NOT_FOUND", "Variant not found");
+            throw new VariantNotFoundException();
         }
         productRepository.softDeleteVariant(id);
     }

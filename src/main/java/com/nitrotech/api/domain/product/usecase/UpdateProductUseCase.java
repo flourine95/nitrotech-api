@@ -1,8 +1,16 @@
 package com.nitrotech.api.domain.product.usecase;
 
+import com.nitrotech.api.domain.product.exception.ProductSlugExistsException;
+
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
+
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+
+import com.nitrotech.api.domain.product.exception.ProductNotFoundException;
+
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
@@ -27,16 +35,16 @@ public class UpdateProductUseCase {
     @Transactional
     public ProductData execute(UpdateProductCommand command) {
         ProductData before = productRepository.findNotDeletedById(command.id())
-                .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException());
 
         if (command.categoryId() != null && !categoryRepository.existsById(command.categoryId())) {
-            throw new NotFoundException("CATEGORY_NOT_FOUND", "Category not found");
+            throw new CategoryNotFoundException();
         }
         if (command.brandId() != null && !brandRepository.existsById(command.brandId())) {
-            throw new NotFoundException("BRAND_NOT_FOUND", "Brand not found");
+            throw new BrandNotFoundException();
         }
         if (command.slug() != null && productRepository.existsNotDeletedBySlugAndIdNot(command.slug(), command.id())) {
-            throw new ConflictException("PRODUCT_SLUG_EXISTS", "Slug already exists");
+            throw new ProductSlugExistsException();
         }
         ProductData after = productRepository.update(command);
         ProductAuditPayload.ProductDelta delta = ProductAuditPayload.delta(before, after);

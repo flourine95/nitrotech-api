@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.category.usecase;
 
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
@@ -17,7 +19,7 @@ public class ToggleCategoryUseCase {
     @Transactional
     public CategoryData execute(Long id) {
         CategoryData category = categoryRepository.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", "Category not found"));
+                .orElseThrow(() -> new CategoryNotFoundException());
         
         // Toggle active status
         boolean newActiveStatus = !category.active();
