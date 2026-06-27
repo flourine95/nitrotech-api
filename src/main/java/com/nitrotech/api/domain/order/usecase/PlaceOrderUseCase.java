@@ -7,9 +7,13 @@ import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
+import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
+import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,9 +28,22 @@ public class PlaceOrderUseCase {
     private final CartRepository cartRepository;
     private final AddressRepository addressRepository;
     private final InventoryRepository inventoryRepository;
+    private final ValidatePromotionUseCase validatePromotionUseCase;
+    private final PromotionRepository promotionRepository;
+
+    @Value("${app.shipping.free-threshold:500000}")
+    private BigDecimal freeShippingThreshold;
+
+    @Value("${app.shipping.flat-fee:30000}")
+    private BigDecimal flatShippingFee;
 
     @Transactional
     public OrderData execute(CreateOrderCommand command) {
+        if (!List.of("cod", "sepay").contains(command.paymentMethod())) {
+            throw new DomainException("PAYMENT_METHOD_UNSUPPORTED",
+                    "Payment method is not supported yet: " + command.paymentMethod()) {};
+        }
+
         CartData cart = cartRepository.getOrCreateCart(command.userId());
         if (cart.items().isEmpty()) {
             throw new DomainException("CART_EMPTY", "Cart is empty") {};
@@ -61,8 +78,13 @@ public class PlaceOrderUseCase {
         List<OrderItemData> items = cart.items().stream().map(this::toOrderItem).toList();
         BigDecimal totalAmount = items.stream().map(OrderItemData::subtotal)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal shippingFee = BigDecimal.ZERO;
+        ApplyPromotionResult promotion = null;
         BigDecimal discountAmount = BigDecimal.ZERO;
+        if (hasText(command.promotionCode())) {
+            promotion = validatePromotionUseCase.execute(command.promotionCode(), command.userId(), totalAmount);
+            discountAmount = promotion.discountAmount();
+        }
+        BigDecimal shippingFee = totalAmount.compareTo(freeShippingThreshold) >= 0 ? BigDecimal.ZERO : flatShippingFee;
         BigDecimal finalAmount = totalAmount.add(shippingFee).subtract(discountAmount);
 
         PlaceOrderData data = new PlaceOrderData(
@@ -72,17 +94,32 @@ public class PlaceOrderUseCase {
         );
 
         OrderData order = orderRepository.place(data);
+        if (promotion != null) {
+            promotionRepository.recordUsage(
+                    promotion.promotionId(),
+                    command.userId(),
+                    order.id(),
+                    promotion.code(),
+                    promotion.discountAmount()
+            );
+        }
 
         // Trừ tồn kho
         cart.items().forEach(item ->
                 inventoryRepository.adjust(item.variantId(), -item.quantity()));
 
         cartRepository.clearCart(command.userId());
-        return order;
+        return "cod".equals(command.paymentMethod())
+                ? orderRepository.updateStatus(order.id(), "confirmed")
+                : order;
     }
 
     private OrderItemData toOrderItem(CartItemData item) {
         return new OrderItemData(null, item.variantId(), item.variant().name(), item.variant().sku(),
                 item.quantity(), item.variant().price(), item.subtotal(), null);
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }

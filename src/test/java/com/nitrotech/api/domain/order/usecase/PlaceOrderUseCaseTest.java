@@ -13,11 +13,14 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.PlaceOrderData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
+import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -35,6 +38,8 @@ class PlaceOrderUseCaseTest {
     private CartRepository cartRepository;
     private AddressRepository addressRepository;
     private InventoryRepository inventoryRepository;
+    private ValidatePromotionUseCase validatePromotionUseCase;
+    private PromotionRepository promotionRepository;
     private PlaceOrderUseCase useCase;
 
     @BeforeEach
@@ -43,7 +48,12 @@ class PlaceOrderUseCaseTest {
         cartRepository = mock(CartRepository.class);
         addressRepository = mock(AddressRepository.class);
         inventoryRepository = mock(InventoryRepository.class);
-        useCase = new PlaceOrderUseCase(orderRepository, cartRepository, addressRepository, inventoryRepository);
+        validatePromotionUseCase = mock(ValidatePromotionUseCase.class);
+        promotionRepository = mock(PromotionRepository.class);
+        useCase = new PlaceOrderUseCase(orderRepository, cartRepository, addressRepository, inventoryRepository,
+                validatePromotionUseCase, promotionRepository);
+        ReflectionTestUtils.setField(useCase, "freeShippingThreshold", new BigDecimal("500000"));
+        ReflectionTestUtils.setField(useCase, "flatShippingFee", new BigDecimal("30000"));
     }
 
     @Test
@@ -71,6 +81,28 @@ class PlaceOrderUseCaseTest {
         verify(inventoryRepository).adjust(101L, -2);
         verify(cartRepository).clearCart(10L);
         assertThat(result.finalAmount()).isEqualByComparingTo("24000000");
+    }
+
+    @Test
+    void confirmsCodOrderAfterPlace() {
+        when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "Mouse", "300000", 1)));
+        when(inventoryRepository.hasSufficientStock(101L, 1)).thenReturn(true);
+        when(orderRepository.place(any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
+        when(orderRepository.updateStatus(777L, "confirmed")).thenReturn(orderWithStatus("confirmed"));
+
+        OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null));
+
+        assertThat(result.status()).isEqualTo("confirmed");
+        verify(orderRepository).updateStatus(777L, "confirmed");
+    }
+
+    @Test
+    void rejectsUnsupportedPaymentMethod() {
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "momo", null, null)))
+                .isInstanceOf(DomainException.class)
+                .hasMessage("Payment method is not supported yet: momo");
+
+        verify(cartRepository, never()).getOrCreateCart(anyLong());
     }
 
     @Test
@@ -202,6 +234,28 @@ class PlaceOrderUseCaseTest {
                 data.promotionCode(),
                 data.note(),
                 data.items(),
+                Instant.now(),
+                Instant.now(),
+                null,
+                null
+        );
+    }
+
+    private OrderData orderWithStatus(String status) {
+        return new OrderData(
+                777L,
+                10L,
+                "SO-777",
+                addressSnapshot(),
+                status,
+                "cod",
+                new BigDecimal("300000"),
+                BigDecimal.ZERO,
+                new BigDecimal("30000"),
+                new BigDecimal("330000"),
+                null,
+                null,
+                List.of(),
                 Instant.now(),
                 Instant.now(),
                 null,

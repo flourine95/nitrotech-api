@@ -21,5 +21,5 @@ public interface OrderRepository {
     List<Object[]> countPaymentMethods(OrderFilter filter);
     OrderData updateStatus(Long id, String status);
     boolean existsByIdAndUserId(Long id, Long userId);
-    int expirePendingCreatedAtOrBefore(Instant cutoff, Instant expiredAt);
+    List<OrderData> findPendingCreatedAtOrBefore(Instant cutoff);
 }

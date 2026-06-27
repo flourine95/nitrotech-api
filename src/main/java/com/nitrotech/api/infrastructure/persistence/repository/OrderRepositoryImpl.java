@@ -286,9 +286,10 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     @Override
-    @Transactional
-    public int expirePendingCreatedAtOrBefore(Instant cutoff, Instant expiredAt) {
-        return orderJpa.expirePendingCreatedAtOrBefore(cutoff, expiredAt);
+    public List<OrderData> findPendingCreatedAtOrBefore(Instant cutoff) {
+        return orderJpa.findPendingCreatedAtOrBefore(cutoff).stream()
+                .map(this::toData)
+                .toList();
     }
 
     private Map<String, Object> snapshotToMap(ShippingAddressSnapshot s) {

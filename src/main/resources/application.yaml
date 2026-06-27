@@ -55,6 +55,8 @@ app:
   shipping:
     default-provider: ${DEFAULT_SHIPPING_PROVIDER:ghtk}
     simulation-enabled: ${SHIPMENT_SIMULATION_ENABLED:false}
+    free-threshold: ${SHIPPING_FREE_THRESHOLD:500000}
+    flat-fee: ${SHIPPING_FLAT_FEE:30000}
 
 # GHTK
 ghtk:
