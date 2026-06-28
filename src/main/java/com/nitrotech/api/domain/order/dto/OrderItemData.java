@@ -9,5 +9,6 @@ public record OrderItemData(
         String sku,
         int quantity,
         BigDecimal unitPrice,
-        BigDecimal subtotal
+        BigDecimal subtotal,
+        String imageUrl
 ) {}

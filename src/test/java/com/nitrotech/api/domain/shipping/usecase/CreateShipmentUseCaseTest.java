@@ -6,7 +6,7 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;

@@ -1,5 +1,6 @@
 package com.nitrotech.api.infrastructure.shipping.ghn;
 
+import com.nitrotech.api.domain.payment.PaymentMethod;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
@@ -90,7 +91,7 @@ public class GhnShippingProvider implements ShippingProvider {
         int paymentTypeId = 1;
 
         // If payment method is COD, collect order final amount. Otherwise (prepaid), collect 0.
-        int codAmount = "cod".equalsIgnoreCase(order.paymentMethod()) 
+        int codAmount = PaymentMethod.COD.value().equalsIgnoreCase(order.paymentMethod())
                 ? order.finalAmount().intValue() 
                 : 0;
 

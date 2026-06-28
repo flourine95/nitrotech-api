@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.shipping.dto;
 
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -22,6 +23,7 @@ public class ShipmentData {
     private Instant estimatedAt;
     private Instant shippedAt;
     private Instant deliveredAt;
+    private Instant lastOfficialEventAt;
     private Instant createdAt;
     private Instant updatedAt;
 }

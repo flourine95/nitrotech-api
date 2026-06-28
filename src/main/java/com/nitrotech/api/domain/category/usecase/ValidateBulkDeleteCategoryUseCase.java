@@ -27,8 +27,8 @@ public class ValidateBulkDeleteCategoryUseCase {
                 reasons.put(id, "Category not found or already deleted");
             } else if (categoryRepository.hasAnyChildren(id)) {
                 cannotDelete.add(id);
-                int childCount = categoryRepository.hasNotDeletedChildren(id) ? 
-                    countChildren(id) : countAllChildren(id);
+                int childCount = categoryRepository.hasNotDeletedChildren(id) ?
+                        countChildren(id) : countAllChildren(id);
                 reasons.put(id, "Has " + childCount + " children");
             } else {
                 canDelete.add(id);

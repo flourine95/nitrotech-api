@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.promotion.exception.PromotionNotFoundException;
+
 import com.nitrotech.api.domain.promotion.dto.CreatePromotionCommand;
 import com.nitrotech.api.domain.promotion.dto.PromotionData;
 import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
@@ -30,7 +32,7 @@ public class PromotionRepositoryImpl implements PromotionRepository {
     @Override
     public PromotionData update(Long id, CreatePromotionCommand command) {
         PromotionEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new NotFoundException("PROMOTION_NOT_FOUND", "Promotion not found"));
+                .orElseThrow(() -> new PromotionNotFoundException());
         return toData(jpa.save(toEntity(entity, command)));
     }
 
@@ -52,7 +54,7 @@ public class PromotionRepositoryImpl implements PromotionRepository {
     @Override
     public PromotionData updateStatus(Long id, String status) {
         PromotionEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new NotFoundException("PROMOTION_NOT_FOUND", "Promotion not found"));
+                .orElseThrow(() -> new PromotionNotFoundException());
         entity.setStatus(status);
         return toData(jpa.save(entity));
     }

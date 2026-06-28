@@ -1,5 +1,7 @@
 package com.nitrotech.api.domain.shipping.dto;
 
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
+
 import java.time.Instant;
 
 public record ShipmentLogData(
@@ -10,5 +12,7 @@ public record ShipmentLogData(
         String source,
         String location,
         String note,
+        Instant occurredAt,
+        String reasonCode,
         Instant createdAt
 ) {}

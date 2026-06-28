@@ -8,6 +8,8 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListItemData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.usecase.*;
+import com.nitrotech.api.domain.shipping.dto.OrderShipmentData;
+import com.nitrotech.api.domain.shipping.usecase.GetOrderShipmentUseCase;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import com.nitrotech.api.shared.validation.ValidSortFields;
@@ -36,6 +38,7 @@ public class OrderController {
     private final GetOrderUseCase getOrderUseCase;
     private final CancelOrderUseCase cancelOrderUseCase;
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
+    private final GetOrderShipmentUseCase getOrderShipmentUseCase;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
@@ -57,6 +60,16 @@ public class OrderController {
             @PathVariable Long id
     ) {
         return ResponseEntity.ok(ApiResult.ok(getOrderUseCase.execute(id, principal.id())));
+    }
+
+    @GetMapping("/{id}/shipment")
+    @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
+    public ResponseEntity<ApiResult<OrderShipmentData>> getShipment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id
+    ) {
+        getOrderUseCase.execute(id, principal.id());
+        return ResponseEntity.ok(ApiResult.ok(getOrderShipmentUseCase.execute(id)));
     }
 
     @PostMapping

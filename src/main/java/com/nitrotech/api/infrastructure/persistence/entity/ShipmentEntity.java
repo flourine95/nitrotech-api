@@ -45,6 +45,9 @@ public class ShipmentEntity {
     @Column(name = "delivered_at")
     private Instant deliveredAt;
 
+    @Column(name = "last_official_event_at")
+    private Instant lastOfficialEventAt;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

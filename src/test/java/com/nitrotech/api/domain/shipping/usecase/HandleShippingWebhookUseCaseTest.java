@@ -6,8 +6,9 @@ import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
 import com.nitrotech.api.domain.shipping.dto.ShipmentLogSource;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
+import com.nitrotech.api.domain.shipping.service.ShipmentOrderStatusSyncService;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,16 +25,23 @@ import static org.mockito.Mockito.*;
 class HandleShippingWebhookUseCaseTest {
 
     private ShipmentRepository shipmentRepository;
-    private OrderRepository orderRepository;
     private AuditLogService auditLogService;
+    private ShipmentOrderStatusSyncService shipmentOrderStatusSyncService;
+    private GhtkWebhookProcessor ghtkWebhookProcessor;
     private HandleShippingWebhookUseCase useCase;
 
     @BeforeEach
     void setUp() {
         shipmentRepository = mock(ShipmentRepository.class);
-        orderRepository = mock(OrderRepository.class);
         auditLogService = mock(AuditLogService.class);
-        useCase = new HandleShippingWebhookUseCase(shipmentRepository, orderRepository, auditLogService);
+        shipmentOrderStatusSyncService = mock(ShipmentOrderStatusSyncService.class);
+        ghtkWebhookProcessor = mock(GhtkWebhookProcessor.class);
+        useCase = new HandleShippingWebhookUseCase(
+                shipmentRepository,
+                auditLogService,
+                shipmentOrderStatusSyncService,
+                ghtkWebhookProcessor
+        );
     }
 
     @Test
@@ -119,59 +127,15 @@ class HandleShippingWebhookUseCaseTest {
     }
 
     @Test
-    void handlesGhtkWebhookPayload() {
-        ShipmentData shipment = ShipmentData.builder()
-                .id(20L)
-                .provider("ghtk")
-                .trackingCode("S1.A1.17373471")
-                .status(ShipmentStatus.READY_TO_PICK)
-                .build();
+    void delegatesGhtkPayloadToDedicatedProcessor() {
+        Map<String, Object> payload = Map.of("label_id", "S1.A1.17373471", "status_id", 5);
+        when(ghtkWebhookProcessor.process(payload)).thenReturn(Map.of("ok", true, "status", "delivered"));
 
-        when(shipmentRepository.findByProviderAndTrackingCode("ghtk", "S1.A1.17373471"))
-                .thenReturn(Optional.of(shipment));
-        when(shipmentRepository.save(any(ShipmentData.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+        Map<String, Object> result = useCase.execute("GHTK", payload);
 
-        Map<String, Object> result = useCase.execute("GHTK", Map.of(
-                "partner_id", "1234567",
-                "label_id", "S1.A1.17373471",
-                "status_id", 5,
-                "action_time", "2016-11-02T12:18:39+07:00",
-                "reason", ""
-        ));
-
-        assertThat(result.get("ok")).isEqualTo(true);
-        assertThat(result.get("status")).isEqualTo("delivered");
-        assertThat(shipment.getDeliveredAt()).isNotNull();
-        verify(shipmentRepository).addLog(20L, ShipmentStatus.DELIVERED, "5", ShipmentLogSource.WEBHOOK, null,
-                "Webhook GHTK: 5 (status_5)");
-    }
-
-    @Test
-    void deliveredWebhookCompletesOrder() {
-        ShipmentData shipment = ShipmentData.builder()
-                .id(20L)
-                .orderId(123L)
-                .provider("ghtk")
-                .trackingCode("S1.A1.17373471")
-                .status(ShipmentStatus.READY_TO_PICK)
-                .build();
-        OrderData order = mock(OrderData.class);
-        when(order.id()).thenReturn(123L);
-        when(order.status()).thenReturn("processing");
-
-        when(shipmentRepository.findByProviderAndTrackingCode("ghtk", "S1.A1.17373471"))
-                .thenReturn(Optional.of(shipment));
-        when(shipmentRepository.save(any(ShipmentData.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-        when(orderRepository.findById(123L)).thenReturn(Optional.of(order));
-
-        useCase.execute("ghtk", Map.of(
-                "label_id", "S1.A1.17373471",
-                "status_id", 5
-        ));
-
-        verify(orderRepository).updateStatus(123L, "delivered");
+        assertThat(result).containsEntry("status", "delivered");
+        verify(ghtkWebhookProcessor).process(payload);
+        verifyNoInteractions(shipmentRepository, auditLogService, shipmentOrderStatusSyncService);
     }
 
     @Test

@@ -10,5 +10,5 @@ public record UpdateAddressCommand(
     String ward,
     String wardCode,
     String street,
-    boolean defaultAddress
+    Boolean defaultAddress
 ) {}

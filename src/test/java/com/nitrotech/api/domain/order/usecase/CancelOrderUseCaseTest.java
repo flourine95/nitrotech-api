@@ -1,10 +1,12 @@
 package com.nitrotech.api.domain.order.usecase;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.dto.OrderItemData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -21,13 +23,15 @@ class CancelOrderUseCaseTest {
 
     private OrderRepository orderRepository;
     private AuditLogService auditLogService;
+    private InventoryRepository inventoryRepository;
     private CancelOrderUseCase useCase;
 
     @BeforeEach
     void setUp() {
         orderRepository = mock(OrderRepository.class);
         auditLogService = mock(AuditLogService.class);
-        useCase = new CancelOrderUseCase(orderRepository, auditLogService);
+        inventoryRepository = mock(InventoryRepository.class);
+        useCase = new CancelOrderUseCase(orderRepository, auditLogService, inventoryRepository);
     }
 
     @Test
@@ -39,6 +43,7 @@ class CancelOrderUseCaseTest {
 
         assertThat(result.status()).isEqualTo("cancelled");
         verify(orderRepository).updateStatus(123L, "cancelled");
+        verify(inventoryRepository).adjust(101L, 2);
         verify(auditLogService).record(any());
     }
 
@@ -90,9 +95,12 @@ class CancelOrderUseCaseTest {
                 new BigDecimal("500000"),
                 null,
                 null,
-                List.of(),
+                List.of(new OrderItemData(1L, 101L, "RTX 4060", "SKU-101", 2,
+                        new BigDecimal("250000"), new BigDecimal("500000"), null)),
                 Instant.now(),
-                Instant.now()
+                Instant.now(),
+                null,
+                null
         );
     }
 }

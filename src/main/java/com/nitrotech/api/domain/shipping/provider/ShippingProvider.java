@@ -5,5 +5,6 @@ import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 
 public interface ShippingProvider {
     String getProviderName();
+
     ShippingResult createShipment(OrderData order);
 }

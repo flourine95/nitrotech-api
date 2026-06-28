@@ -15,7 +15,7 @@ public class SetDefaultAddressUseCase {
 
     public void execute(Long userId, Long addressId) {
         AddressData address = addressRepository.findById(addressId)
-            .orElseThrow(() -> AddressNotFoundException.withId(addressId));
+                .orElseThrow(() -> AddressNotFoundException.withId(addressId));
 
         if (!address.userId().equals(userId)) {
             throw new AddressAccessDeniedException();

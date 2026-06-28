@@ -1,12 +1,12 @@
 package com.nitrotech.api.domain.product.usecase;
 
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.product.dto.ProductData;
+import com.nitrotech.api.domain.product.exception.ProductNotFoundException;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,7 +21,7 @@ public class DeleteProductUseCase {
     @Transactional
     public void execute(Long id) {
         ProductData product = productRepository.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("PRODUCT_NOT_FOUND", "Product not found"));
+                .orElseThrow(() -> new ProductNotFoundException());
         productRepository.softDelete(id);
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.PRODUCT_DELETED,

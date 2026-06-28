@@ -1,10 +1,15 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
+import com.nitrotech.api.domain.category.exception.CategoryAlreadyFirstException;
+import com.nitrotech.api.domain.category.exception.CategoryAlreadyLastException;
+import com.nitrotech.api.domain.category.exception.CategoryCircularReferenceException;
+import com.nitrotech.api.domain.category.exception.InvalidCategoryAfterIdException;
+
 import com.nitrotech.api.domain.category.dto.*;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.CategoryEntity;
 import com.nitrotech.api.infrastructure.persistence.spec.CategorySpecification;
-import com.nitrotech.api.shared.exception.ConflictException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -47,8 +52,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Override
     public CategoryData update(UpdateCategoryCommand command) {
         CategoryEntity entity = jpa.findNotDeletedById(command.id())
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                        "Category with ID " + command.id() + " not found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + command.id() + " not found"));
         if (command.name() != null) entity.setName(command.name());
         if (command.slug() != null) entity.setSlug(command.slug());
         if (command.description() != null) entity.setDescription(command.description());
@@ -199,8 +203,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Transactional
     public MoveCategoryResult moveCategory(MoveCategoryCommand command) {
         CategoryEntity moved = jpa.findNotDeletedById(command.movedId())
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                        "Category with ID " + command.movedId() + " not found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + command.movedId() + " not found"));
         
         List<CategoryData> updated = new ArrayList<>();
 
@@ -408,8 +411,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Transactional
     public CategoryData moveUp(Long id) {
         CategoryEntity entity = jpa.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                        "Category with ID " + id + " not found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
 
         List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, entity.getParentId());
         siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
@@ -420,7 +422,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 .orElse(-1);
 
         if (currentIndex <= 0) {
-            throw new ConflictException("ALREADY_FIRST", "Category is already at the first position");
+            throw new CategoryAlreadyFirstException();
         }
 
         CategoryEntity temp = siblings.get(currentIndex);
@@ -439,8 +441,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Transactional
     public CategoryData moveDown(Long id) {
         CategoryEntity entity = jpa.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                        "Category with ID " + id + " not found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
 
         List<CategoryEntity> siblings = jpa.findAllNotDeleted(null, entity.getParentId());
         siblings.sort(Comparator.comparingInt(CategoryEntity::getSortOrder).thenComparingLong(CategoryEntity::getId));
@@ -451,7 +452,7 @@ public class CategoryRepositoryImpl implements CategoryRepository {
                 .orElse(-1);
 
         if (currentIndex < 0 || currentIndex >= siblings.size() - 1) {
-            throw new ConflictException("ALREADY_LAST", "Category is already at the last position");
+            throw new CategoryAlreadyLastException();
         }
 
         CategoryEntity temp = siblings.get(currentIndex);
@@ -470,21 +471,18 @@ public class CategoryRepositoryImpl implements CategoryRepository {
     @Transactional
     public CategoryData move(Long id, Long newParentId, Long afterId) {
         CategoryEntity entity = jpa.findNotDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("CATEGORY_NOT_FOUND", 
-                        "Category with ID " + id + " not found"));
+                .orElseThrow(() -> new CategoryNotFoundException("Category with ID " + id + " not found"));
 
         if (!Objects.equals(newParentId, entity.getParentId())) {
             if (newParentId != null && isDescendantOf(newParentId, id)) {
-                throw new ConflictException(
-                        "CATEGORY_CIRCULAR_REF", "Cannot move category into its own descendant");
+                throw new CategoryCircularReferenceException("Cannot move category into its own descendant");
             }
             entity.setParentId(newParentId);
         }
 
         if (afterId != null) {
             CategoryEntity afterCategory = jpa.findNotDeletedById(afterId)
-                    .orElseThrow(() -> new ConflictException(
-                            "INVALID_AFTER_ID", "afterId category not found"));
+                    .orElseThrow(InvalidCategoryAfterIdException::new);
 
             entity.setSortOrder(afterCategory.getSortOrder() + 1);
 

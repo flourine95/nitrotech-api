@@ -1,10 +1,6 @@
 package com.nitrotech.api.domain.category.usecase;
 
-import com.nitrotech.api.domain.category.dto.CategoryData;
-import com.nitrotech.api.domain.category.dto.CategoryFilter;
-import com.nitrotech.api.domain.category.dto.CategoryPageResult;
-import com.nitrotech.api.domain.category.dto.CategoryFacets;
-import com.nitrotech.api.domain.category.dto.CategoryTreeResult;
+import com.nitrotech.api.domain.category.dto.*;
 import com.nitrotech.api.domain.category.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

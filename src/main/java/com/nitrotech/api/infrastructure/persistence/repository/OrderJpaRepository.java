@@ -3,7 +3,6 @@ package com.nitrotech.api.infrastructure.persistence.repository;
 import com.nitrotech.api.infrastructure.persistence.entity.OrderEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -24,17 +23,12 @@ public interface OrderJpaRepository extends JpaRepository<OrderEntity, Long>, Jp
 
     boolean existsByIdAndUserId(Long id, Long userId);
 
-    @Modifying(clearAutomatically = true, flushAutomatically = true)
-    @Query(value = """
-            UPDATE orders
-            SET status = 'expired'
-            , updated_at = :expiredAt
-            WHERE status = 'pending'
-            AND created_at <= :cutoff
-            AND deleted_at IS NULL
-            """, nativeQuery = true)
-    int expirePendingCreatedAtOrBefore(
-            @Param("cutoff") Instant cutoff,
-            @Param("expiredAt") Instant expiredAt
-    );
+    @Query("""
+            SELECT o FROM OrderEntity o
+            WHERE o.status = 'pending'
+            AND o.createdAt <= :cutoff
+            AND o.deletedAt IS NULL
+            """)
+    List<OrderEntity> findPendingCreatedAtOrBefore(@Param("cutoff") Instant cutoff);
+
 }

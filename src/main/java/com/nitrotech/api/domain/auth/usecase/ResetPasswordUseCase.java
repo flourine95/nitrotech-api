@@ -28,9 +28,9 @@ public class ResetPasswordUseCase {
         resetTokenRepository.markUsed(token);
 
         userRepository.findById(resetToken.userId()).ifPresent(user ->
-            sessionRepository.findByPrincipalName(user.email())
-                    .values()
-                    .forEach(s -> sessionRepository.deleteById(s.getId()))
+                sessionRepository.findByPrincipalName(user.email())
+                        .values()
+                        .forEach(s -> sessionRepository.deleteById(s.getId()))
         );
     }
 }

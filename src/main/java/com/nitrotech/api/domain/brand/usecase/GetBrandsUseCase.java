@@ -1,6 +1,5 @@
 package com.nitrotech.api.domain.brand.usecase;
 
-import com.nitrotech.api.domain.brand.dto.BrandFacets;
 import com.nitrotech.api.domain.brand.dto.BrandFilter;
 import com.nitrotech.api.domain.brand.dto.BrandListResult;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;

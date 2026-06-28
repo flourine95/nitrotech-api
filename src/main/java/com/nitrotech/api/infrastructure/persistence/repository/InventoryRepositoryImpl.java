@@ -72,6 +72,12 @@ public class InventoryRepositoryImpl implements InventoryRepository {
         return getQuantity(variantId) >= required;
     }
 
+    @Override
+    @Transactional
+    public boolean deductIfEnough(Long variantId, int quantity) {
+        return jpa.deductIfEnough(variantId, quantity) == 1;
+    }
+
     private InventoryEntity getOrCreateEntity(Long variantId) {
         return jpa.findByVariantId(variantId).orElseGet(() -> {
             InventoryEntity e = new InventoryEntity();

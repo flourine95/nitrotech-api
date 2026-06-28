@@ -1,15 +1,17 @@
 package com.nitrotech.api.domain.shipping.usecase;
 
+import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.exception.OrderNotFoundException;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
+import com.nitrotech.api.domain.shipping.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShipmentData;
-import com.nitrotech.api.domain.shipping.dto.ShipmentStatus;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
+import com.nitrotech.api.domain.shipping.exception.InvalidShipmentOrderStatusException;
+import com.nitrotech.api.domain.shipping.exception.ShipmentAlreadyExistsException;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import com.nitrotech.api.domain.shipping.repository.ShipmentRepository;
-import com.nitrotech.api.shared.exception.DomainException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -48,20 +50,17 @@ public class CreateShipmentUseCase {
         Optional<ShipmentData> existing = shipmentRepository.findByOrderId(orderId);
         if (existing.isPresent()) {
             log.warn("Shipment already exists for orderId: {}", orderId);
-            throw new DomainException("SHIPMENT_ALREADY_EXISTS",
-                    "Shipment already exists for order " + orderId) {};
+            throw new ShipmentAlreadyExistsException(orderId);
         }
 
         // Retrieve order details
         OrderData order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new NotFoundException("ORDER_NOT_FOUND", 
-                        "Order with ID " + orderId + " not found"));
+                .orElseThrow(() -> OrderNotFoundException.withId(orderId));
 
         // Check order status
-        String status = order.status();
-        if (!"confirmed".equalsIgnoreCase(status) && !"processing".equalsIgnoreCase(status)) {
-            throw new DomainException("INVALID_ORDER_STATUS",
-                    "Cannot create shipment for order " + orderId + " in " + status + " status") {};
+        OrderStatus status = OrderStatus.fromValue(order.status());
+        if (status != OrderStatus.CONFIRMED && status != OrderStatus.PROCESSING) {
+            throw new InvalidShipmentOrderStatusException(orderId, order.status());
         }
 
         // Get shipping provider

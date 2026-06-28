@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.review.exception.ReviewNotFoundException;
+
 import com.nitrotech.api.domain.review.dto.CreateReviewCommand;
 import com.nitrotech.api.domain.review.dto.ReviewData;
 import com.nitrotech.api.domain.review.repository.ReviewRepository;
@@ -54,7 +56,7 @@ public class ReviewRepositoryImpl implements ReviewRepository {
     @Override
     public ReviewData updateStatus(Long id, String status) {
         ReviewEntity entity = jpa.findActiveById(id)
-                .orElseThrow(() -> new NotFoundException("REVIEW_NOT_FOUND", "Review not found"));
+                .orElseThrow(() -> new ReviewNotFoundException());
         entity.setStatus(status);
         return toData(jpa.save(entity));
     }

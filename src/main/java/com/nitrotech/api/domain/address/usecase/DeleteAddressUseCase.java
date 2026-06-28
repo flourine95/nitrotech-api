@@ -16,16 +16,14 @@ public class DeleteAddressUseCase {
 
     public void execute(Long userId, Long addressId) {
         AddressData address = addressRepository.findById(addressId)
-            .orElseThrow(() -> AddressNotFoundException.withId(addressId));
+                .orElseThrow(() -> AddressNotFoundException.withId(addressId));
 
         if (!address.userId().equals(userId)) {
             throw new AddressAccessDeniedException();
         }
 
-        if (address.defaultAddress()) {
+        if (address.defaultAddress() || !addressRepository.deleteNonDefault(addressId)) {
             throw new CannotDeleteDefaultAddressException();
         }
-
-        addressRepository.delete(addressId);
     }
 }

@@ -1,5 +1,7 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
+
 import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.domain.auth.dto.UserProfileData;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
@@ -88,7 +90,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public UserProfileData updateProfile(Long id, String name, String phone, String avatar) {
         UserEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         if (name != null) entity.setName(name);
         if (phone != null) entity.setPhone(phone);
         if (avatar != null) entity.setAvatar(avatar);
@@ -98,7 +100,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public void updatePassword(Long id, String hashedPassword) {
         UserEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         entity.setPassword(hashedPassword);
         jpa.save(entity);
     }
@@ -106,7 +108,7 @@ public class UserRepositoryImpl implements UserRepository {
     @Override
     public void activateUser(Long id) {
         UserEntity entity = jpa.findById(id)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
         entity.setStatus(UserEntity.Status.active);
         jpa.save(entity);
     }

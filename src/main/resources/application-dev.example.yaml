@@ -34,18 +34,20 @@ app:
   public-api-url: http://localhost:8080
   shipping:
     default-provider: ghtk
+    simulation-enabled: true
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001
 
 cloudinary:
-  cloud-name: your-cloud-name    # Lấy tại cloudinary.com/console
+  cloud-name: your-cloud-name # Lấy tại cloudinary.com/console
   api-key: your-api-key
   api-secret: your-api-secret
 
 ghtk:
   api-url: https://services-staging.ghtklab.com
   token: paste-ghtk-staging-token-here
+  webhook-hash: generate-a-long-random-secret-for-ghtk-callback
   pickup:
     name: paste-pickup-contact-name-here
     tel: paste-pickup-phone-here

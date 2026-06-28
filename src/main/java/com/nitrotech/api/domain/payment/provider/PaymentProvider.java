@@ -7,6 +7,8 @@ import com.nitrotech.api.domain.payment.dto.VerifiedPaymentWebhook;
 
 public interface PaymentProvider {
     String getProviderName();
+
     PaymentInitResult initiatePayment(PaymentOrderData order);
+
     VerifiedPaymentWebhook parseAndVerifyWebhook(RawWebhookRequest rawRequest);
 }

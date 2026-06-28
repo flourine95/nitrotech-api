@@ -1,16 +1,17 @@
 package com.nitrotech.api.domain.access.usecase;
 
-import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
-import com.nitrotech.api.domain.audit.dto.AuditAction;
-import com.nitrotech.api.domain.audit.dto.AuditResourceType;
-import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.access.dto.PermissionData;
 import com.nitrotech.api.domain.access.dto.RoleData;
 import com.nitrotech.api.domain.access.dto.UserAccessData;
+import com.nitrotech.api.domain.access.exception.RoleNotFoundException;
 import com.nitrotech.api.domain.access.repository.AccessManagementRepository;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.ForbiddenException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,12 +101,12 @@ public class AccessManagementUseCase {
 
     private RoleData getRole(Long id) {
         return accessRepository.findRoleById(id)
-                .orElseThrow(() -> new NotFoundException("ROLE_NOT_FOUND", "Role not found"));
+                .orElseThrow(RoleNotFoundException::new);
     }
 
     private UserAccessData getUser(Long id) {
         return accessRepository.findUserById(id)
-                .orElseThrow(() -> new NotFoundException("USER_NOT_FOUND", "User not found"));
+                .orElseThrow(() -> new UserNotFoundException());
     }
 
     private Set<Long> permissionIds(Set<String> permissionSlugs) {

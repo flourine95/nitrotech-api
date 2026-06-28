@@ -2,10 +2,10 @@ package com.nitrotech.api.domain.cart.usecase;
 
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
+import com.nitrotech.api.domain.inventory.exception.InsufficientStockException;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.product.exception.VariantNotFoundException;
 import com.nitrotech.api.domain.product.repository.ProductRepository;
-import com.nitrotech.api.shared.exception.DomainException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -19,15 +19,14 @@ public class AddToCartUseCase {
 
     public CartItemData execute(Long userId, Long variantId, int quantity) {
         if (!productRepository.existsVariantById(variantId)) {
-            throw new NotFoundException("VARIANT_NOT_FOUND", "Variant not found");
+            throw new VariantNotFoundException();
         }
         int desiredQuantity = cartRepository.hasItem(userId, variantId)
                 ? cartRepository.getItemQuantity(userId, variantId) + quantity
                 : quantity;
         if (!inventoryRepository.hasSufficientStock(variantId, desiredQuantity)) {
             int available = inventoryRepository.getQuantity(variantId);
-            throw new DomainException("INSUFFICIENT_STOCK",
-                    "Insufficient stock. Available: " + available) {};
+            throw new InsufficientStockException(available);
         }
         if (cartRepository.hasItem(userId, variantId)) {
             return cartRepository.updateItemQuantity(userId, variantId, desiredQuantity);

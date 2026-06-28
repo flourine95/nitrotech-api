@@ -1,8 +1,8 @@
 package com.nitrotech.api.domain.brand.usecase;
 
+import com.nitrotech.api.domain.brand.exception.BrandHasProductsException;
+import com.nitrotech.api.domain.brand.exception.BrandNotFoundException;
 import com.nitrotech.api.domain.brand.repository.BrandRepository;
-import com.nitrotech.api.shared.exception.ConflictException;
-import com.nitrotech.api.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -15,12 +15,10 @@ public class HardDeleteBrandUseCase {
 
     public void execute(Long id) {
         brandRepository.findDeletedById(id)
-                .orElseThrow(() -> new NotFoundException("BRAND_NOT_FOUND",
-                        "Deleted brand not found. Soft delete first before permanent delete."));
+                .orElseThrow(BrandNotFoundException::deletedForHardDelete);
 
         if (productBrandChecker.hasProducts(id)) {
-            throw new ConflictException("BRAND_HAS_PRODUCTS",
-                    "Cannot permanently delete brand that has products.");
+            throw new BrandHasProductsException();
         }
 
         brandRepository.hardDelete(id);

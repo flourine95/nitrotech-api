@@ -24,7 +24,7 @@ public class LogoutUseCase {
         sessionRepository.findByPrincipalName(email)
                 .values()
                 .forEach(s -> sessionRepository.deleteById(s.getId()));
-        
+
         HttpSession session = request.getSession(false);
         if (session != null) {
             session.invalidate();
