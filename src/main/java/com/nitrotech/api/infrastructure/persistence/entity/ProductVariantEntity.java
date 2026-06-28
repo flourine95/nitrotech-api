@@ -44,6 +44,18 @@ public class ProductVariantEntity {
     @Column(nullable = false)
     private boolean active = true;
 
+    @Column(name = "weight_grams")
+    private Integer weightGrams;
+
+    @Column(name = "length_cm", precision = 8, scale = 2)
+    private BigDecimal lengthCm;
+
+    @Column(name = "width_cm", precision = 8, scale = 2)
+    private BigDecimal widthCm;
+
+    @Column(name = "height_cm", precision = 8, scale = 2)
+    private BigDecimal heightCm;
+
     @CreationTimestamp
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;

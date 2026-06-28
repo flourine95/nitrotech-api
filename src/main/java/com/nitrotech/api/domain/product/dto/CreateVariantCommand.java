@@ -9,5 +9,9 @@ public record CreateVariantCommand(
         BigDecimal price,
         Map<String, Object> attributes,
         boolean active,
-        Long imageId
+        Long imageId,
+        Integer weightGrams,
+        BigDecimal lengthCm,
+        BigDecimal widthCm,
+        BigDecimal heightCm
 ) {}

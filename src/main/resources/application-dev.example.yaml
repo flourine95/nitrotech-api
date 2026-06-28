@@ -35,6 +35,7 @@ app:
   shipping:
     default-provider: ghtk
     simulation-enabled: true
+    default-weight-grams: 1000
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001
@@ -47,6 +48,7 @@ cloudinary:
 ghtk:
   api-url: https://services-staging.ghtklab.com
   token: paste-ghtk-staging-token-here
+  client-source:
   webhook-hash: generate-a-long-random-secret-for-ghtk-callback
   pickup:
     name: paste-pickup-contact-name-here

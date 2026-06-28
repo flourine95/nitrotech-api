@@ -31,10 +31,12 @@ app:
   public-api-url: http://localhost:8080
   shipping:
     default-provider: ghtk
+    default-weight-grams: 1000
 
 ghtk:
   api-url: http://localhost:9099
   token: mock-token
+  client-source: test
   pickup:
     name: Test Warehouse
     tel: "0909000000"

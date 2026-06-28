@@ -63,6 +63,10 @@ public class OrderRepositoryImpl implements OrderRepository {
             itemEntity.setQuantity(item.quantity());
             itemEntity.setUnitPrice(item.unitPrice());
             itemEntity.setSubtotal(item.subtotal());
+            itemEntity.setWeightGrams(item.weightGrams());
+            itemEntity.setLengthCm(item.lengthCm());
+            itemEntity.setWidthCm(item.widthCm());
+            itemEntity.setHeightCm(item.heightCm());
             itemJpa.save(itemEntity);
         });
 
@@ -335,7 +339,8 @@ public class OrderRepositoryImpl implements OrderRepository {
                 .map(i -> new OrderItemData(
                         i.getId(), i.getVariantId(), i.getName(),
                         i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal(),
-                        null // imageUrl: populated by variant→image join when needed
+                        null, // imageUrl: populated by variant→image join when needed
+                        i.getWeightGrams(), i.getLengthCm(), i.getWidthCm(), i.getHeightCm()
                 ))
                 .toList();
 

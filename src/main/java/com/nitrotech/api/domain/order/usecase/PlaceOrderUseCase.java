@@ -5,21 +5,17 @@ import com.nitrotech.api.domain.address.repository.AddressRepository;
 import com.nitrotech.api.domain.cart.dto.CartData;
 import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
-import com.nitrotech.api.domain.inventory.exception.InsufficientStockException;
-import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
-import com.nitrotech.api.domain.order.OrderStatus;
 import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.exception.CartEmptyException;
 import com.nitrotech.api.domain.order.exception.PaymentMethodUnsupportedException;
-import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.payment.PaymentMethod;
 import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
-import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
+import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuoteRequest;
+import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,12 +24,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PlaceOrderUseCase {
 
-    private final OrderRepository orderRepository;
     private final CartRepository cartRepository;
     private final AddressRepository addressRepository;
-    private final InventoryRepository inventoryRepository;
     private final ValidatePromotionUseCase validatePromotionUseCase;
-    private final PromotionRepository promotionRepository;
+    private final ShippingProviderResolver shippingProviderResolver;
+    private final PlaceOrderTransaction placeOrderTransaction;
 
     @Value("${app.shipping.free-threshold:500000}")
     private BigDecimal freeShippingThreshold;
@@ -41,7 +36,9 @@ public class PlaceOrderUseCase {
     @Value("${app.shipping.flat-fee:30000}")
     private BigDecimal flatShippingFee;
 
-    @Transactional
+    @Value("${app.shipping.default-provider:ghtk}")
+    private String defaultShippingProvider;
+
     public OrderData execute(CreateOrderCommand command) {
         PaymentMethod paymentMethod = PaymentMethod.fromValue(command.paymentMethod());
         if (paymentMethod == null || !List.of(PaymentMethod.COD, PaymentMethod.SEPAY).contains(paymentMethod)) {
@@ -73,7 +70,7 @@ public class PlaceOrderUseCase {
             promotion = validatePromotionUseCase.execute(command.promotionCode(), command.userId(), totalAmount);
             discountAmount = promotion.discountAmount();
         }
-        BigDecimal shippingFee = totalAmount.compareTo(freeShippingThreshold) >= 0 ? BigDecimal.ZERO : flatShippingFee;
+        BigDecimal shippingFee = quoteShippingFee(snapshot, items, totalAmount);
         BigDecimal finalAmount = totalAmount.add(shippingFee).subtract(discountAmount);
 
         PlaceOrderData data = new PlaceOrderData(
@@ -82,34 +79,37 @@ public class PlaceOrderUseCase {
                 totalAmount, discountAmount, shippingFee, finalAmount, items
         );
 
-        OrderData order = orderRepository.place(data);
-        if (promotion != null) {
-            promotionRepository.recordUsage(
-                    promotion.promotionId(),
-                    command.userId(),
-                    order.id(),
-                    promotion.code(),
-                    promotion.discountAmount()
-            );
-        }
-
-        cart.items().forEach(this::deductStock);
-
-        cartRepository.clearCart(command.userId());
-        return paymentMethod == PaymentMethod.COD
-                ? orderRepository.updateStatus(order.id(), OrderStatus.CONFIRMED.value())
-                : order;
+        return placeOrderTransaction.execute(data, cart, promotion);
     }
 
-    private void deductStock(CartItemData item) {
-        if (!inventoryRepository.deductIfEnough(item.variantId(), item.quantity())) {
-            throw new InsufficientStockException(item.variant().name(), inventoryRepository.getQuantity(item.variantId()));
+    public BigDecimal quoteShippingFee(Long userId, ShippingAddressSnapshot snapshot) {
+        CartData cart = cartRepository.getOrCreateCart(userId);
+        if (cart.items().isEmpty()) {
+            throw new CartEmptyException();
         }
+        List<OrderItemData> items = cart.items().stream().map(this::toOrderItem).toList();
+        BigDecimal totalAmount = items.stream().map(OrderItemData::subtotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return quoteShippingFee(snapshot, items, totalAmount);
     }
 
     private OrderItemData toOrderItem(CartItemData item) {
         return new OrderItemData(null, item.variantId(), item.variant().name(), item.variant().sku(),
-                item.quantity(), item.variant().price(), item.subtotal(), null);
+                item.quantity(), item.variant().price(), item.subtotal(), null,
+                item.variant().weightGrams(), item.variant().lengthCm(), item.variant().widthCm(), item.variant().heightCm());
+    }
+
+    private BigDecimal quoteShippingFee(ShippingAddressSnapshot snapshot, List<OrderItemData> items, BigDecimal totalAmount) {
+        if (totalAmount.compareTo(freeShippingThreshold) >= 0) {
+            return BigDecimal.ZERO;
+        }
+        try {
+            return shippingProviderResolver.getProvider(defaultShippingProvider)
+                    .quoteFee(new ShippingFeeQuoteRequest(snapshot, items, totalAmount))
+                    .fee();
+        } catch (RuntimeException ignored) {
+            return flatShippingFee;
+        }
     }
 
     private boolean hasText(String value) {

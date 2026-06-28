@@ -27,7 +27,7 @@ class GhtkClientTest {
         objectMapper = new ObjectMapper();
         RestClient.Builder builder = RestClient.builder();
         mockServer = MockRestServiceServer.bindTo(builder).build();
-        ghtkClient = new GhtkClient(builder, "http://mock-ghtk.vn", "my-token");
+        ghtkClient = new GhtkClient(builder, "http://mock-ghtk.vn", "my-token", "test-client");
     }
 
     @Test
@@ -44,6 +44,7 @@ class GhtkClientTest {
         mockServer.expect(requestTo("http://mock-ghtk.vn/services/shipment/order"))
                 .andExpect(method(HttpMethod.POST))
                 .andExpect(header("Token", "my-token"))
+                .andExpect(header("X-Client-Source", "test-client"))
                 .andExpect(header("Content-Type", MediaType.APPLICATION_JSON_VALUE))
                 .andExpect(content().json(objectMapper.writeValueAsString(request)))
                 .andRespond(withSuccess(objectMapper.writeValueAsString(expectedResponse), MediaType.APPLICATION_JSON));

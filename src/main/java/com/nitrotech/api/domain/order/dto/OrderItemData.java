@@ -10,5 +10,9 @@ public record OrderItemData(
         int quantity,
         BigDecimal unitPrice,
         BigDecimal subtotal,
-        String imageUrl
+        String imageUrl,
+        Integer weightGrams,
+        BigDecimal lengthCm,
+        BigDecimal widthCm,
+        BigDecimal heightCm
 ) {}

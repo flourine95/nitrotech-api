@@ -68,7 +68,8 @@ public class AdminProductController {
     public ResponseEntity<ApiResult<ProductData>> create(@Valid @RequestBody CreateProductRequest req) {
         List<CreateVariantCommand> variants = req.variants() == null ? null :
                 req.variants().stream().map(v -> new CreateVariantCommand(
-                        v.sku(), v.name(), v.price(), v.attributes(), v.active(), v.imageId())).toList();
+                        v.sku(), v.name(), v.price(), v.attributes(), v.active(), v.imageId(),
+                        v.weightGrams(), v.lengthCm(), v.widthCm(), v.heightCm())).toList();
         ProductData data = createProductUseCase.execute(new CreateProductCommand(
                 req.categoryId(), req.brandId(), req.name(), req.slug(),
                 req.description(), req.shortDescription(), req.thumbnail(), req.specs(), req.active(),
@@ -117,7 +118,8 @@ public class AdminProductController {
             @Valid @RequestBody CreateVariantRequest req
     ) {
         ProductVariantData data = createVariantUseCase.execute(productId,
-                new CreateVariantCommand(req.sku(), req.name(), req.price(), req.attributes(), req.active(), req.imageId()));
+                new CreateVariantCommand(req.sku(), req.name(), req.price(), req.attributes(), req.active(), req.imageId(),
+                        req.weightGrams(), req.lengthCm(), req.widthCm(), req.heightCm()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(data));
     }
 
@@ -129,7 +131,8 @@ public class AdminProductController {
             @Valid @RequestBody UpdateVariantRequest req
     ) {
         ProductVariantData data = updateVariantUseCase.execute(new UpdateVariantCommand(
-                variantId, productId, req.sku(), req.name(), req.price(), req.attributes(), req.active(), req.imageId()));
+                variantId, productId, req.sku(), req.name(), req.price(), req.attributes(), req.active(), req.imageId(),
+                req.weightGrams(), req.lengthCm(), req.widthCm(), req.heightCm()));
         return ResponseEntity.ok(ApiResult.ok(data));
     }
 
