@@ -150,7 +150,8 @@ class GhnShippingProviderTest {
                 "Nguyen Van A", "0909123456", "HCM", "79", "Q1", "760", "Ben Nghe", "20412", "123 Street"
         );
         OrderItemData item = new OrderItemData(
-                1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null
+                1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null,
+                1000, null, null, null
         );
         return new OrderData(
                 123L, 10L, "SO-123", addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now(), null, null

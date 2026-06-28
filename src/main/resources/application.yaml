@@ -57,11 +57,13 @@ app:
     simulation-enabled: ${SHIPMENT_SIMULATION_ENABLED:false}
     free-threshold: ${SHIPPING_FREE_THRESHOLD:500000}
     flat-fee: ${SHIPPING_FLAT_FEE:30000}
+    default-weight-grams: ${SHIPPING_DEFAULT_WEIGHT_GRAMS:1000}
 
 # GHTK
 ghtk:
   api-url: ${GHTK_API_URL:https://services.giaohangtietkiem.vn}
   token: ${GHTK_TOKEN:}
+  client-source: ${GHTK_CLIENT_SOURCE:}
   webhook-hash: ${GHTK_WEBHOOK_HASH:}
   pickup:
     name: ${GHTK_PICKUP_NAME:}

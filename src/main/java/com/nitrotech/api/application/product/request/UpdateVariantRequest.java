@@ -1,6 +1,7 @@
 package com.nitrotech.api.application.product.request;
 
 import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
@@ -18,5 +19,13 @@ public record UpdateVariantRequest(
 
         Map<String, Object> attributes,
         Boolean active,
-        Long imageId
+        Long imageId,
+        @Positive(message = "Weight must be greater than 0")
+        Integer weightGrams,
+        @DecimalMin(value = "0.0", inclusive = false, message = "Length must be greater than 0")
+        BigDecimal lengthCm,
+        @DecimalMin(value = "0.0", inclusive = false, message = "Width must be greater than 0")
+        BigDecimal widthCm,
+        @DecimalMin(value = "0.0", inclusive = false, message = "Height must be greater than 0")
+        BigDecimal heightCm
 ) {}

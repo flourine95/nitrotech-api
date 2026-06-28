@@ -1,13 +1,18 @@
 package com.nitrotech.api.infrastructure.shipping.ghtk;
 
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.order.dto.OrderItemData;
 import com.nitrotech.api.domain.payment.PaymentMethod;
+import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuote;
+import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuoteRequest;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
+import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkFeeResponse;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderRequest;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderResponse;
 import com.nitrotech.api.shared.exception.ShippingException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
@@ -23,11 +28,12 @@ import java.util.List;
 @EnableConfigurationProperties(GhtkPickupProperties.class)
 public class GhtkShippingProvider implements ShippingProvider {
 
-    private static final double DEFAULT_PRODUCT_WEIGHT = 0.2; // Default 200g in kg
-
     private final GhtkClient ghtkClient;
     private final GhtkAddressNormalizer addressNormalizer;
     private final GhtkPickupProperties pickupProperties;
+
+    @Value("${app.shipping.default-weight-grams:1000}")
+    private int defaultWeightGrams;
 
     @Override
     public String getProviderName() {
@@ -61,14 +67,50 @@ public class GhtkShippingProvider implements ShippingProvider {
                 .build();
     }
 
+    @Override
+    public ShippingFeeQuote quoteFee(ShippingFeeQuoteRequest request) {
+        var addr = request.shippingAddress();
+        GhtkFeeResponse response;
+        try {
+            response = ghtkClient.calculateFee(
+                    requiredPickup("address", pickupProperties.address()),
+                    addressNormalizer.normalizeProvince(requiredPickup("province", pickupProperties.province())),
+                    addressNormalizer.normalizeDistrict(requiredPickup("district", pickupProperties.district())),
+                    addressNormalizer.normalizeWard(pickupProperties.ward()),
+                    addressNormalizer.normalizeAddress(addr.street()),
+                    addressNormalizer.normalizeProvince(addr.province()),
+                    addressNormalizer.normalizeDistrict(addr.district()),
+                    addressNormalizer.normalizeWard(addr.ward()),
+                    totalWeightGrams(request.items()),
+                    request.orderValue()
+            );
+        } catch (Exception e) {
+            throw new ShippingException("GHTK_FEE_API_ERROR", "Failed to call GHTK fee API: " + e.getMessage());
+        }
+
+        if (response == null || !Boolean.TRUE.equals(response.getSuccess()) || response.getFee() == null) {
+            String msg = response == null ? "Unknown error" : response.getMessage();
+            throw new ShippingException("GHTK_FEE_FAILED", "GHTK failed to quote fee: " + msg);
+        }
+
+        return new ShippingFeeQuote(
+                response.getFee().getFee(),
+                response.getFee().getInsuranceFee(),
+                Boolean.TRUE.equals(response.getFee().getDelivery())
+        );
+    }
+
     private GhtkOrderRequest mapToGhtkRequest(OrderData order) {
         List<GhtkOrderRequest.Product> products = order.items().stream()
                 .map(item -> GhtkOrderRequest.Product.builder()
                         .name(item.name())
-                        .weight(DEFAULT_PRODUCT_WEIGHT)
+                        .weight(weightKg(item))
                         .quantity(item.quantity())
                         .productCode(item.sku())
                         .price(item.unitPrice())
+                        .height(item.heightCm())
+                        .width(item.widthCm())
+                        .length(item.lengthCm())
                         .build())
                 .toList();
 
@@ -109,6 +151,20 @@ public class GhtkShippingProvider implements ShippingProvider {
                 .products(products)
                 .order(ghtkOrder)
                 .build();
+    }
+
+    private int totalWeightGrams(List<OrderItemData> items) {
+        return items.stream()
+                .mapToInt(item -> weightGrams(item) * item.quantity())
+                .sum();
+    }
+
+    private int weightGrams(OrderItemData item) {
+        return item.weightGrams() == null ? defaultWeightGrams : item.weightGrams();
+    }
+
+    private double weightKg(OrderItemData item) {
+        return weightGrams(item) / 1000.0;
     }
 
     private Instant parseEstimatedTime(String timeStr) {

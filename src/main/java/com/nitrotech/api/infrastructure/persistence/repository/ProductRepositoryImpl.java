@@ -254,6 +254,10 @@ public class ProductRepositoryImpl implements ProductRepository {
         if (command.attributes() != null) entity.setAttributes(command.attributes());
         if (command.active() != null) entity.setActive(command.active());
         if (command.imageId() != null) entity.setImageId(command.imageId());
+        if (command.weightGrams() != null) entity.setWeightGrams(command.weightGrams());
+        if (command.lengthCm() != null) entity.setLengthCm(command.lengthCm());
+        if (command.widthCm() != null) entity.setWidthCm(command.widthCm());
+        if (command.heightCm() != null) entity.setHeightCm(command.heightCm());
         return toVariantData(variantJpa.save(entity));
     }
 
@@ -538,6 +542,10 @@ public class ProductRepositoryImpl implements ProductRepository {
         entity.setAttributes(command.attributes());
         entity.setActive(command.active());
         entity.setImageId(command.imageId());
+        entity.setWeightGrams(command.weightGrams());
+        entity.setLengthCm(command.lengthCm());
+        entity.setWidthCm(command.widthCm());
+        entity.setHeightCm(command.heightCm());
         return variantJpa.save(entity);
     }
 
@@ -657,6 +665,7 @@ public class ProductRepositoryImpl implements ProductRepository {
                 e.getId(), e.getProductId(), e.getSku(), e.getName(),
                 e.getPrice(), e.getAttributes(), e.isActive(),
                 e.getImageId(), imageUrl,
+                e.getWeightGrams(), e.getLengthCm(), e.getWidthCm(), e.getHeightCm(),
                 stockQuantity,
                 lowStockThreshold,
                 stockQuantity != null ? stockQuantity > 0 : null,

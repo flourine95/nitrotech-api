@@ -48,7 +48,8 @@ class ExpirePendingOrdersUseCaseTest {
                 new BigDecimal("500000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("500000"),
                 null, null,
                 List.of(new OrderItemData(1L, 101L, "RTX 4060", "SKU-101", 2,
-                        new BigDecimal("250000"), new BigDecimal("500000"), null)),
+                        new BigDecimal("250000"), new BigDecimal("500000"), null,
+                        1000, null, null, null)),
                 Instant.now(), Instant.now(), null, null
         );
     }

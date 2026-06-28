@@ -2,6 +2,7 @@ package com.nitrotech.api.application.order.controller;
 
 import com.nitrotech.api.application.order.request.CreateOrderRequest;
 import com.nitrotech.api.application.order.request.OrderListRequest;
+import com.nitrotech.api.application.order.request.QuoteShippingFeeRequest;
 import com.nitrotech.api.application.order.request.UpdateOrderStatusRequest;
 import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
@@ -26,6 +27,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.math.BigDecimal;
 
 @RestController
 @RequestMapping("/api/orders")
@@ -72,23 +74,25 @@ public class OrderController {
         return ResponseEntity.ok(ApiResult.ok(getOrderShipmentUseCase.execute(id)));
     }
 
+    @PostMapping("/shipping-fee")
+    @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
+    public ResponseEntity<ApiResult<BigDecimal>> quoteShippingFee(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @Valid @RequestBody QuoteShippingFeeRequest req
+    ) {
+        return ResponseEntity.ok(ApiResult.ok(placeOrderUseCase.quoteShippingFee(
+                principal.id(),
+                toSnapshot(req.shippingAddress())
+        )));
+    }
+
     @PostMapping
     public ResponseEntity<ApiResult<OrderData>> place(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateOrderRequest req
     ) {
         String paymentMethod = req.paymentMethod() != null ? req.paymentMethod() : "cod";
-        ShippingAddressSnapshot shippingAddress = req.shippingAddress() == null ? null : new ShippingAddressSnapshot(
-                req.shippingAddress().name(),
-                req.shippingAddress().phone(),
-                req.shippingAddress().city(),
-                req.shippingAddress().cityCode() != null ? req.shippingAddress().cityCode() : "",
-                req.shippingAddress().district(),
-                req.shippingAddress().districtCode() != null ? req.shippingAddress().districtCode() : "",
-                req.shippingAddress().ward(),
-                req.shippingAddress().wardCode() != null ? req.shippingAddress().wardCode() : "",
-                req.shippingAddress().address()
-        );
+        ShippingAddressSnapshot shippingAddress = req.shippingAddress() == null ? null : toSnapshot(req.shippingAddress());
         OrderData order = placeOrderUseCase.execute(new CreateOrderCommand(
                 principal.id(), req.addressId(), shippingAddress, paymentMethod, req.promotionCode(), req.note()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(order));
@@ -110,5 +114,19 @@ public class OrderController {
             @Valid @RequestBody UpdateOrderStatusRequest req
     ) {
         return ResponseEntity.ok(ApiResult.ok(updateOrderStatusUseCase.execute(id, req.status())));
+    }
+
+    private ShippingAddressSnapshot toSnapshot(CreateOrderRequest.ShippingAddressRequest shippingAddress) {
+        return new ShippingAddressSnapshot(
+                shippingAddress.name(),
+                shippingAddress.phone(),
+                shippingAddress.city(),
+                shippingAddress.cityCode() != null ? shippingAddress.cityCode() : "",
+                shippingAddress.district(),
+                shippingAddress.districtCode() != null ? shippingAddress.districtCode() : "",
+                shippingAddress.ward(),
+                shippingAddress.wardCode() != null ? shippingAddress.wardCode() : "",
+                shippingAddress.address()
+        );
     }
 }

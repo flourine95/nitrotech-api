@@ -10,6 +10,7 @@ import com.nitrotech.api.shared.exception.ShippingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -37,6 +38,7 @@ class GhtkShippingProviderTest {
                         "Quận 3",
                         "Phường 1"
                 ));
+        ReflectionTestUtils.setField(provider, "defaultWeightGrams", 1000);
     }
 
     @Test
@@ -61,7 +63,7 @@ class GhtkShippingProviderTest {
 
         assertThat(captured.getProducts()).hasSize(1);
         assertThat(captured.getProducts().get(0).getName()).isEqualTo("Item A");
-        assertThat(captured.getProducts().get(0).getWeight()).isEqualTo(0.2); // Default weight
+        assertThat(captured.getProducts().get(0).getWeight()).isEqualTo(1.0);
 
         GhtkOrderRequest.Order capturedOrder = captured.getOrder();
         assertThat(capturedOrder.getId()).isEqualTo("123");
@@ -140,7 +142,8 @@ class GhtkShippingProviderTest {
                 "Nguyen Van A", "0909123456", "HCM", "79", "Q1", "760", "Ben Nghe", "20412", "123 Street"
         );
         OrderItemData item = new OrderItemData(
-                1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null
+                1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null,
+                1000, null, null, null
         );
         return new OrderData(
                 123L, 10L, "SO-123", addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now(), null, null

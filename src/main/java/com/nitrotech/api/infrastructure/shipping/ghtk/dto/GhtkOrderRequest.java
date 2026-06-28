@@ -28,6 +28,9 @@ public class GhtkOrderRequest {
         @JsonProperty("product_code")
         private String productCode;
         private BigDecimal price;
+        private BigDecimal height;
+        private BigDecimal width;
+        private BigDecimal length;
     }
 
     @Data

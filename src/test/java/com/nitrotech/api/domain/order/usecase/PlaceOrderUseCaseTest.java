@@ -7,14 +7,14 @@ import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.dto.CartSummaryData;
 import com.nitrotech.api.domain.cart.dto.CartVariantData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
-import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
 import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.PlaceOrderData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
-import com.nitrotech.api.domain.order.repository.OrderRepository;
-import com.nitrotech.api.domain.promotion.repository.PromotionRepository;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
+import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuote;
+import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
+import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,38 +34,40 @@ import static org.mockito.Mockito.*;
 
 class PlaceOrderUseCaseTest {
 
-    private OrderRepository orderRepository;
     private CartRepository cartRepository;
     private AddressRepository addressRepository;
-    private InventoryRepository inventoryRepository;
     private ValidatePromotionUseCase validatePromotionUseCase;
-    private PromotionRepository promotionRepository;
+    private ShippingProviderResolver shippingProviderResolver;
+    private ShippingProvider shippingProvider;
+    private PlaceOrderTransaction placeOrderTransaction;
     private PlaceOrderUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        orderRepository = mock(OrderRepository.class);
         cartRepository = mock(CartRepository.class);
         addressRepository = mock(AddressRepository.class);
-        inventoryRepository = mock(InventoryRepository.class);
         validatePromotionUseCase = mock(ValidatePromotionUseCase.class);
-        promotionRepository = mock(PromotionRepository.class);
-        useCase = new PlaceOrderUseCase(orderRepository, cartRepository, addressRepository, inventoryRepository,
-                validatePromotionUseCase, promotionRepository);
+        shippingProviderResolver = mock(ShippingProviderResolver.class);
+        shippingProvider = mock(ShippingProvider.class);
+        placeOrderTransaction = mock(PlaceOrderTransaction.class);
+        when(shippingProviderResolver.getProvider("ghtk")).thenReturn(shippingProvider);
+        when(shippingProvider.quoteFee(any())).thenReturn(new ShippingFeeQuote(new BigDecimal("20000"), BigDecimal.ZERO, true));
+        when(placeOrderTransaction.execute(any(), any(), any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
+        useCase = new PlaceOrderUseCase(cartRepository, addressRepository, validatePromotionUseCase,
+                shippingProviderResolver, placeOrderTransaction);
         ReflectionTestUtils.setField(useCase, "freeShippingThreshold", new BigDecimal("500000"));
         ReflectionTestUtils.setField(useCase, "flatShippingFee", new BigDecimal("30000"));
+        ReflectionTestUtils.setField(useCase, "defaultShippingProvider", "ghtk");
     }
 
     @Test
     void placesOrderFromCartAndClearsCartWhenStockIsAvailable() {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "RTX 4060", "12000000", 2)));
-        when(inventoryRepository.deductIfEnough(101L, 2)).thenReturn(true);
-        when(orderRepository.place(any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
 
         OrderData result = useCase.execute(command(addressSnapshot()));
 
         ArgumentCaptor<PlaceOrderData> captor = ArgumentCaptor.forClass(PlaceOrderData.class);
-        verify(orderRepository).place(captor.capture());
+        verify(placeOrderTransaction).execute(captor.capture(), any(), any());
         PlaceOrderData placed = captor.getValue();
         assertThat(placed.userId()).isEqualTo(10L);
         assertThat(placed.paymentMethod()).isEqualTo("sepay");
@@ -78,22 +80,19 @@ class PlaceOrderUseCaseTest {
         assertThat(placed.items().getFirst().quantity()).isEqualTo(2);
         assertThat(placed.shippingAddress().receiver()).isEqualTo("Nguyen Phi Long");
 
-        verify(inventoryRepository).deductIfEnough(101L, 2);
-        verify(cartRepository).clearCart(10L);
+        verify(shippingProvider, never()).quoteFee(any());
         assertThat(result.finalAmount()).isEqualByComparingTo("24000000");
     }
 
     @Test
-    void confirmsCodOrderAfterPlace() {
+    void quotesShippingFeeWhenOrderIsBelowFreeThreshold() {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "Mouse", "300000", 1)));
-        when(inventoryRepository.deductIfEnough(101L, 1)).thenReturn(true);
-        when(orderRepository.place(any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
-        when(orderRepository.updateStatus(777L, "confirmed")).thenReturn(orderWithStatus("confirmed"));
 
         OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null));
 
-        assertThat(result.status()).isEqualTo("confirmed");
-        verify(orderRepository).updateStatus(777L, "confirmed");
+        assertThat(result.shippingFee()).isEqualByComparingTo("20000");
+        assertThat(result.finalAmount()).isEqualByComparingTo("320000");
+        verify(shippingProvider).quoteFee(any());
     }
 
     @Test
@@ -108,14 +107,12 @@ class PlaceOrderUseCaseTest {
     @Test
     void loadsSavedAddressWhenSnapshotIsNotProvided() {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "RTX 4060", "12000000", 1)));
-        when(inventoryRepository.deductIfEnough(101L, 1)).thenReturn(true);
         when(addressRepository.findByIdAndUserId(55L, 10L)).thenReturn(Optional.of(address()));
-        when(orderRepository.place(any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
 
         useCase.execute(new CreateOrderCommand(10L, 55L, null, "cod", null, "call first"));
 
         ArgumentCaptor<PlaceOrderData> captor = ArgumentCaptor.forClass(PlaceOrderData.class);
-        verify(orderRepository).place(captor.capture());
+        verify(placeOrderTransaction).execute(captor.capture(), any(), any());
         assertThat(captor.getValue().shippingAddress().receiver()).isEqualTo("Saved Receiver");
         assertThat(captor.getValue().shippingAddress().province()).isEqualTo("Ho Chi Minh");
         assertThat(captor.getValue().note()).isEqualTo("call first");
@@ -129,25 +126,18 @@ class PlaceOrderUseCaseTest {
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Cart is empty");
 
-        verify(orderRepository, never()).place(any());
-        verify(inventoryRepository, never()).deductIfEnough(anyLong(), anyInt());
-        verify(cartRepository, never()).clearCart(anyLong());
+        verify(placeOrderTransaction, never()).execute(any(), any(), any());
     }
 
     @Test
-    void rejectsOrderWhenStockDeductFails() {
+    void fallsBackToFlatShippingFeeWhenCarrierQuoteFails() {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "RTX 4060", "12000000", 3)));
-        when(orderRepository.place(any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
-        when(inventoryRepository.deductIfEnough(101L, 3)).thenReturn(false);
-        when(inventoryRepository.getQuantity(101L)).thenReturn(1);
+        ReflectionTestUtils.setField(useCase, "freeShippingThreshold", new BigDecimal("99999999"));
+        when(shippingProvider.quoteFee(any())).thenThrow(new RuntimeException("down"));
 
-        assertThatThrownBy(() -> useCase.execute(command(addressSnapshot())))
-                .isInstanceOf(DomainException.class)
-                .hasMessage("Insufficient stock for RTX 4060. Available: 1");
+        OrderData result = useCase.execute(command(addressSnapshot()));
 
-        verify(orderRepository).place(any());
-        verify(inventoryRepository).deductIfEnough(101L, 3);
-        verify(cartRepository, never()).clearCart(anyLong());
+        assertThat(result.shippingFee()).isEqualByComparingTo("30000");
     }
 
     @Test
@@ -159,9 +149,7 @@ class PlaceOrderUseCaseTest {
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Address with ID 55 not found");
 
-        verify(orderRepository, never()).place(any());
-        verify(inventoryRepository, never()).deductIfEnough(anyLong(), anyInt());
-        verify(cartRepository, never()).clearCart(anyLong());
+        verify(placeOrderTransaction, never()).execute(any(), any(), any());
     }
 
     private CreateOrderCommand command(ShippingAddressSnapshot snapshot) {
@@ -178,7 +166,8 @@ class PlaceOrderUseCaseTest {
                 variantId,
                 1L,
                 variantId,
-                new CartVariantData(variantId, 99L, sku, name, unitPrice, Map.of(), true, null, null, null, null, null, null, null),
+                new CartVariantData(variantId, 99L, sku, name, unitPrice, Map.of(), true, null, null,
+                        1000, null, null, null, null, null, null, null, null),
                 quantity,
                 unitPrice.multiply(BigDecimal.valueOf(quantity)),
                 Instant.now(),
@@ -241,25 +230,4 @@ class PlaceOrderUseCaseTest {
         );
     }
 
-    private OrderData orderWithStatus(String status) {
-        return new OrderData(
-                777L,
-                10L,
-                "SO-777",
-                addressSnapshot(),
-                status,
-                "cod",
-                new BigDecimal("300000"),
-                BigDecimal.ZERO,
-                new BigDecimal("30000"),
-                new BigDecimal("330000"),
-                null,
-                null,
-                List.of(),
-                Instant.now(),
-                Instant.now(),
-                null,
-                null
-        );
-    }
 }
