@@ -18,13 +18,13 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.text.Normalizer;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 @Component
@@ -55,7 +55,7 @@ public class VnpayPaymentProvider implements PaymentProvider {
         ZonedDateTime now = ZonedDateTime.now(ZoneId.of("Asia/Ho_Chi_Minh"));
         ZonedDateTime expiresAt = now.plusMinutes(properties.expireMinutes() == null ? 15 : properties.expireMinutes());
 
-        Map<String, String> params = new TreeMap<>();
+        Map<String, String> params = new LinkedHashMap<>();
         params.put("vnp_Amount", toVnpayAmount(order.amount()));
         params.put("vnp_Command", "pay");
         params.put("vnp_CreateDate", VNPAY_TIME_FORMAT.format(now));
@@ -71,43 +71,33 @@ public class VnpayPaymentProvider implements PaymentProvider {
         params.put("vnp_Version", "2.1.0");
 
         Map<String, String> signableParams = prepareSignableParams(params);
-        String hashData = buildHashData(signableParams);
+        String hashData = buildEncodedParamString(signableParams);
         String secureHash = hmacSha512(properties.hashSecret().trim(), hashData);
-        String queryString = buildQueryString(signableParams);
+        String queryString = buildEncodedParamString(signableParams);
         String paymentUrl = properties.payUrl().trim() + "?" + queryString + "&vnp_SecureHash=" + secureHash;
+
         return new PaymentInitResult(paymentUrl, true);
     }
 
     @Override
     public VerifiedPaymentWebhook parseAndVerifyWebhook(RawWebhookRequest rawRequest) {
-        Map<String, String> payload = extractPayload(rawRequest);
         requireConfig(properties.hashSecret(), "vnpay.hash-secret");
 
-        String secureHash = payload.get("vnp_SecureHash");
-        if (secureHash == null || secureHash.isBlank()) {
-            throw new BadRequestException("INVALID_VNPAY_CALLBACK", "Missing VNPAY secure hash");
-        }
+        Map<String, String> payload = extractPayload(rawRequest);
+        String secureHash = required(payload, "vnp_SecureHash");
 
-        Map<String, String> signedFields = prepareSignableParams(payload);
-        String expectedHash = hmacSha512(properties.hashSecret().trim(), buildHashData(signedFields));
+        Map<String, String> signableParams = prepareSignableParams(payload);
+        String expectedHash = hmacSha512(properties.hashSecret().trim(), buildEncodedParamString(signableParams));
         if (!expectedHash.equalsIgnoreCase(secureHash.trim())) {
             throw new BadRequestException("INVALID_VNPAY_SIGNATURE", "Invalid VNPAY secure hash");
         }
 
-        String txnRef = required(payload, "vnp_TxnRef");
-        Long orderId;
-        try {
-            orderId = Long.valueOf(txnRef);
-        } catch (NumberFormatException ex) {
-            throw new BadRequestException("ORDER_ID_NOT_FOUND", "Cannot parse order ID from VNPAY transaction reference");
-        }
-
+        Long orderId = parseOrderId(required(payload, "vnp_TxnRef"));
         String responseCode = payload.getOrDefault("vnp_ResponseCode", "");
-        String transactionStatus = payload.getOrDefault("vnp_TransactionStatus", responseCode);
+        String transactionStatus = payload.getOrDefault("vnp_TransactionStatus", "");
         String status = ("00".equals(responseCode) && "00".equals(transactionStatus)) ? "paid" : "failed";
 
-        String providerRef = payload.getOrDefault("vnp_TransactionNo", txnRef);
-        Instant paidAt = parsePayDate(payload.get("vnp_PayDate"));
+        String providerRef = payload.getOrDefault("vnp_TransactionNo", payload.get("vnp_TxnRef"));
 
         return new VerifiedPaymentWebhook(
                 getProviderName(),
@@ -115,7 +105,7 @@ public class VnpayPaymentProvider implements PaymentProvider {
                 orderId,
                 parseAmount(payload.get("vnp_Amount")),
                 status,
-                paidAt,
+                parsePayDate(payload.get("vnp_PayDate")),
                 payload.get("vnp_OrderInfo"),
                 new LinkedHashMap<>(payload)
         );
@@ -132,7 +122,9 @@ public class VnpayPaymentProvider implements PaymentProvider {
         Map<String, String> parsed = new LinkedHashMap<>();
         String[] parts = rawRequest.rawBody().split("&");
         for (String part : parts) {
-            if (part.isBlank()) continue;
+            if (part.isBlank()) {
+                continue;
+            }
             String[] kv = part.split("=", 2);
             String key = URLDecoder.decode(kv[0], StandardCharsets.UTF_8);
             String value = kv.length > 1 ? URLDecoder.decode(kv[1], StandardCharsets.UTF_8) : "";
@@ -155,13 +147,7 @@ public class VnpayPaymentProvider implements PaymentProvider {
                 ));
     }
 
-    private String buildHashData(Map<String, String> params) {
-        return params.entrySet().stream()
-                .map(entry -> entry.getKey() + "=" + encode(entry.getValue()))
-                .collect(Collectors.joining("&"));
-    }
-
-    private String buildQueryString(Map<String, String> params) {
+    private String buildEncodedParamString(Map<String, String> params) {
         return params.entrySet().stream()
                 .map(entry -> entry.getKey() + "=" + encode(entry.getValue()))
                 .collect(Collectors.joining("&"));
@@ -187,18 +173,17 @@ public class VnpayPaymentProvider implements PaymentProvider {
                 .toPlainString();
     }
 
-    private String sanitizeOrderInfo(String description) {
-        String value = defaultIfBlank(description, "NitroTech payment");
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .replaceAll("[^A-Za-z0-9 _.,:-]", "")
-                .trim();
-        return normalized.isBlank() ? "NitroTech payment" : normalized;
+    private Long parseOrderId(String txnRef) {
+        try {
+            return Long.valueOf(txnRef);
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("ORDER_ID_NOT_FOUND", "Cannot parse order ID from VNPAY transaction reference");
+        }
     }
 
     private BigDecimal parseAmount(String rawAmount) {
         if (rawAmount == null || rawAmount.isBlank()) {
-            return BigDecimal.ZERO;
+            throw new BadRequestException("INVALID_VNPAY_AMOUNT", "VNPAY amount is missing");
         }
         try {
             return new BigDecimal(rawAmount).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
@@ -212,11 +197,20 @@ public class VnpayPaymentProvider implements PaymentProvider {
             return Instant.now();
         }
         try {
-            return ZonedDateTime.parse(rawPayDate.trim(), VNPAY_TIME_FORMAT.withZone(ZoneId.of("Asia/Ho_Chi_Minh")))
-                    .toInstant();
+            LocalDateTime localDateTime = LocalDateTime.parse(rawPayDate.trim(), VNPAY_TIME_FORMAT);
+            return localDateTime.atZone(ZoneId.of("Asia/Ho_Chi_Minh")).toInstant();
         } catch (RuntimeException ex) {
             return Instant.now();
         }
+    }
+
+    private String sanitizeOrderInfo(String description) {
+        String value = defaultIfBlank(description, "NitroTech payment");
+        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
+                .replaceAll("\\p{M}", "")
+                .replaceAll("[^A-Za-z0-9 _.,:-]", "")
+                .trim();
+        return normalized.isBlank() ? "NitroTech payment" : normalized;
     }
 
     private String required(Map<String, String> payload, String key) {

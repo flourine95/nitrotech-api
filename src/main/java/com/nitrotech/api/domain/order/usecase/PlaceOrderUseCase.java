@@ -41,7 +41,7 @@ public class PlaceOrderUseCase {
 
     public OrderData execute(CreateOrderCommand command) {
         PaymentMethod paymentMethod = PaymentMethod.fromValue(command.paymentMethod());
-        if (paymentMethod == null || !List.of(PaymentMethod.COD, PaymentMethod.VNPAY, PaymentMethod.SEPAY).contains(paymentMethod)) {
+        if (paymentMethod == null || !List.of(PaymentMethod.COD, PaymentMethod.SEPAY, PaymentMethod.VNPAY).contains(paymentMethod)) {
             throw new PaymentMethodUnsupportedException(command.paymentMethod());
         }
 

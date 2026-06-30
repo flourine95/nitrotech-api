@@ -3,13 +3,15 @@ package com.nitrotech.api.domain.payment.usecase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nitrotech.api.application.payment.request.RawWebhookRequest;
 import com.nitrotech.api.domain.order.dto.OrderData;
+import com.nitrotech.api.domain.payment.provider.PaymentProviderResolver;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.order.usecase.UpdateOrderStatusUseCase;
 import com.nitrotech.api.domain.payment.dto.VerifiedPaymentWebhook;
 import com.nitrotech.api.domain.payment.repository.PaymentTransactionRepository;
-import com.nitrotech.api.infrastructure.payment.PaymentProviderRegistry;
 import com.nitrotech.api.infrastructure.payment.sepay.SepayPaymentProvider;
 import com.nitrotech.api.infrastructure.payment.sepay.dto.SepayWebhookPayload;
+import com.nitrotech.api.infrastructure.payment.vnpay.VnpayPaymentProvider;
+import com.nitrotech.api.infrastructure.payment.vnpay.VnpayProperties;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.ForbiddenException;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -18,11 +20,17 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +42,8 @@ class HandlePaymentWebhookUseCaseTest {
     private PaymentTransactionRepository paymentTransactionRepository;
     private UpdateOrderStatusUseCase updateOrderStatusUseCase;
     private SepayPaymentProvider sepayPaymentProvider;
-    private PaymentProviderRegistry registry;
+    private VnpayPaymentProvider vnpayPaymentProvider;
+    private PaymentProviderResolver registry;
     private HandlePaymentWebhookUseCase useCase;
     private ObjectMapper objectMapper;
 
@@ -51,7 +60,18 @@ class HandlePaymentWebhookUseCaseTest {
         ReflectionTestUtils.setField(sepayPaymentProvider, "sepayAccountNumber", "123456789");
         ReflectionTestUtils.setField(sepayPaymentProvider, "sepayBankName", "MBBank");
 
-        registry = new PaymentProviderRegistry(List.of(sepayPaymentProvider));
+        vnpayPaymentProvider = new VnpayPaymentProvider(new VnpayProperties(
+                "DEMO_TMN",
+                "secret-key",
+                "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html",
+                "http://localhost:3000/payment/vnpay/return",
+                "http://localhost:8080/api/webhooks/payments/vnpay",
+                "vn",
+                "other",
+                15
+        ));
+
+        registry = new PaymentProviderResolver(List.of(sepayPaymentProvider, vnpayPaymentProvider));
         useCase = new HandlePaymentWebhookUseCase(registry, orderRepository, paymentTransactionRepository, updateOrderStatusUseCase);
     }
 
@@ -177,6 +197,55 @@ class HandlePaymentWebhookUseCaseTest {
                 .hasMessageContaining("Invalid SePay API Key");
     }
 
+    @Test
+    void marksPendingOrderConfirmedWhenValidVnpayCallbackArrives() {
+        when(paymentTransactionRepository.existsByProviderAndProviderRef("vnpay", "456789"))
+                .thenReturn(false);
+        when(orderRepository.findById(123L)).thenReturn(Optional.of(order("pending")));
+
+        Map<String, Object> result = useCase.execute("vnpay", vnpayRawRequest("00", "00", "50000000", "123", "456789"));
+
+        assertThat(result.get("success")).isEqualTo(true);
+        verify(paymentTransactionRepository).save(any(VerifiedPaymentWebhook.class), eq("paid"));
+        verify(updateOrderStatusUseCase).execute(123L, "confirmed");
+    }
+
+    @Test
+    void rejectsVnpayCallbackWhenSecureHashIsInvalid() {
+        RawWebhookRequest rawRequest = vnpayRawRequest("00", "00", "50000000", "123", "456789");
+        rawRequest.queryParams().put("vnp_SecureHash", "invalid");
+
+        assertThatThrownBy(() -> useCase.execute("vnpay", rawRequest))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("Invalid VNPAY secure hash");
+    }
+
+    @Test
+    void recordsFailedVnpayCallbackWithoutMarkingOrderPaid() {
+        when(paymentTransactionRepository.existsByProviderAndProviderRef("vnpay", "456790"))
+                .thenReturn(false);
+        when(orderRepository.findById(123L)).thenReturn(Optional.of(order("pending")));
+
+        Map<String, Object> result = useCase.execute("vnpay", vnpayRawRequest("24", "24", "50000000", "123", "456790"));
+
+        assertThat(result.get("success")).isEqualTo(false);
+        verify(paymentTransactionRepository).save(any(VerifiedPaymentWebhook.class), eq("failed"));
+        verify(updateOrderStatusUseCase, never()).execute(anyLong(), anyString());
+    }
+
+    @Test
+    void ignoresDuplicateVnpayCallbackByProviderReference() {
+        when(paymentTransactionRepository.existsByProviderAndProviderRef("vnpay", "456791"))
+                .thenReturn(true);
+
+        Map<String, Object> result = useCase.execute("vnpay", vnpayRawRequest("00", "00", "50000000", "123", "456791"));
+
+        assertThat(result.get("success")).isEqualTo(true);
+        assertThat(result.get("message")).isEqualTo("Duplicate transaction ignored");
+        verify(paymentTransactionRepository, never()).save(any(), anyString());
+        verify(updateOrderStatusUseCase, never()).execute(anyLong(), anyString());
+    }
+
     private RawWebhookRequest rawRequest(
             String code,
             BigDecimal amount
@@ -233,5 +302,43 @@ class HandlePaymentWebhookUseCaseTest {
                 null,
                 null
         );
+    }
+
+    private RawWebhookRequest vnpayRawRequest(
+            String responseCode,
+            String transactionStatus,
+            String amount,
+            String txnRef,
+            String transactionNo
+    ) {
+        Map<String, String> queryParams = new LinkedHashMap<>();
+        queryParams.put("vnp_Amount", amount);
+        queryParams.put("vnp_BankCode", "NCB");
+        queryParams.put("vnp_OrderInfo", "Payment for order SO-" + txnRef);
+        queryParams.put("vnp_PayDate", "20260701153045");
+        queryParams.put("vnp_ResponseCode", responseCode);
+        queryParams.put("vnp_TmnCode", "DEMO_TMN");
+        queryParams.put("vnp_TransactionNo", transactionNo);
+        queryParams.put("vnp_TransactionStatus", transactionStatus);
+        queryParams.put("vnp_TxnRef", txnRef);
+
+        String hashData = queryParams.entrySet().stream()
+                .filter(entry -> entry.getValue() != null && !entry.getValue().isBlank())
+                .sorted(Map.Entry.comparingByKey())
+                .map(entry -> entry.getKey() + "=" + URLEncoder.encode(entry.getValue(), StandardCharsets.US_ASCII))
+                .collect(Collectors.joining("&"));
+
+        queryParams.put("vnp_SecureHash", hmacSha512("secret-key", hashData));
+        return new RawWebhookRequest(Map.of(), queryParams, "");
+    }
+
+    private String hmacSha512(String secret, String data) {
+        try {
+            Mac mac = Mac.getInstance("HmacSHA512");
+            mac.init(new SecretKeySpec(secret.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
+            return java.util.HexFormat.of().formatHex(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
+        } catch (Exception ex) {
+            throw new IllegalStateException(ex);
+        }
     }
 }

@@ -46,7 +46,7 @@ public class HandlePaymentWebhookUseCase {
                     && verified.amount() != null
                     && verified.amount().compareTo(order.finalAmount()) == 0;
 
-            String outcomeStatus = isPaid ? "paid" : "mismatch";
+            String outcomeStatus = resolveOutcomeStatus(provider.getProviderName(), verified.status(), isPaid);
 
             paymentTransactionRepository.save(verified, outcomeStatus);
 
@@ -66,6 +66,16 @@ public class HandlePaymentWebhookUseCase {
             }
             throw e;
         }
+    }
+
+    private String resolveOutcomeStatus(String providerName, String webhookStatus, boolean isPaid) {
+        if (isPaid) {
+            return "paid";
+        }
+        if ("vnpay".equalsIgnoreCase(providerName) && !"paid".equalsIgnoreCase(webhookStatus)) {
+            return "failed";
+        }
+        return "mismatch";
     }
 
 }

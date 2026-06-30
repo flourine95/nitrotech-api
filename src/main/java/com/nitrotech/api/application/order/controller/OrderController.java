@@ -102,13 +102,15 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/payment/initiate")
-@PreAuthorize("hasAuthority('ORDER_READ_OWN') or hasAuthority('ORDER_READ_ALL')")
-public ResponseEntity<ApiResult<PaymentInitResult>> initiatePayment(
-        @AuthenticationPrincipal UserPrincipal principal,
-        @PathVariable Long id
-) {
-    return ResponseEntity.ok(ApiResult.ok(initiateOrderPaymentUseCase.execute(id, principal.id())));
-}
+    @PreAuthorize("hasAuthority('ORDER_READ_OWN') or hasAuthority('ORDER_READ_ALL')")
+    public ResponseEntity<ApiResult<PaymentInitResult>> initiatePayment(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @PathVariable Long id
+    ) {
+        boolean canReadAll = principal.permissions().contains("ORDER_READ_ALL");
+        PaymentInitResult result = initiateOrderPaymentUseCase.execute(id, principal.id(), canReadAll);
+        return ResponseEntity.ok(ApiResult.ok(result));
+    }
 
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAuthority('ORDER_CANCEL_OWN')")

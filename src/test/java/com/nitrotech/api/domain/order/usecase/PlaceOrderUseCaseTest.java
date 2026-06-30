@@ -96,6 +96,15 @@ class PlaceOrderUseCaseTest {
     }
 
     @Test
+    void acceptsVnpayPaymentMethod() {
+        when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "Keyboard", "800000", 1)));
+
+        OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "vnpay", null, null));
+
+        assertThat(result.paymentMethod()).isEqualTo("vnpay");
+    }
+
+    @Test
     void rejectsUnsupportedPaymentMethod() {
         assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "momo", null, null)))
                 .isInstanceOf(DomainException.class)
