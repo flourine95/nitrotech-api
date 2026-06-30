@@ -110,12 +110,33 @@ Payment:
 - `SEPAY_ACCOUNT_NUMBER`: bank account number used for SePay QR codes
 - `SEPAY_BANK_NAME`: bank code or name used for SePay QR codes
 - `SEPAY_PAYMENT_CODE_PREFIX`: payment code prefix, defaults to `NT`
+- `VNPAY_TMN_CODE`: VNPAY sandbox or production merchant code
+- `VNPAY_HASH_SECRET`: VNPAY secure hash secret used to sign payment URLs and verify callbacks
+- `VNPAY_PAY_URL`: VNPAY payment URL, defaults to sandbox for local development
+- `VNPAY_RETURN_URL`: frontend return URL after VNPAY payment
+- `VNPAY_IPN_URL`: backend IPN/webhook URL for VNPAY payment notifications
 
 Optional:
 
 - `SERVER_PORT`: application port, defaults to `8080`
 - `GHTK_PICKUP_ADDRESS_ID`: GHTK pickup warehouse or address ID
 - `GHTK_PICKUP_WARD`: GHTK pickup ward
+
+
+## Local public URL with ngrok
+
+Some third-party services such as VNPAY, GHN, or other webhook providers need a public URL to call back to the local backend. For local development, you can expose the backend with ngrok.
+
+Install ngrok on Windows:
+## Local public URL with ngrok
+
+Some third-party services such as VNPAY, GHN, or other webhook providers need a public URL to call back to the local backend. For local development, you can expose the backend with ngrok.
+
+Install ngrok on Windows:
+
+```powershell
+winget install ngrok.ngrok
+```
 
 ## Shipping webhooks
 

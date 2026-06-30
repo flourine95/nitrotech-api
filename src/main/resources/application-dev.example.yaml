@@ -71,6 +71,16 @@ sepay:
   account-number: paste-sepay-account-number-here
   bank-name: paste-sepay-bank-name-here
 
+vnpay:
+  tmn-code: paste-vnpay-tmn-code-here
+  hash-secret: paste-vnpay-hash-secret-here
+  pay-url: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+  return-url: http://localhost:3000/payment/vnpay/return
+  ipn-url: http://localhost:8080/api/webhooks/payments/vnpay
+  locale: vn
+  order-type: other
+  expire-minutes: 15
+
 logging:
   level:
     com.nitrotech.api: DEBUG

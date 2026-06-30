@@ -9,6 +9,8 @@ import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderListItemData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
 import com.nitrotech.api.domain.order.usecase.*;
+import com.nitrotech.api.domain.payment.dto.PaymentInitResult;
+import com.nitrotech.api.domain.payment.usecase.InitiateOrderPaymentUseCase;
 import com.nitrotech.api.domain.shipping.dto.OrderShipmentData;
 import com.nitrotech.api.domain.shipping.usecase.GetOrderShipmentUseCase;
 import com.nitrotech.api.shared.response.ApiResult;
@@ -41,6 +43,7 @@ public class OrderController {
     private final CancelOrderUseCase cancelOrderUseCase;
     private final UpdateOrderStatusUseCase updateOrderStatusUseCase;
     private final GetOrderShipmentUseCase getOrderShipmentUseCase;
+    private final InitiateOrderPaymentUseCase initiateOrderPaymentUseCase;
 
     @GetMapping
     @PreAuthorize("hasAuthority('ORDER_READ_OWN')")
@@ -97,6 +100,15 @@ public class OrderController {
                 principal.id(), req.addressId(), shippingAddress, paymentMethod, req.promotionCode(), req.note()));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(order));
     }
+
+    @PostMapping("/{id}/payment/initiate")
+@PreAuthorize("hasAuthority('ORDER_READ_OWN') or hasAuthority('ORDER_READ_ALL')")
+public ResponseEntity<ApiResult<PaymentInitResult>> initiatePayment(
+        @AuthenticationPrincipal UserPrincipal principal,
+        @PathVariable Long id
+) {
+    return ResponseEntity.ok(ApiResult.ok(initiateOrderPaymentUseCase.execute(id, principal.id())));
+}
 
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAuthority('ORDER_CANCEL_OWN')")
