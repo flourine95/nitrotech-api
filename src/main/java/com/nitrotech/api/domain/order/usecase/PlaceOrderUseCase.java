@@ -13,6 +13,7 @@ import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuoteRequest;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
+import com.nitrotech.api.shared.exception.ShippingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -107,9 +108,22 @@ public class PlaceOrderUseCase {
             return shippingProviderResolver.getProvider(defaultShippingProvider)
                     .quoteFee(new ShippingFeeQuoteRequest(snapshot, items, totalAmount))
                     .fee();
+        } catch (ShippingException ex) {
+            if (isCarrierConfigOrAuthError(ex)) {
+                throw ex;
+            }
+            return flatShippingFee;
         } catch (RuntimeException ignored) {
             return flatShippingFee;
         }
+    }
+
+    private boolean isCarrierConfigOrAuthError(ShippingException ex) {
+        return List.of(
+                "GHTK_TOKEN_MISSING",
+                "GHTK_AUTH_INVALID",
+                "GHTK_PICKUP_CONFIG_MISSING"
+        ).contains(ex.getCode());
     }
 
     private boolean hasText(String value) {
