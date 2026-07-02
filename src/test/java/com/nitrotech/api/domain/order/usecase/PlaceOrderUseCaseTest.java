@@ -17,6 +17,7 @@ import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
+import com.nitrotech.api.shared.exception.ShippingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -147,6 +148,18 @@ class PlaceOrderUseCaseTest {
         OrderData result = useCase.execute(command(addressSnapshot()));
 
         assertThat(result.shippingFee()).isEqualByComparingTo("30000");
+    }
+
+    @Test
+    void rethrowsCarrierConfigErrorsWhenQuotingShippingFee() {
+        when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "Mouse", "300000", 1)));
+        when(shippingProvider.quoteFee(any())).thenThrow(
+                new ShippingException("GHTK_TOKEN_MISSING", "GHTK token is required when shipment simulation is disabled")
+        );
+
+        assertThatThrownBy(() -> useCase.quoteShippingFee(10L, addressSnapshot()))
+                .isInstanceOf(ShippingException.class)
+                .hasMessage("GHTK token is required when shipment simulation is disabled");
     }
 
     @Test
