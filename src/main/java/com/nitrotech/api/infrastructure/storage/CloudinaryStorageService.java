@@ -3,6 +3,7 @@ package com.nitrotech.api.infrastructure.storage;
 import com.cloudinary.Cloudinary;
 import com.cloudinary.api.ApiResponse;
 import com.nitrotech.api.shared.exception.StorageException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,16 +12,13 @@ import java.util.List;
 import java.util.Map;
 
 @Service
+@RequiredArgsConstructor
 public class CloudinaryStorageService {
 
     private final Cloudinary cloudinary;
 
     @Value("${cloudinary.cloud-name}")
     private String cloudName;
-
-    public CloudinaryStorageService(Cloudinary cloudinary) {
-        this.cloudinary = cloudinary;
-    }
 
     public SignatureResult generateSignature(String folder) {
         long timestamp = System.currentTimeMillis() / 1000;
