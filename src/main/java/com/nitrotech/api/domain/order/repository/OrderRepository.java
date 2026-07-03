@@ -18,6 +18,8 @@ public interface OrderRepository {
 
     Optional<OrderData> findById(Long id);
 
+    Optional<OrderData> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey);
+
     Page<OrderListItemData> findList(OrderFilter filter, Pageable pageable);
 
     long countFacetsTotal(OrderFilter filter);

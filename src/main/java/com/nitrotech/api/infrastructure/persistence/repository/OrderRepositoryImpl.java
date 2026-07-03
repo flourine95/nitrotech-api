@@ -43,6 +43,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         entity.setUserId(data.userId());
         entity.setShippingAddress(snapshotToMap(data.shippingAddress()));
         entity.setPaymentMethod(data.paymentMethod());
+        entity.setIdempotencyKey(data.idempotencyKey());
         entity.setPromotionCode(data.promotionCode());
         entity.setNote(data.note());
         entity.setTotalAmount(data.totalAmount());
@@ -81,6 +82,11 @@ public class OrderRepositoryImpl implements OrderRepository {
     @Override
     public Optional<OrderData> findById(Long id) {
         return orderJpa.findActiveById(id).map(this::toData);
+    }
+
+    @Override
+    public Optional<OrderData> findByUserIdAndIdempotencyKey(Long userId, String idempotencyKey) {
+        return orderJpa.findByUserIdAndIdempotencyKey(userId, idempotencyKey).map(this::toData);
     }
 
     @Override

@@ -89,12 +89,13 @@ public class OrderController {
     @PostMapping
     public ResponseEntity<ApiResult<OrderData>> place(
             @AuthenticationPrincipal UserPrincipal principal,
+            @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
             @Valid @RequestBody CreateOrderRequest req
     ) {
         String paymentMethod = req.paymentMethod() != null ? req.paymentMethod() : "cod";
         ShippingAddressSnapshot shippingAddress = req.shippingAddress() == null ? null : toSnapshot(req.shippingAddress());
         OrderData order = placeOrderUseCase.execute(new CreateOrderCommand(
-                principal.id(), req.addressId(), shippingAddress, paymentMethod, req.promotionCode(), req.note()));
+                principal.id(), req.addressId(), shippingAddress, paymentMethod, req.promotionCode(), req.note(), idempotencyKey));
         return ResponseEntity.status(HttpStatus.CREATED).body(ApiResult.created(order));
     }
 

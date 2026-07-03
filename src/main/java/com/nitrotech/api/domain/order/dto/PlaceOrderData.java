@@ -13,5 +13,6 @@ public record PlaceOrderData(
         BigDecimal discountAmount,
         BigDecimal shippingFee,
         BigDecimal finalAmount,
-        List<OrderItemData> items
+        List<OrderItemData> items,
+        String idempotencyKey
 ) {}
