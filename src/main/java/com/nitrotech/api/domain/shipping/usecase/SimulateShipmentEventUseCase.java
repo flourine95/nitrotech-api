@@ -163,8 +163,8 @@ public class SimulateShipmentEventUseCase {
 
     private String simulationNote(String note) {
         if (note == null || note.isBlank()) {
-            return "Simulated shipment event";
+            return "SHIPMENT_SIMULATED";
         }
-        return "Simulated shipment event - " + note.trim();
+        return note.trim();
     }
 }
