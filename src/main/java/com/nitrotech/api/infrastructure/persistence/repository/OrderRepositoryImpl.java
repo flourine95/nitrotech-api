@@ -206,7 +206,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (!now.isBefore(dueAt)) {
             return "critical";
         }
-        Instant base = OrderStatus.PENDING.value().equals(order.getStatus())
+        Instant base = OrderStatus.is(order.getStatus(), OrderStatus.PENDING)
                 ? order.getCreatedAt()
                 : (order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt());
         long totalSeconds = Math.max(1, Duration.between(base, dueAt).getSeconds());

@@ -37,6 +37,14 @@ public enum OrderStatus {
         };
     }
 
+    public boolean matches(String value) {
+        return this.value.equalsIgnoreCase(value == null ? "" : value.trim());
+    }
+
+    public static boolean is(String value, OrderStatus status) {
+        return status != null && status.matches(value);
+    }
+
     @JsonCreator
     public static OrderStatus fromValue(String value) {
         if (value == null || value.isBlank()) {

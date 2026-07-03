@@ -50,7 +50,7 @@ public class HandlePaymentWebhookUseCase {
 
             paymentTransactionRepository.save(verified, outcomeStatus);
 
-            if (isPaid && OrderStatus.PENDING.value().equals(order.status())) {
+            if (isPaid && OrderStatus.is(order.status(), OrderStatus.PENDING)) {
                 updateOrderStatusUseCase.execute(order.id(), OrderStatus.CONFIRMED.value());
             }
 
