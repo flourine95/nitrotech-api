@@ -46,10 +46,11 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
         """)
     List<Object[]> getReviewStatsBatch(@Param("productIds") List<Long> productIds);
 
-    // Query methods for ReviewRepositoryImpl
-
     @Query("SELECT r FROM ReviewEntity r WHERE r.id = :id AND r.deletedAt IS NULL")
     Optional<ReviewEntity> findActiveById(@Param("id") Long id);
+
+    @Query("SELECT r FROM ReviewEntity r WHERE r.id = :id AND r.userId = :userId AND r.deletedAt IS NULL")
+    Optional<ReviewEntity> findActiveByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     @Query("""
         SELECT r FROM ReviewEntity r 
@@ -65,6 +66,14 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     );
 
     @Query("""
+        SELECT r FROM ReviewEntity r
+        WHERE (:status IS NULL OR r.status = :status)
+          AND r.deletedAt IS NULL
+        ORDER BY r.createdAt DESC
+        """)
+    Page<ReviewEntity> findAllActive(@Param("status") String status, Pageable pageable);
+
+    @Query("""
         SELECT r FROM ReviewEntity r 
         WHERE r.status = 'pending' 
           AND r.deletedAt IS NULL
@@ -73,4 +82,31 @@ public interface ReviewJpaRepository extends JpaRepository<ReviewEntity, Long> {
     Page<ReviewEntity> findPending(Pageable pageable);
 
     boolean existsByUserIdAndProductIdAndOrderId(Long userId, Long productId, Long orderId);
+
+    @Query(value = """
+        SELECT EXISTS (
+            SELECT 1
+            FROM order_items oi
+            JOIN product_variants pv ON pv.id = oi.variant_id
+            WHERE oi.order_id = :orderId
+              AND pv.product_id = :productId
+        )
+        """, nativeQuery = true)
+    boolean orderContainsProduct(@Param("orderId") Long orderId, @Param("productId") Long productId);
+
+    @Query("""
+        SELECT
+            COALESCE(AVG(r.rating), 0.0),
+            COUNT(r.id),
+            SUM(CASE WHEN r.rating = 5 THEN 1 ELSE 0 END),
+            SUM(CASE WHEN r.rating = 4 THEN 1 ELSE 0 END),
+            SUM(CASE WHEN r.rating = 3 THEN 1 ELSE 0 END),
+            SUM(CASE WHEN r.rating = 2 THEN 1 ELSE 0 END),
+            SUM(CASE WHEN r.rating = 1 THEN 1 ELSE 0 END)
+        FROM ReviewEntity r
+        WHERE r.productId = :productId
+          AND r.status = 'approved'
+          AND r.deletedAt IS NULL
+        """)
+    Object[] getRatingDistribution(@Param("productId") Long productId);
 }
