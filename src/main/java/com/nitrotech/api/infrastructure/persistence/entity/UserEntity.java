@@ -16,7 +16,7 @@ public class UserEntity {
 
     public enum Status {inactive, active, banned, suspended}
 
-    public enum Provider {local, google, facebook}
+    public enum Provider {local, google, github, facebook}
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

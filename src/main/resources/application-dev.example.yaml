@@ -71,6 +71,16 @@ sepay:
   account-number: paste-sepay-account-number-here
   bank-name: paste-sepay-bank-name-here
 
+oauth:
+  google:
+    client-id: paste-google-client-id-here
+    client-secret: paste-google-client-secret-here
+    redirect-uri: http://localhost:8080/api/auth/oauth/google/callback
+  github:
+    client-id: paste-github-client-id-here
+    client-secret: paste-github-client-secret-here
+    redirect-uri: http://localhost:8080/api/auth/oauth/github/callback
+
 logging:
   level:
     com.nitrotech.api: DEBUG
