@@ -41,4 +41,6 @@ public interface AccessManagementRepository {
     boolean userHasPermissionOutsideRole(Long userId, Long roleId, String permissionSlug);
 
     Set<String> findPermissionSlugsByRoleSlugs(Set<String> roleSlugs);
+
+    List<String> findEmailsByRoleId(Long roleId);
 }

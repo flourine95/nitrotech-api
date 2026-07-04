@@ -1,6 +1,7 @@
 package com.nitrotech.api.domain.audit;
 
 public enum AuditAction {
+    ROLE_UPDATED,
     ROLE_PERMISSION_UPDATED,
     USER_ROLE_UPDATED,
     SHIPMENT_CREATED,
@@ -10,5 +11,8 @@ public enum AuditAction {
     ORDER_CANCELLED,
     PRODUCT_CREATED,
     PRODUCT_UPDATED,
-    PRODUCT_DELETED
+    PRODUCT_DELETED,
+    USER_STATUS_UPDATED,
+    USER_DELETED,
+    USER_RESTORED
 }

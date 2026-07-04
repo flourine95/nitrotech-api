@@ -296,4 +296,15 @@ public class AccessManagementRepositoryImpl implements AccessManagementRepositor
                 ORDER BY p.slug
                 """, String.class, userId));
     }
+
+    @Override
+    public List<String> findEmailsByRoleId(Long roleId) {
+        return jdbc.queryForList("""
+                SELECT u.email
+                FROM user_roles ur
+                JOIN users u ON u.id = ur.user_id
+                WHERE ur.role_id = ?
+                  AND u.deleted_at IS NULL
+                """, String.class, roleId);
+    }
 }

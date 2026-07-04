@@ -13,10 +13,13 @@ import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.ForbiddenException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.session.FindByIndexNameSessionRepository;
+import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -28,6 +31,7 @@ public class AccessManagementUseCase {
 
     private final AccessManagementRepository accessRepository;
     private final AuditLogService auditLogService;
+    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
 
     public List<PermissionData> listPermissions() {
         return accessRepository.findPermissions();
@@ -54,7 +58,19 @@ public class AccessManagementUseCase {
             throw new ForbiddenException("SYSTEM_ROLE_PROTECTED", "System roles cannot be edited");
         }
         accessRepository.updateRole(id, name, description, active);
-        return getRole(id);
+        if (active != null && active != current.active()) {
+            invalidateSessionsByRoleId(id);
+        }
+        RoleData updated = getRole(id);
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.ROLE_UPDATED,
+                AuditResourceType.ROLE,
+                id,
+                roleAuditData(current),
+                roleAuditData(updated),
+                Map.of("roleSlug", current.slug())
+        ));
+        return updated;
     }
 
     @Transactional
@@ -69,6 +85,9 @@ public class AccessManagementUseCase {
 
         accessRepository.replaceRolePermissions(roleId, permissionIds);
         RoleData updated = getRole(roleId);
+
+        invalidateSessionsByRoleId(roleId);
+
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.ROLE_PERMISSION_UPDATED,
                 AuditResourceType.ROLE,
@@ -88,6 +107,9 @@ public class AccessManagementUseCase {
 
         accessRepository.replaceUserRoles(userId, roleIds);
         UserAccessData updated = getUser(userId);
+
+        invalidateSessionsByEmail(user.email());
+
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.USER_ROLE_UPDATED,
                 AuditResourceType.USER,
@@ -165,5 +187,26 @@ public class AccessManagementUseCase {
     ) {
         return !newPermissionSlugs.contains(permissionSlug)
                 && !accessRepository.userHasPermissionOutsideRole(userId, changedRoleId, permissionSlug);
+    }
+
+    private Map<String, Object> roleAuditData(RoleData role) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("name", role.name());
+        data.put("description", role.description());
+        data.put("active", role.active());
+        return data;
+    }
+
+    private void invalidateSessionsByEmail(String email) {
+        try {
+            sessionRepository.findByPrincipalName(email)
+                    .values()
+                    .forEach(s -> sessionRepository.deleteById(s.getId()));
+        } catch (Exception ignored) {}
+    }
+
+    private void invalidateSessionsByRoleId(Long roleId) {
+        accessRepository.findEmailsByRoleId(roleId)
+                .forEach(this::invalidateSessionsByEmail);
     }
 }
