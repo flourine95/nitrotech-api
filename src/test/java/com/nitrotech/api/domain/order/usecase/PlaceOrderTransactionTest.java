@@ -5,6 +5,7 @@ import com.nitrotech.api.domain.cart.dto.CartItemData;
 import com.nitrotech.api.domain.cart.dto.CartSummaryData;
 import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.domain.inventory.repository.InventoryRepository;
+import com.nitrotech.api.domain.notification.service.NotificationPublisher;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.PlaceOrderData;
 import com.nitrotech.api.domain.order.repository.OrderRepository;
@@ -26,8 +27,9 @@ class PlaceOrderTransactionTest {
         InventoryRepository inventoryRepository = mock(InventoryRepository.class);
         CartRepository cartRepository = mock(CartRepository.class);
         PromotionRepository promotionRepository = mock(PromotionRepository.class);
+        NotificationPublisher notificationPublisher = mock(NotificationPublisher.class);
         PlaceOrderTransaction transaction = new PlaceOrderTransaction(
-                orderRepository, inventoryRepository, cartRepository, promotionRepository);
+                orderRepository, inventoryRepository, cartRepository, promotionRepository, notificationPublisher);
 
         PlaceOrderData data = new PlaceOrderData(
                 10L, null, "cod", null, null,
@@ -41,7 +43,9 @@ class PlaceOrderTransactionTest {
         );
         CartData cart = new CartData(1L, 10L, List.of(cartItem()), new CartSummaryData(0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
         when(orderRepository.place(data)).thenReturn(order("pending"));
+        when(inventoryRepository.getQuantity(101L)).thenReturn(10);
         when(inventoryRepository.deductIfEnough(101L, 2)).thenReturn(true);
+        when(inventoryRepository.findByVariantId(101L)).thenReturn(java.util.Optional.empty());
         when(orderRepository.updateStatus(777L, "confirmed")).thenReturn(order("confirmed"));
 
         OrderData result = transaction.execute(data, cart, null);
@@ -49,6 +53,7 @@ class PlaceOrderTransactionTest {
         assertThat(result.status()).isEqualTo("confirmed");
         verify(inventoryRepository).deductIfEnough(101L, 2);
         verify(cartRepository).clearCart(10L);
+        verify(notificationPublisher).publish(argThat(event -> "NEW_ORDER".equals(event.type())));
     }
 
     private CartItemData cartItem() {
