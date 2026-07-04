@@ -1,19 +1,17 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.category.usecase.ProductCategoryChecker;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class ProductCategoryCheckerImpl implements ProductCategoryChecker {
 
     private final ProductJpaRepository productJpa;
-
-    public ProductCategoryCheckerImpl(ProductJpaRepository productJpa) {
-        this.productJpa = productJpa;
-    }
 
     @Override
     public boolean hasProducts(Long categoryId) {

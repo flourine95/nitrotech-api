@@ -1,19 +1,17 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
 import com.nitrotech.api.domain.brand.usecase.ProductBrandChecker;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
 import java.util.Set;
 
 @Component
+@RequiredArgsConstructor
 public class ProductBrandCheckerImpl implements ProductBrandChecker {
 
     private final ProductJpaRepository productJpa;
-
-    public ProductBrandCheckerImpl(ProductJpaRepository productJpa) {
-        this.productJpa = productJpa;
-    }
 
     @Override
     public boolean hasProducts(Long brandId) {

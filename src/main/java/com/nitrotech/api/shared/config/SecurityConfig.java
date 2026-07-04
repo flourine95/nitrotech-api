@@ -3,6 +3,7 @@ package com.nitrotech.api.shared.config;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nitrotech.api.shared.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -20,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
 
     private static final String[] PUBLIC_ENDPOINTS = {
@@ -47,10 +49,6 @@ public class SecurityConfig {
 
     private final CorsConfigurationSource corsConfigurationSource;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    public SecurityConfig(CorsConfigurationSource corsConfigurationSource) {
-        this.corsConfigurationSource = corsConfigurationSource;
-    }
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) {
