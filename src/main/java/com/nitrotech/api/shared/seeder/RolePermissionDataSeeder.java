@@ -61,7 +61,8 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
                 new PermissionSeed("Manage Promotions", "PROMOTION_MANAGE", "promotion", "Manage promotions"),
                 new PermissionSeed("Manage Reviews", "REVIEW_MANAGE", "review", "Manage reviews"),
                 new PermissionSeed("Manage Banners", "BANNER_MANAGE", "banner", "Manage banners"),
-                new PermissionSeed("Manage Media", "MEDIA_MANAGE", "media", "Upload and browse media assets")
+                new PermissionSeed("Manage Media", "MEDIA_MANAGE", "media", "Upload and browse media assets"),
+                new PermissionSeed("Read Notifications", "NOTIFICATION_READ", "notification", "Read admin notifications")
         );
 
         jdbc.batchUpdate("""
@@ -100,7 +101,8 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
                     'CATEGORY_READ', 'BRAND_READ',
                     'ORDER_READ_ALL', 'ORDER_UPDATE_STATUS',
                     'INVENTORY_MANAGE', 'REVIEW_MANAGE',
-                    'PROMOTION_MANAGE', 'MEDIA_MANAGE'
+                    'PROMOTION_MANAGE', 'MEDIA_MANAGE',
+                    'NOTIFICATION_READ'
                 )
                 WHERE r.slug = 'staff'
                 ON CONFLICT DO NOTHING
