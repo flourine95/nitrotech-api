@@ -107,7 +107,7 @@ public class PlaceOrderUseCase {
     }
 
     private OrderItemData toOrderItem(CartItemData item) {
-        return new OrderItemData(null, item.variantId(), item.variant().name(), item.variant().sku(),
+        return new OrderItemData(null, item.variantId(), item.variant().productId(), item.variant().name(), item.variant().sku(),
                 item.quantity(), item.variant().price(), item.subtotal(), null,
                 item.variant().weightGrams(), item.variant().lengthCm(), item.variant().widthCm(), item.variant().heightCm());
     }

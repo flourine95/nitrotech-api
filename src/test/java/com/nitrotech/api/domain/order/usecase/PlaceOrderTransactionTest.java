@@ -33,7 +33,7 @@ class PlaceOrderTransactionTest {
                 10L, null, "cod", null, null,
                 new BigDecimal("300000"), BigDecimal.ZERO, new BigDecimal("20000"), new BigDecimal("320000"),
                 List.of(new com.nitrotech.api.domain.order.dto.OrderItemData(
-                        null, 101L, "Mouse", "SKU-101", 2,
+                        null, 101L, 201L, "Mouse", "SKU-101", 2,
                         new BigDecimal("150000"), new BigDecimal("300000"), null,
                         500, null, null, null
                 )),

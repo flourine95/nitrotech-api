@@ -95,7 +95,7 @@ class CancelOrderUseCaseTest {
                 new BigDecimal("500000"),
                 null,
                 null,
-                List.of(new OrderItemData(1L, 101L, "RTX 4060", "SKU-101", 2,
+                List.of(new OrderItemData(1L, 101L, 201L, "RTX 4060", "SKU-101", 2,
                         new BigDecimal("250000"), new BigDecimal("500000"), null,
                         1000, null, null, null)),
                 Instant.now(),
