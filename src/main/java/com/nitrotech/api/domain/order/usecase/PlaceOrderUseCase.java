@@ -8,11 +8,13 @@ import com.nitrotech.api.domain.cart.repository.CartRepository;
 import com.nitrotech.api.domain.order.dto.*;
 import com.nitrotech.api.domain.order.exception.CartEmptyException;
 import com.nitrotech.api.domain.order.exception.PaymentMethodUnsupportedException;
+import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.payment.PaymentMethod;
 import com.nitrotech.api.domain.promotion.dto.ApplyPromotionResult;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuoteRequest;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
+import com.nitrotech.api.shared.exception.BadRequestException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,12 +25,14 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PlaceOrderUseCase {
+    private static final int IDEMPOTENCY_KEY_MAX_LENGTH = 120;
 
     private final CartRepository cartRepository;
     private final AddressRepository addressRepository;
     private final ValidatePromotionUseCase validatePromotionUseCase;
     private final ShippingProviderResolver shippingProviderResolver;
     private final PlaceOrderTransaction placeOrderTransaction;
+    private final OrderRepository orderRepository;
 
     @Value("${app.shipping.free-threshold:500000}")
     private BigDecimal freeShippingThreshold;
@@ -40,6 +44,14 @@ public class PlaceOrderUseCase {
     private String defaultShippingProvider;
 
     public OrderData execute(CreateOrderCommand command) {
+        String idempotencyKey = normalizeIdempotencyKey(command.idempotencyKey());
+        if (idempotencyKey != null) {
+            var existing = orderRepository.findByUserIdAndIdempotencyKey(command.userId(), idempotencyKey);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
+
         PaymentMethod paymentMethod = PaymentMethod.fromValue(command.paymentMethod());
         if (paymentMethod == null || !List.of(PaymentMethod.COD, PaymentMethod.SEPAY).contains(paymentMethod)) {
             throw new PaymentMethodUnsupportedException(command.paymentMethod());
@@ -76,7 +88,8 @@ public class PlaceOrderUseCase {
         PlaceOrderData data = new PlaceOrderData(
                 command.userId(), snapshot, command.paymentMethod(),
                 command.promotionCode(), command.note(),
-                totalAmount, discountAmount, shippingFee, finalAmount, items
+                totalAmount, discountAmount, shippingFee, finalAmount, items,
+                idempotencyKey
         );
 
         return placeOrderTransaction.execute(data, cart, promotion);
@@ -114,5 +127,16 @@ public class PlaceOrderUseCase {
 
     private boolean hasText(String value) {
         return value != null && !value.isBlank();
+    }
+
+    private String normalizeIdempotencyKey(String value) {
+        if (!hasText(value)) {
+            return null;
+        }
+        String trimmed = value.trim();
+        if (trimmed.length() > IDEMPOTENCY_KEY_MAX_LENGTH) {
+            throw new BadRequestException("IDEMPOTENCY_KEY_TOO_LONG", "Idempotency-Key must not exceed 120 characters");
+        }
+        return trimmed;
     }
 }

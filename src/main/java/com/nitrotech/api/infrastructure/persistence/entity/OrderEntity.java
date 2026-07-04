@@ -32,6 +32,9 @@ public class OrderEntity {
     @Column(name = "order_code", nullable = false, unique = true)
     private String orderCode;
 
+    @Column(name = "idempotency_key")
+    private String idempotencyKey;
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", columnDefinition = "jsonb", nullable = false)
     private Map<String, Object> shippingAddress;

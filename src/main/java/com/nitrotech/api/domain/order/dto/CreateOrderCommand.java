@@ -6,5 +6,6 @@ public record CreateOrderCommand(
         ShippingAddressSnapshot shippingAddress,
         String paymentMethod,
         String promotionCode,
-        String note
+        String note,
+        String idempotencyKey
 ) {}

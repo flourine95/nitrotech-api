@@ -36,7 +36,8 @@ class PlaceOrderTransactionTest {
                         null, 101L, "Mouse", "SKU-101", 2,
                         new BigDecimal("150000"), new BigDecimal("300000"), null,
                         500, null, null, null
-                ))
+                )),
+                null
         );
         CartData cart = new CartData(1L, 10L, List.of(cartItem()), new CartSummaryData(0, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO));
         when(orderRepository.place(data)).thenReturn(order("pending"));

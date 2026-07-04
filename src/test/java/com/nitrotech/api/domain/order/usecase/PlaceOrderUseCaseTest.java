@@ -11,10 +11,12 @@ import com.nitrotech.api.domain.order.dto.CreateOrderCommand;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.PlaceOrderData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
+import com.nitrotech.api.domain.order.repository.OrderRepository;
 import com.nitrotech.api.domain.promotion.usecase.ValidatePromotionUseCase;
 import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuote;
 import com.nitrotech.api.domain.shipping.provider.ShippingProvider;
 import com.nitrotech.api.domain.shipping.provider.ShippingProviderResolver;
+import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.exception.DomainException;
 import com.nitrotech.api.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,6 +42,7 @@ class PlaceOrderUseCaseTest {
     private ShippingProviderResolver shippingProviderResolver;
     private ShippingProvider shippingProvider;
     private PlaceOrderTransaction placeOrderTransaction;
+    private OrderRepository orderRepository;
     private PlaceOrderUseCase useCase;
 
     @BeforeEach
@@ -50,11 +53,12 @@ class PlaceOrderUseCaseTest {
         shippingProviderResolver = mock(ShippingProviderResolver.class);
         shippingProvider = mock(ShippingProvider.class);
         placeOrderTransaction = mock(PlaceOrderTransaction.class);
+        orderRepository = mock(OrderRepository.class);
         when(shippingProviderResolver.getProvider("ghtk")).thenReturn(shippingProvider);
         when(shippingProvider.quoteFee(any())).thenReturn(new ShippingFeeQuote(new BigDecimal("20000"), BigDecimal.ZERO, true));
         when(placeOrderTransaction.execute(any(), any(), any())).thenAnswer(invocation -> order(invocation.getArgument(0)));
         useCase = new PlaceOrderUseCase(cartRepository, addressRepository, validatePromotionUseCase,
-                shippingProviderResolver, placeOrderTransaction);
+                shippingProviderResolver, placeOrderTransaction, orderRepository);
         ReflectionTestUtils.setField(useCase, "freeShippingThreshold", new BigDecimal("500000"));
         ReflectionTestUtils.setField(useCase, "flatShippingFee", new BigDecimal("30000"));
         ReflectionTestUtils.setField(useCase, "defaultShippingProvider", "ghtk");
@@ -88,7 +92,7 @@ class PlaceOrderUseCaseTest {
     void quotesShippingFeeWhenOrderIsBelowFreeThreshold() {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "Mouse", "300000", 1)));
 
-        OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null));
+        OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null, null));
 
         assertThat(result.shippingFee()).isEqualByComparingTo("20000");
         assertThat(result.finalAmount()).isEqualByComparingTo("320000");
@@ -97,7 +101,7 @@ class PlaceOrderUseCaseTest {
 
     @Test
     void rejectsUnsupportedPaymentMethod() {
-        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "momo", null, null)))
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "momo", null, null, null)))
                 .isInstanceOf(DomainException.class)
                 .hasMessage("Payment method is not supported yet: momo");
 
@@ -109,7 +113,7 @@ class PlaceOrderUseCaseTest {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "RTX 4060", "12000000", 1)));
         when(addressRepository.findByIdAndUserId(55L, 10L)).thenReturn(Optional.of(address()));
 
-        useCase.execute(new CreateOrderCommand(10L, 55L, null, "cod", null, "call first"));
+        useCase.execute(new CreateOrderCommand(10L, 55L, null, "cod", null, "call first", null));
 
         ArgumentCaptor<PlaceOrderData> captor = ArgumentCaptor.forClass(PlaceOrderData.class);
         verify(placeOrderTransaction).execute(captor.capture(), any(), any());
@@ -145,15 +149,43 @@ class PlaceOrderUseCaseTest {
         when(cartRepository.getOrCreateCart(10L)).thenReturn(cart(item(101L, "SKU-101", "RTX 4060", "12000000", 1)));
         when(addressRepository.findByIdAndUserId(55L, 10L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, 55L, null, "cod", null, null)))
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, 55L, null, "cod", null, null, null)))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Address with ID 55 not found");
 
         verify(placeOrderTransaction, never()).execute(any(), any(), any());
     }
 
+    @Test
+    void returnsExistingOrderForRepeatedIdempotencyKey() {
+        OrderData existing = order(new PlaceOrderData(
+                10L, addressSnapshot(), "cod", null, null,
+                new BigDecimal("300000"), BigDecimal.ZERO, BigDecimal.ZERO, new BigDecimal("300000"),
+                List.of(), "same-key"
+        ));
+        when(orderRepository.findByUserIdAndIdempotencyKey(10L, "same-key")).thenReturn(Optional.of(existing));
+
+        OrderData result = useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null, " same-key "));
+
+        assertThat(result).isSameAs(existing);
+        verify(cartRepository, never()).getOrCreateCart(anyLong());
+        verify(placeOrderTransaction, never()).execute(any(), any(), any());
+    }
+
+    @Test
+    void rejectsIdempotencyKeyLongerThanColumnLimit() {
+        String tooLongKey = "a".repeat(121);
+
+        assertThatThrownBy(() -> useCase.execute(new CreateOrderCommand(10L, null, addressSnapshot(), "cod", null, null, tooLongKey)))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessage("Idempotency-Key must not exceed 120 characters");
+
+        verify(cartRepository, never()).getOrCreateCart(anyLong());
+        verify(placeOrderTransaction, never()).execute(any(), any(), any());
+    }
+
     private CreateOrderCommand command(ShippingAddressSnapshot snapshot) {
-        return new CreateOrderCommand(10L, null, snapshot, "sepay", null, "deliver in office hours");
+        return new CreateOrderCommand(10L, null, snapshot, "sepay", null, "deliver in office hours", null);
     }
 
     private CartData cart(CartItemData... items) {
