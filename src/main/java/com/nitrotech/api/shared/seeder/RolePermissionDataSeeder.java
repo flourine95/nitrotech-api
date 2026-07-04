@@ -38,6 +38,9 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
 
         List<PermissionSeed> permissions = List.of(
                 new PermissionSeed("Read Users", "USER_READ", "user", "Read users"),
+                new PermissionSeed("Create User", "USER_CREATE", "user", "Create users"),
+                new PermissionSeed("Update User", "USER_UPDATE", "user", "Update users"),
+                new PermissionSeed("Delete User", "USER_DELETE", "user", "Delete users"),
                 new PermissionSeed("Manage User Roles", "USER_MANAGE_ROLE", "user", "Assign roles to users"),
                 new PermissionSeed("Read Roles", "ROLE_READ", "role", "Read roles and permissions"),
                 new PermissionSeed("Manage Roles", "ROLE_MANAGE", "role", "Create, update, delete roles and assign permissions"),
