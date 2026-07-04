@@ -34,6 +34,7 @@ public class OrderRepositoryImpl implements OrderRepository {
     private final UserJpaRepository userJpa;
     private final PaymentTransactionJpaRepository paymentJpa;
     private final ShipmentJpaRepository shipmentJpa;
+    private final ProductVariantJpaRepository variantJpa;
     private final EntityManager em;
 
     @Override
@@ -211,7 +212,7 @@ public class OrderRepositoryImpl implements OrderRepository {
         if (!now.isBefore(dueAt)) {
             return "critical";
         }
-        Instant base = OrderStatus.PENDING.value().equals(order.getStatus())
+        Instant base = OrderStatus.is(order.getStatus(), OrderStatus.PENDING)
                 ? order.getCreatedAt()
                 : (order.getUpdatedAt() == null ? order.getCreatedAt() : order.getUpdatedAt());
         long totalSeconds = Math.max(1, Duration.between(base, dueAt).getSeconds());
@@ -341,9 +342,16 @@ public class OrderRepositoryImpl implements OrderRepository {
     }
 
     private OrderData toData(OrderEntity e) {
-        List<OrderItemData> items = itemJpa.findByOrder_Id(e.getId()).stream()
+        List<OrderItemEntity> orderItems = itemJpa.findByOrder_Id(e.getId());
+        Map<Long, Long> productIds = variantJpa.findAllById(orderItems.stream()
+                        .map(OrderItemEntity::getVariantId)
+                        .distinct()
+                        .toList())
+                .stream()
+                .collect(Collectors.toMap(v -> v.getId(), v -> v.getProductId()));
+        List<OrderItemData> items = orderItems.stream()
                 .map(i -> new OrderItemData(
-                        i.getId(), i.getVariantId(), i.getName(),
+                        i.getId(), i.getVariantId(), productIds.get(i.getVariantId()), i.getName(),
                         i.getSku(), i.getQuantity(), i.getUnitPrice(), i.getSubtotal(),
                         null, // imageUrl: populated by variant→image join when needed
                         i.getWeightGrams(), i.getLengthCm(), i.getWidthCm(), i.getHeightCm()
