@@ -3,8 +3,6 @@ package com.nitrotech.api.infrastructure.shipping.ghtk;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderItemData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
-import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuote;
-import com.nitrotech.api.domain.shipping.dto.ShippingFeeQuoteRequest;
 import com.nitrotech.api.domain.shipping.dto.ShippingResult;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderRequest;
 import com.nitrotech.api.infrastructure.shipping.ghtk.dto.GhtkOrderResponse;
@@ -139,52 +137,16 @@ class GhtkShippingProviderTest {
                 .extracting("code").isEqualTo("GHTK_PICKUP_CONFIG_MISSING");
     }
 
-    @Test
-    void simulatesQuoteWhenShipmentSimulationIsEnabled() {
-        ReflectionTestUtils.setField(provider, "simulationEnabled", true);
-
-        ShippingFeeQuote quote = provider.quoteFee(new ShippingFeeQuoteRequest(
-                addressSnapshot(),
-                List.of(item()),
-                new BigDecimal("500000")
-        ));
-
-        assertThat(quote.fee()).isEqualByComparingTo("21000");
-        assertThat(quote.insuranceFee()).isEqualByComparingTo("0");
-        assertThat(quote.delivery()).isTrue();
-        verifyNoInteractions(ghtkClient);
-    }
-
-    @Test
-    void simulatesShipmentCreationWhenShipmentSimulationIsEnabled() {
-        ReflectionTestUtils.setField(provider, "simulationEnabled", true);
-
-        ShippingResult result = provider.createShipment(order("cod", new BigDecimal("530000")));
-
-        assertThat(result.getTrackingCode()).isEqualTo("GHTK-SIM-123");
-        assertThat(result.getFee()).isEqualByComparingTo("0");
-        assertThat(result.getEstimatedAt()).isNotNull();
-        verifyNoInteractions(ghtkClient);
-    }
-
     private OrderData order(String paymentMethod, BigDecimal finalAmount) {
-        return new OrderData(
-                123L, 10L, "SO-123", addressSnapshot(), "confirmed", paymentMethod, finalAmount,
-                BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item()),
-                Instant.now(), Instant.now(), null, null
-        );
-    }
-
-    private ShippingAddressSnapshot addressSnapshot() {
-        return new ShippingAddressSnapshot(
+        ShippingAddressSnapshot addr = new ShippingAddressSnapshot(
                 "Nguyen Van A", "0909123456", "HCM", "79", "Q1", "760", "Ben Nghe", "20412", "123 Street"
         );
-    }
-
-    private OrderItemData item() {
-        return new OrderItemData(
+        OrderItemData item = new OrderItemData(
                 1L, 10L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null,
                 1000, null, null, null
+        );
+        return new OrderData(
+                123L, 10L, "SO-123", addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now(), null, null
         );
     }
 }

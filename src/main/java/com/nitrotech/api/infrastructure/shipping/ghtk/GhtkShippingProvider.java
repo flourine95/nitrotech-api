@@ -17,7 +17,6 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
@@ -36,9 +35,6 @@ public class GhtkShippingProvider implements ShippingProvider {
     @Value("${app.shipping.default-weight-grams:1000}")
     private int defaultWeightGrams;
 
-    @Value("${app.shipping.simulation-enabled:false}")
-    private boolean simulationEnabled;
-
     @Override
     public String getProviderName() {
         return "ghtk";
@@ -46,16 +42,10 @@ public class GhtkShippingProvider implements ShippingProvider {
 
     @Override
     public ShippingResult createShipment(OrderData order) {
-        if (simulationEnabled) {
-            return simulateShipment(order);
-        }
-
         GhtkOrderRequest request = mapToGhtkRequest(order);
         GhtkOrderResponse response;
         try {
             response = ghtkClient.createOrder(request);
-        } catch (ShippingException e) {
-            throw e;
         } catch (Exception e) {
             throw new ShippingException("GHTK_API_ERROR", "Failed to call GHTK API: " + e.getMessage());
         }
@@ -79,10 +69,6 @@ public class GhtkShippingProvider implements ShippingProvider {
 
     @Override
     public ShippingFeeQuote quoteFee(ShippingFeeQuoteRequest request) {
-        if (simulationEnabled) {
-            return simulateQuote(request);
-        }
-
         var addr = request.shippingAddress();
         GhtkFeeResponse response;
         try {
@@ -98,8 +84,6 @@ public class GhtkShippingProvider implements ShippingProvider {
                     totalWeightGrams(request.items()),
                     request.orderValue()
             );
-        } catch (ShippingException e) {
-            throw e;
         } catch (Exception e) {
             throw new ShippingException("GHTK_FEE_API_ERROR", "Failed to call GHTK fee API: " + e.getMessage());
         }
@@ -114,25 +98,6 @@ public class GhtkShippingProvider implements ShippingProvider {
                 response.getFee().getInsuranceFee(),
                 Boolean.TRUE.equals(response.getFee().getDelivery())
         );
-    }
-
-    private ShippingResult simulateShipment(OrderData order) {
-        return ShippingResult.builder()
-                .trackingCode("GHTK-SIM-" + order.id())
-                .fee(order.shippingFee())
-                .estimatedAt(Instant.now().plus(Duration.ofDays(3)))
-                .build();
-    }
-
-    private ShippingFeeQuote simulateQuote(ShippingFeeQuoteRequest request) {
-        int weightGrams = totalWeightGrams(request.items());
-        BigDecimal fee = BigDecimal.valueOf(18_000L)
-                .add(BigDecimal.valueOf(Math.max(weightGrams - 1, 0L) / 500L).multiply(BigDecimal.valueOf(3_000L)))
-                .add(request.orderValue()
-                        .divide(BigDecimal.valueOf(1_000_000L), 0, RoundingMode.DOWN)
-                        .multiply(BigDecimal.valueOf(2_000L)));
-
-        return new ShippingFeeQuote(fee, BigDecimal.ZERO, true);
     }
 
     private GhtkOrderRequest mapToGhtkRequest(OrderData order) {

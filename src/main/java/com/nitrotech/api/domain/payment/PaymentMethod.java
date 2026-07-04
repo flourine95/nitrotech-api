@@ -7,7 +7,6 @@ import java.util.Arrays;
 
 public enum PaymentMethod {
     COD("cod"),
-    VNPAY("vnpay"),
     SEPAY("sepay");
 
     private final String value;

@@ -19,19 +19,6 @@ public class PaymentWebhookController {
 
     private final HandlePaymentWebhookUseCase handlePaymentWebhookUseCase;
 
-    @GetMapping("/api/webhooks/payments/{provider}")
-    public ResponseEntity<?> receiveGet(
-            @PathVariable String provider,
-            @RequestParam Map<String, String> queryParams,
-            @RequestHeader Map<String, String> headers
-    ) {
-        log.info("Incoming payment webhook for provider: {}", provider);
-
-        RawWebhookRequest rawRequest = new RawWebhookRequest(headers, queryParams, "");
-        Map<String, Object> result = handlePaymentWebhookUseCase.execute(provider, rawRequest);
-        return ResponseEntity.ok(result);
-    }
-
     @PostMapping({"/api/webhooks/payments/{provider}", "/api/webhooks/sepay"})
     public ResponseEntity<?> receive(
             @PathVariable(required = false) String provider,
