@@ -2,22 +2,25 @@ package com.nitrotech.api.application.auth.controller;
 
 import com.nitrotech.api.application.auth.request.*;
 import com.nitrotech.api.domain.auth.dto.*;
+import com.nitrotech.api.domain.auth.provider.OAuthProviderResolver;
 import com.nitrotech.api.domain.auth.usecase.*;
+import com.nitrotech.api.shared.exception.DomainException;
+import com.nitrotech.api.shared.exception.BadRequestException;
 import com.nitrotech.api.shared.response.ApiResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -34,6 +37,11 @@ public class AuthController {
     private final ResetPasswordUseCase resetPasswordUseCase;
     private final VerifyEmailUseCase verifyEmailUseCase;
     private final ResendVerificationUseCase resendVerificationUseCase;
+    private final OAuthProviderResolver oauthProviderResolver;
+    private final OAuthCallbackUseCase oauthCallbackUseCase;
+    private final CreateAuthSessionUseCase createAuthSessionUseCase;
+    @Value("${app.frontend-url:http://localhost:3000}")
+    private String frontendUrl;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResult<AuthResult>> register(
@@ -50,25 +58,59 @@ public class AuthController {
             HttpServletRequest httpRequest
     ) {
         AuthResult result = loginUseCase.execute(new LoginCommand(request.email(), request.password()));
-
-        UserPrincipal principal = new UserPrincipal(
-                result.user().id(),
-                result.user().email(),
-                result.user().name(),
-                result.user().roles(),
-                result.user().permissions()
-        );
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
-                principal, null, principal.getAuthorities());
-        SecurityContext context = SecurityContextHolder.createEmptyContext();
-        context.setAuthentication(authentication);
-        SecurityContextHolder.setContext(context);
-
-        HttpSession session = httpRequest.getSession(true);
-        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY, context);
-        session.setAttribute(FindByIndexNameSessionRepository.PRINCIPAL_NAME_INDEX_NAME, result.user().email());
-
+        createAuthSessionUseCase.execute(result, httpRequest);
         return ResponseEntity.ok(ApiResult.ok(result));
+    }
+
+    @GetMapping("/oauth/{provider}/authorize")
+    public ResponseEntity<ApiResult<Map<String, String>>> authorizeOAuth(@PathVariable String provider) {
+        String authorizationUrl = oauthProviderResolver.getProvider(provider).buildAuthorizationUrl();
+        return ResponseEntity.ok(ApiResult.ok(Map.of("authorizationUrl", authorizationUrl)));
+    }
+
+    @GetMapping("/oauth/{provider}/callback")
+    public ResponseEntity<Void> oauthCallback(
+            @PathVariable String provider,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String error,
+            @RequestParam(name = "error_description", required = false) String errorDescription,
+            HttpServletRequest httpRequest
+    ) {
+        try {
+            if (error != null && !error.isBlank()) {
+                throw new BadRequestException(
+                        "OAUTH_AUTHORIZATION_FAILED",
+                        errorDescription != null && !errorDescription.isBlank() ? errorDescription : error
+                );
+            }
+
+            AuthResult result = oauthCallbackUseCase.execute(provider, code);
+            createAuthSessionUseCase.execute(result, httpRequest);
+            return redirect(buildSuccessRedirectUri());
+        } catch (DomainException ex) {
+            return redirect(buildFailureRedirectUri(ex.getCode()));
+        } catch (RuntimeException ex) {
+            return redirect(buildFailureRedirectUri("OAUTH_CALLBACK_FAILED"));
+        }
+    }
+
+    private ResponseEntity<Void> redirect(URI location) {
+        return ResponseEntity.status(HttpStatus.FOUND)
+                .header(HttpHeaders.LOCATION, location.toString())
+                .build();
+    }
+
+    private URI buildSuccessRedirectUri() {
+        return UriComponentsBuilder.fromUriString(frontendUrl).build(true).toUri();
+    }
+
+    private URI buildFailureRedirectUri(String errorCode) {
+        return UriComponentsBuilder.fromUriString(frontendUrl)
+                .replacePath("/login")
+                .replaceQuery(null)
+                .queryParam("oauth_error", errorCode)
+                .build(true)
+                .toUri();
     }
 
     @PostMapping("/logout")

@@ -64,6 +64,7 @@ ghtk:
   api-url: ${GHTK_API_URL:https://services.giaohangtietkiem.vn}
   token: ${GHTK_TOKEN:}
   client-source: ${GHTK_CLIENT_SOURCE:}
+  real-shipment-enabled: ${GHTK_REAL_SHIPMENT_ENABLED:false}
   webhook-hash: ${GHTK_WEBHOOK_HASH:}
   pickup:
     name: ${GHTK_PICKUP_NAME:}
@@ -97,6 +98,17 @@ sepay:
   webhook-api-key: ${SEPAY_WEBHOOK_API_KEY:}
   account-number: ${SEPAY_ACCOUNT_NUMBER:123456789}
   bank-name: ${SEPAY_BANK_NAME:MBBank}
+
+# OAuth
+oauth:
+  google:
+    client-id: ${GOOGLE_OAUTH_CLIENT_ID:}
+    client-secret: ${GOOGLE_OAUTH_CLIENT_SECRET:}
+    redirect-uri: ${GOOGLE_OAUTH_REDIRECT_URI:}
+  github:
+    client-id: ${GITHUB_OAUTH_CLIENT_ID:}
+    client-secret: ${GITHUB_OAUTH_CLIENT_SECRET:}
+    redirect-uri: ${GITHUB_OAUTH_REDIRECT_URI:}
 
 # Swagger / OpenAPI
 springdoc:

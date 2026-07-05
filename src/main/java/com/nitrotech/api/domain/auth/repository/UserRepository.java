@@ -19,15 +19,24 @@ public interface UserRepository {
 
     Optional<UserProfileData> findByEmail(String email);
 
+    Optional<UserAuthAccount> findAuthAccountById(Long id);
+
+    Optional<UserAuthAccount> findAuthAccountByEmail(String email);
+
     UserProfileData updateProfile(Long id, String name, String phone, String avatar);
 
     void updatePassword(Long id, String hashedPassword);
 
     void activateUser(Long id);
 
+    UserAuthAccount saveOAuthUser(String name, String email, String avatar, String provider, String providerId);
+
     record UserCredential(Long id, String name, String email, String hashedPassword, String status) {
     }
 
     record UserAuthorities(Set<String> roles, Set<String> permissions) {
+    }
+
+    record UserAuthAccount(Long id, String name, String email, String status) {
     }
 }

@@ -88,6 +88,16 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     @Override
+    public Optional<UserAuthAccount> findAuthAccountById(Long id) {
+        return jpa.findById(id).map(this::toAuthAccount);
+    }
+
+    @Override
+    public Optional<UserAuthAccount> findAuthAccountByEmail(String email) {
+        return jpa.findByEmail(email).map(this::toAuthAccount);
+    }
+
+    @Override
     public UserProfileData updateProfile(Long id, String name, String phone, String avatar) {
         UserEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new UserNotFoundException());
@@ -113,12 +123,44 @@ public class UserRepositoryImpl implements UserRepository {
         jpa.save(entity);
     }
 
+    @Override
+    public UserAuthAccount saveOAuthUser(String name, String email, String avatar, String provider, String providerId) {
+        UserEntity entity = new UserEntity();
+        entity.setName(name);
+        entity.setEmail(email);
+        entity.setAvatar(avatar);
+        entity.setStatus(UserEntity.Status.active);
+        entity.setProvider(resolveProvider(provider));
+        entity.setProviderId(providerId);
+        UserEntity saved = jpa.save(entity);
+        assignRole(saved.getId(), "customer");
+        return toAuthAccount(saved);
+    }
+
     private UserProfileData toProfileData(UserEntity e) {
         return new UserProfileData(
                 e.getId(), e.getName(), e.getEmail(),
                 e.getPhone(), e.getAvatar(),
                 e.getStatus().name(), e.getProvider().name()
         );
+    }
+
+    private UserAuthAccount toAuthAccount(UserEntity entity) {
+        return new UserAuthAccount(
+                entity.getId(),
+                entity.getName(),
+                entity.getEmail(),
+                entity.getStatus().name()
+        );
+    }
+
+    private UserEntity.Provider resolveProvider(String provider) {
+        return switch (provider == null ? "" : provider.toLowerCase()) {
+            case "google" -> UserEntity.Provider.google;
+            case "github" -> UserEntity.Provider.github;
+            case "facebook" -> UserEntity.Provider.facebook;
+            default -> UserEntity.Provider.local;
+        };
     }
 
     private void assignRole(Long userId, String roleSlug) {
