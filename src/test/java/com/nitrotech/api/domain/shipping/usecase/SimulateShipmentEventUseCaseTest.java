@@ -95,7 +95,7 @@ class SimulateShipmentEventUseCaseTest {
                 "delivering",
                 ShipmentLogSource.SIMULATION,
                 "Demo Hub",
-                "Simulated shipment event - Demo order is out for delivery"
+                "Demo order is out for delivery"
         );
         verifyNoInteractions(shipmentOrderStatusSyncService);
         verify(auditLogService).record(any(AuditLogCommand.class));
