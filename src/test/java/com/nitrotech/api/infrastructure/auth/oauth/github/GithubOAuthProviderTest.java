@@ -34,17 +34,18 @@ class GithubOAuthProviderTest {
                 "github-client-id",
                 "github-client-secret",
                 "http://localhost:8080/api/auth/oauth/github/callback"
-        ));
+        ), false);
     }
 
     @Test
     void buildsAuthorizationUrlWithExpectedQueryParams() {
-        String url = provider.buildAuthorizationUrl();
+        String url = provider.buildAuthorizationUrl("state-123");
         var params = UriComponentsBuilder.fromUriString(url).build().getQueryParams();
 
         assertThat(params.getFirst("client_id")).isEqualTo("github-client-id");
         assertThat(params.getFirst("redirect_uri")).isEqualTo("http://localhost:8080/api/auth/oauth/github/callback");
         assertThat(params.getFirst("scope")).isEqualTo("read:user user:email");
+        assertThat(params.getFirst("state")).isEqualTo("state-123");
     }
 
     @Test

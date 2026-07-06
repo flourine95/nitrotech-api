@@ -8,6 +8,7 @@ import com.nitrotech.api.domain.auth.provider.OAuthProvider;
 import com.nitrotech.api.domain.auth.provider.OAuthProviderResolver;
 import com.nitrotech.api.domain.auth.repository.OAuthAccountRepository;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.shared.exception.BadRequestException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -24,6 +25,7 @@ class OAuthCallbackUseCaseTest {
     private OAuthProviderResolver resolver;
     private OAuthAccountRepository oauthAccountRepository;
     private UserRepository userRepository;
+    private AuditLogService auditLogService;
     private OAuthProvider provider;
     private OAuthCallbackUseCase useCase;
 
@@ -32,6 +34,7 @@ class OAuthCallbackUseCaseTest {
         resolver = mock(OAuthProviderResolver.class);
         oauthAccountRepository = mock(OAuthAccountRepository.class);
         userRepository = mock(UserRepository.class);
+        auditLogService = mock(AuditLogService.class);
         provider = mock(OAuthProvider.class);
 
         when(provider.getProviderName()).thenReturn("google");
@@ -47,7 +50,7 @@ class OAuthCallbackUseCaseTest {
                         true
                 ));
 
-        useCase = new OAuthCallbackUseCase(resolver, oauthAccountRepository, userRepository);
+        useCase = new OAuthCallbackUseCase(resolver, oauthAccountRepository, userRepository, auditLogService);
     }
 
     @Test
@@ -126,5 +129,19 @@ class OAuthCallbackUseCaseTest {
 
         assertThatThrownBy(() -> useCase.execute("google", "auth-code"))
                 .isInstanceOf(AccountNotActiveException.class);
+        verify(oauthAccountRepository, never()).saveOrUpdate(anyLong(), anyString(), any());
+    }
+
+    @Test
+    void rejectsBannedExistingEmailBeforeLinkingOAuthAccount() {
+        when(oauthAccountRepository.findByProviderAndExternalId("google", "google-user-1"))
+                .thenReturn(Optional.empty());
+        when(userRepository.findAuthAccountByEmail("google@example.com"))
+                .thenReturn(Optional.of(new UserRepository.UserAuthAccount(23L, "Blocked User", "google@example.com", "banned")));
+
+        assertThatThrownBy(() -> useCase.execute("google", "auth-code"))
+                .isInstanceOf(AccountNotActiveException.class);
+        verify(oauthAccountRepository, never()).saveOrUpdate(anyLong(), anyString(), any());
+        verifyNoInteractions(auditLogService);
     }
 }

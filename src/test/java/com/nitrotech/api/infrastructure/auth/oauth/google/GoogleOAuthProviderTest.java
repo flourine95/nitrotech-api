@@ -33,18 +33,19 @@ class GoogleOAuthProviderTest {
                 "google-client-id",
                 "google-client-secret",
                 "http://localhost:8080/api/auth/oauth/google/callback"
-        ));
+        ), false);
     }
 
     @Test
     void buildsAuthorizationUrlWithExpectedQueryParams() {
-        String url = provider.buildAuthorizationUrl();
+        String url = provider.buildAuthorizationUrl("state-123");
         var params = UriComponentsBuilder.fromUriString(url).build().getQueryParams();
 
         assertThat(params.getFirst("client_id")).isEqualTo("google-client-id");
         assertThat(params.getFirst("redirect_uri")).isEqualTo("http://localhost:8080/api/auth/oauth/google/callback");
         assertThat(params.getFirst("response_type")).isEqualTo("code");
         assertThat(params.getFirst("scope")).isEqualTo("openid email profile");
+        assertThat(params.getFirst("state")).isEqualTo("state-123");
     }
 
     @Test
