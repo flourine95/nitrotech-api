@@ -6,7 +6,7 @@ import com.nitrotech.api.domain.auth.dto.OAuthUserInfo;
 public interface OAuthProvider {
     String getProviderName();
 
-    String buildAuthorizationUrl();
+    String buildAuthorizationUrl(String state);
 
     OAuthTokenResponse exchangeAuthorizationCode(String code);
 

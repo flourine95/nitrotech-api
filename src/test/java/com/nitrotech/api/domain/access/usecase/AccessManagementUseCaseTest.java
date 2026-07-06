@@ -5,12 +5,10 @@ import com.nitrotech.api.domain.access.dto.UserAccessData;
 import com.nitrotech.api.domain.access.repository.AccessManagementRepository;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
 
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -24,22 +22,21 @@ class AccessManagementUseCaseTest {
 
     private AccessManagementRepository accessRepository;
     private AuditLogService auditLogService;
-    private FindByIndexNameSessionRepository<Session> sessionRepository;
+    private AuthSessionInvalidator authSessionInvalidator;
     private AccessManagementUseCase useCase;
 
     @BeforeEach
     void setUp() {
         accessRepository = mock(AccessManagementRepository.class);
         auditLogService = mock(AuditLogService.class);
-        sessionRepository = mock();
-        useCase = new AccessManagementUseCase(accessRepository, auditLogService, sessionRepository);
+        authSessionInvalidator = mock();
+        useCase = new AccessManagementUseCase(accessRepository, auditLogService, authSessionInvalidator);
     }
 
     @Test
     void updatingUserRolesInvalidatesThatUsersSessions() {
         UserAccessData before = user("user@example.com", Set.of("customer"));
         UserAccessData after = user("user@example.com", Set.of("staff"));
-        Session session = session("s1");
 
         when(accessRepository.findUserById(2L)).thenReturn(Optional.of(before), Optional.of(after));
         when(accessRepository.findRoleIdsBySlugs(Set.of("staff"))).thenReturn(Set.of(10L));
@@ -47,12 +44,11 @@ class AccessManagementUseCaseTest {
                 .thenReturn(Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE"));
         when(accessRepository.countUsersWithPermissionExceptUser(2L, "ROLE_MANAGE")).thenReturn(1);
         when(accessRepository.countUsersWithPermissionExceptUser(2L, "USER_MANAGE_ROLE")).thenReturn(1);
-        when(sessionRepository.findByPrincipalName("user@example.com")).thenReturn(Map.of("s1", session));
 
         useCase.updateUserRoles(1L, 2L, Set.of("staff"));
 
         verify(accessRepository).replaceUserRoles(2L, Set.of(10L));
-        verify(sessionRepository).deleteById("s1");
+        verify(authSessionInvalidator).invalidateByEmail("user@example.com");
         verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
@@ -60,19 +56,17 @@ class AccessManagementUseCaseTest {
     void updatingRolePermissionsInvalidatesSessionsForUsersWithThatRole() {
         RoleData before = role(Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE"));
         RoleData after = role(Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE", "ORDER_READ"));
-        Session session = session("s2");
 
         when(accessRepository.findRoleById(10L)).thenReturn(Optional.of(before), Optional.of(after));
         when(accessRepository.findPermissionIdsBySlugs(Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE", "ORDER_READ")))
                 .thenReturn(Set.of(1L, 2L, 3L));
         when(accessRepository.findUserIdsByRoleId(10L)).thenReturn(Set.of(2L));
         when(accessRepository.findEmailsByRoleId(10L)).thenReturn(java.util.List.of("user@example.com"));
-        when(sessionRepository.findByPrincipalName("user@example.com")).thenReturn(Map.of("s2", session));
 
         useCase.updateRolePermissions(1L, 10L, Set.of("ROLE_MANAGE", "USER_MANAGE_ROLE", "ORDER_READ"));
 
         verify(accessRepository).replaceRolePermissions(10L, Set.of(1L, 2L, 3L));
-        verify(sessionRepository).deleteById("s2");
+        verify(authSessionInvalidator).invalidateByEmails(java.util.List.of("user@example.com"));
         verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
@@ -80,16 +74,14 @@ class AccessManagementUseCaseTest {
     void changingRoleActiveStateInvalidatesSessionsForUsersWithThatRole() {
         RoleData before = role(Set.of("ROLE_MANAGE"));
         RoleData after = new RoleData(10L, "Staff", "staff", null, false, false, Set.of("ROLE_MANAGE"));
-        Session session = session("s3");
 
         when(accessRepository.findRoleById(10L)).thenReturn(Optional.of(before), Optional.of(after));
         when(accessRepository.findEmailsByRoleId(10L)).thenReturn(java.util.List.of("user@example.com"));
-        when(sessionRepository.findByPrincipalName("user@example.com")).thenReturn(Map.of("s3", session));
 
         useCase.updateRole(10L, "Staff", null, false);
 
         verify(accessRepository).updateRole(10L, "Staff", null, false);
-        verify(sessionRepository).deleteById("s3");
+        verify(authSessionInvalidator).invalidateByEmails(java.util.List.of("user@example.com"));
         verify(auditLogService).record(any(AuditLogCommand.class));
     }
 
@@ -115,11 +107,5 @@ class AccessManagementUseCaseTest {
 
     private static RoleData role(Set<String> permissions) {
         return new RoleData(10L, "Staff", "staff", null, true, false, permissions);
-    }
-
-    private static Session session(String id) {
-        Session session = mock(Session.class);
-        when(session.getId()).thenReturn(id);
-        return session;
     }
 }

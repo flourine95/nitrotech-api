@@ -1,14 +1,14 @@
 package com.nitrotech.api.domain.user.usecase;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
 import com.nitrotech.api.domain.user.dto.BulkResult;
 import com.nitrotech.api.domain.user.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +23,7 @@ public class BulkUpdateUserStatusUseCase {
 
     private final AdminUserRepository adminUserRepository;
     private final AuditLogService auditLogService;
-    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
+    private final AuthSessionInvalidator authSessionInvalidator;
 
     @Transactional
     public BulkResult execute(List<Long> ids, String status, Long currentUserId) {
@@ -45,17 +45,11 @@ public class BulkUpdateUserStatusUseCase {
         Map<Long, String> beforeStatuses = adminUserRepository.findStatusesByIds(validIds);
         List<Long> updated = validIds.isEmpty() ? List.of() : adminUserRepository.bulkUpdateStatus(validIds, status);
         Set<Long> updatedSet = Set.copyOf(updated);
+        UserStatus requestedStatus = UserStatus.fromValue(status);
 
         if (!updated.isEmpty()) {
-            if (!"active".equals(status)) {
-                List<String> emails = adminUserRepository.findEmailsByIds(updated);
-                emails.forEach(email -> {
-                    try {
-                        sessionRepository.findByPrincipalName(email)
-                                .values()
-                                .forEach(s -> sessionRepository.deleteById(s.getId()));
-                    } catch (Exception ignored) {}
-                });
+            if (requestedStatus != UserStatus.active) {
+                authSessionInvalidator.invalidateByEmails(adminUserRepository.findEmailsByIds(updated));
             }
 
             auditLogService.record(AuditLogCommand.success(

@@ -5,7 +5,9 @@ import com.nitrotech.api.domain.auth.dto.OAuthTokenResponse;
 import com.nitrotech.api.domain.auth.dto.OAuthUserInfo;
 import com.nitrotech.api.domain.auth.provider.OAuthProvider;
 import com.nitrotech.api.shared.exception.BadRequestException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -14,6 +16,8 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Duration;
+
 @Component
 @EnableConfigurationProperties(GoogleOAuthProperties.class)
 public class GoogleOAuthProvider implements OAuthProvider {
@@ -21,8 +25,16 @@ public class GoogleOAuthProvider implements OAuthProvider {
     private final RestClient restClient;
     private final GoogleOAuthProperties properties;
 
+    @Autowired
     public GoogleOAuthProvider(RestClient.Builder builder, GoogleOAuthProperties properties) {
-        this.restClient = builder.baseUrl("https://oauth2.googleapis.com").build();
+        this(builder, properties, true);
+    }
+
+    GoogleOAuthProvider(RestClient.Builder builder, GoogleOAuthProperties properties, boolean applyTimeouts) {
+        RestClient.Builder clientBuilder = applyTimeouts ? builder.requestFactory(requestFactory()) : builder;
+        this.restClient = clientBuilder
+                .baseUrl("https://oauth2.googleapis.com")
+                .build();
         this.properties = properties;
     }
 
@@ -32,7 +44,7 @@ public class GoogleOAuthProvider implements OAuthProvider {
     }
 
     @Override
-    public String buildAuthorizationUrl() {
+    public String buildAuthorizationUrl(String state) {
         validateConfigured();
         return UriComponentsBuilder.fromUriString("https://accounts.google.com/o/oauth2/v2/auth")
                 .queryParam("client_id", properties.clientId())
@@ -40,8 +52,17 @@ public class GoogleOAuthProvider implements OAuthProvider {
                 .queryParam("response_type", "code")
                 .queryParam("scope", "openid email profile")
                 .queryParam("access_type", "offline")
+                .queryParam("prompt", "select_account")
+                .queryParam("state", state)
                 .build()
                 .toUriString();
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
+        return factory;
     }
 
     @Override

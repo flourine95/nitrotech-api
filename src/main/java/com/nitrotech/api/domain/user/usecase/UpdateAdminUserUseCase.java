@@ -1,13 +1,14 @@
 package com.nitrotech.api.domain.user.usecase;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.auth.exception.EmailAlreadyExistsException;
 import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
+import com.nitrotech.api.domain.auth.repository.UserRepository;
+import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
 import com.nitrotech.api.domain.user.dto.AdminUserData;
+import com.nitrotech.api.domain.user.exception.SelfStatusChangeException;
 import com.nitrotech.api.domain.user.repository.AdminUserRepository;
-import com.nitrotech.api.infrastructure.persistence.repository.UserJpaRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,22 +17,22 @@ import org.springframework.transaction.annotation.Transactional;
 public class UpdateAdminUserUseCase {
 
     private final AdminUserRepository adminUserRepository;
-    private final UserJpaRepository userJpaRepository;
-    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
+    private final UserRepository userRepository;
+    private final AuthSessionInvalidator authSessionInvalidator;
 
     @Transactional
     public AdminUserData execute(Long id, String name, String email, String phone, String status, Long currentUserId) {
         AdminUserData current = adminUserRepository.findById(id)
                 .orElseThrow(UserNotFoundException::new);
-        if (currentUserId.equals(id) && status != null && !"active".equals(status)) {
-            throw new com.nitrotech.api.shared.exception.ForbiddenException(
-                    "SELF_STATUS_CHANGE", "Không thể tự khóa tài khoản của chính mình");
+        UserStatus requestedStatus = status == null ? null : UserStatus.fromValue(status);
+        if (currentUserId.equals(id) && requestedStatus != null && requestedStatus != UserStatus.active) {
+            throw new SelfStatusChangeException();
         }
 
         String normalizedEmail = email == null ? null : email.trim().toLowerCase();
         if (normalizedEmail != null
                 && !normalizedEmail.equals(current.email())
-                && userJpaRepository.existsByEmail(normalizedEmail)) {
+                && userRepository.existsByEmail(normalizedEmail)) {
             throw new EmailAlreadyExistsException(normalizedEmail);
         }
 
@@ -44,21 +45,13 @@ public class UpdateAdminUserUseCase {
         );
 
         if ((normalizedEmail != null && !normalizedEmail.equals(current.email()))
-                || (status != null && !"active".equals(status))) {
-            invalidateSessions(current.email());
+                || (requestedStatus != null && requestedStatus != UserStatus.active)) {
+            authSessionInvalidator.invalidateByEmail(current.email());
             if (normalizedEmail != null) {
-                invalidateSessions(normalizedEmail);
+                authSessionInvalidator.invalidateByEmail(normalizedEmail);
             }
         }
         return updated;
-    }
-
-    private void invalidateSessions(String email) {
-        try {
-            sessionRepository.findByPrincipalName(email)
-                    .values()
-                    .forEach(session -> sessionRepository.deleteById(session.getId()));
-        } catch (Exception ignored) {}
     }
 
     private String blankToNull(String value) {

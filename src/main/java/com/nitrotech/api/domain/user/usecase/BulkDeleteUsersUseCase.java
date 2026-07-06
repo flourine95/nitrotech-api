@@ -4,11 +4,10 @@ import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
+import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
 import com.nitrotech.api.domain.user.dto.BulkResult;
 import com.nitrotech.api.domain.user.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,7 +22,7 @@ public class BulkDeleteUsersUseCase {
 
     private final AdminUserRepository adminUserRepository;
     private final AuditLogService auditLogService;
-    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
+    private final AuthSessionInvalidator authSessionInvalidator;
 
     @Transactional
     public BulkResult execute(List<Long> ids, Long currentUserId) {
@@ -47,14 +46,7 @@ public class BulkDeleteUsersUseCase {
         Set<Long> deletedSet = Set.copyOf(deleted);
 
         if (!deleted.isEmpty()) {
-            List<String> emails = adminUserRepository.findEmailsByIds(deleted);
-            emails.forEach(email -> {
-                try {
-                    sessionRepository.findByPrincipalName(email)
-                            .values()
-                            .forEach(s -> sessionRepository.deleteById(s.getId()));
-                } catch (Exception ignored) {}
-            });
+            authSessionInvalidator.invalidateByEmails(adminUserRepository.findEmailsByIds(deleted));
 
             auditLogService.record(AuditLogCommand.success(
                     AuditAction.USER_DELETED,

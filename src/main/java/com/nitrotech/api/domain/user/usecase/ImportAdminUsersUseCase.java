@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.user.usecase;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.user.dto.UserImportResult;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -60,7 +61,7 @@ public class ImportAdminUsersUseCase {
                         name,
                         email,
                         phone,
-                        status.isBlank() ? "active" : status,
+                        status.isBlank() ? UserStatus.active.value() : status,
                         roles(rawRoles)
                 );
                 result.created++;

@@ -3,18 +3,19 @@ package com.nitrotech.api.domain.access.usecase;
 import com.nitrotech.api.domain.access.dto.PermissionData;
 import com.nitrotech.api.domain.access.dto.RoleData;
 import com.nitrotech.api.domain.access.dto.UserAccessData;
+import com.nitrotech.api.domain.access.exception.PermissionNotFoundException;
 import com.nitrotech.api.domain.access.exception.RoleNotFoundException;
+import com.nitrotech.api.domain.access.exception.RoleReferenceNotFoundException;
+import com.nitrotech.api.domain.access.exception.SelfLockoutGuardException;
+import com.nitrotech.api.domain.access.exception.SystemRoleProtectedException;
 import com.nitrotech.api.domain.access.repository.AccessManagementRepository;
 import com.nitrotech.api.domain.audit.AuditAction;
 import com.nitrotech.api.domain.audit.AuditResourceType;
 import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
 import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
-import com.nitrotech.api.shared.exception.BadRequestException;
-import com.nitrotech.api.shared.exception.ForbiddenException;
+import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
 import lombok.RequiredArgsConstructor;
-import org.springframework.session.FindByIndexNameSessionRepository;
-import org.springframework.session.Session;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,7 +32,7 @@ public class AccessManagementUseCase {
 
     private final AccessManagementRepository accessRepository;
     private final AuditLogService auditLogService;
-    private final FindByIndexNameSessionRepository<? extends Session> sessionRepository;
+    private final AuthSessionInvalidator authSessionInvalidator;
 
     public List<PermissionData> listPermissions() {
         return accessRepository.findPermissions();
@@ -55,7 +56,7 @@ public class AccessManagementUseCase {
     public RoleData updateRole(Long id, String name, String description, Boolean active) {
         RoleData current = getRole(id);
         if (current.systemRole()) {
-            throw new ForbiddenException("SYSTEM_ROLE_PROTECTED", "System roles cannot be edited");
+            throw new SystemRoleProtectedException();
         }
         accessRepository.updateRole(id, name, description, active);
         if (active != null && active != current.active()) {
@@ -77,7 +78,7 @@ public class AccessManagementUseCase {
     public RoleData updateRolePermissions(Long actorId, Long roleId, Set<String> permissionSlugs) {
         RoleData role = getRole(roleId);
         if (role.systemRole()) {
-            throw new ForbiddenException("SYSTEM_ROLE_PROTECTED", "System role permissions cannot be edited");
+            throw new SystemRoleProtectedException();
         }
 
         Set<Long> permissionIds = permissionIds(permissionSlugs);
@@ -108,7 +109,7 @@ public class AccessManagementUseCase {
         accessRepository.replaceUserRoles(userId, roleIds);
         UserAccessData updated = getUser(userId);
 
-        invalidateSessionsByEmail(user.email());
+        authSessionInvalidator.invalidateByEmail(user.email());
 
         auditLogService.record(AuditLogCommand.success(
                 AuditAction.USER_ROLE_UPDATED,
@@ -134,7 +135,7 @@ public class AccessManagementUseCase {
     private Set<Long> permissionIds(Set<String> permissionSlugs) {
         Set<Long> ids = accessRepository.findPermissionIdsBySlugs(permissionSlugs);
         if (ids.size() != permissionSlugs.size()) {
-            throw new BadRequestException("PERMISSION_NOT_FOUND", "One or more permissions were not found");
+            throw new PermissionNotFoundException();
         }
         return ids;
     }
@@ -142,7 +143,7 @@ public class AccessManagementUseCase {
     private Set<Long> roleIds(Set<String> roleSlugs) {
         Set<Long> ids = accessRepository.findRoleIdsBySlugs(roleSlugs);
         if (ids.size() != roleSlugs.size()) {
-            throw new BadRequestException("ROLE_NOT_FOUND", "One or more roles were not found");
+            throw new RoleReferenceNotFoundException();
         }
         return ids;
     }
@@ -153,13 +154,11 @@ public class AccessManagementUseCase {
         for (String critical : CRITICAL_PERMISSIONS) {
             if (!newPermissionSlugs.contains(critical)
                     && accessRepository.countUsersWithPermissionExceptRole(roleId, critical) == 0) {
-                throw new ForbiddenException("SELF_LOCKOUT_GUARD",
-                        "At least one user must keep " + critical);
+                throw new SelfLockoutGuardException("At least one user must keep " + critical);
             }
             if (affectedUsers.contains(actorId)
                     && userWouldLosePermissionAfterRoleChange(actorId, roleId, critical, newPermissionSlugs)) {
-                throw new ForbiddenException("SELF_LOCKOUT_GUARD",
-                        "You cannot remove your own " + critical + " permission");
+                throw new SelfLockoutGuardException("You cannot remove your own " + critical + " permission");
             }
         }
     }
@@ -169,12 +168,10 @@ public class AccessManagementUseCase {
         for (String critical : CRITICAL_PERMISSIONS) {
             if (!newPermissions.contains(critical)
                     && accessRepository.countUsersWithPermissionExceptUser(userId, critical) == 0) {
-                throw new ForbiddenException("SELF_LOCKOUT_GUARD",
-                        "At least one user must keep " + critical);
+                throw new SelfLockoutGuardException("At least one user must keep " + critical);
             }
             if (actorId.equals(userId) && !newPermissions.contains(critical)) {
-                throw new ForbiddenException("SELF_LOCKOUT_GUARD",
-                        "You cannot remove your own " + critical + " permission");
+                throw new SelfLockoutGuardException("You cannot remove your own " + critical + " permission");
             }
         }
     }
@@ -197,16 +194,7 @@ public class AccessManagementUseCase {
         return data;
     }
 
-    private void invalidateSessionsByEmail(String email) {
-        try {
-            sessionRepository.findByPrincipalName(email)
-                    .values()
-                    .forEach(s -> sessionRepository.deleteById(s.getId()));
-        } catch (Exception ignored) {}
-    }
-
     private void invalidateSessionsByRoleId(Long roleId) {
-        accessRepository.findEmailsByRoleId(roleId)
-                .forEach(this::invalidateSessionsByEmail);
+        authSessionInvalidator.invalidateByEmails(accessRepository.findEmailsByRoleId(roleId));
     }
 }
