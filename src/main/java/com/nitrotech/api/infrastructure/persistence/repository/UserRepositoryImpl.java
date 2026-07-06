@@ -4,6 +4,7 @@ import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
 
 import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.domain.auth.dto.UserProfileData;
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.infrastructure.persistence.entity.UserEntity;
 import com.nitrotech.api.shared.exception.NotFoundException;
@@ -119,7 +120,7 @@ public class UserRepositoryImpl implements UserRepository {
     public void activateUser(Long id) {
         UserEntity entity = jpa.findById(id)
                 .orElseThrow(() -> new UserNotFoundException());
-        entity.setStatus(UserEntity.Status.active);
+        entity.setStatus(UserStatus.active);
         jpa.save(entity);
     }
 
@@ -129,7 +130,7 @@ public class UserRepositoryImpl implements UserRepository {
         entity.setName(name);
         entity.setEmail(email);
         entity.setAvatar(avatar);
-        entity.setStatus(UserEntity.Status.active);
+        entity.setStatus(UserStatus.active);
         entity.setProvider(resolveProvider(provider));
         entity.setProviderId(providerId);
         UserEntity saved = jpa.save(entity);

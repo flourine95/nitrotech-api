@@ -1,4 +1,4 @@
-package com.nitrotech.api.domain.auth.usecase;
+package com.nitrotech.api.application.auth.service;
 
 import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.shared.security.UserPrincipal;
@@ -12,9 +12,9 @@ import org.springframework.session.FindByIndexNameSessionRepository;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CreateAuthSessionUseCase {
+public class AuthSessionService {
 
-    public void execute(AuthResult result, HttpServletRequest httpRequest) {
+    public void create(AuthResult result, HttpServletRequest httpRequest) {
         UserPrincipal principal = new UserPrincipal(
                 result.user().id(),
                 result.user().email(),

@@ -1,5 +1,6 @@
 package com.nitrotech.api.infrastructure.persistence.entity;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -13,8 +14,6 @@ import java.time.Instant;
 @Table(name = "users")
 @Getter @Setter @NoArgsConstructor
 public class UserEntity {
-
-    public enum Status {inactive, active, banned, suspended}
 
     public enum Provider {local, google, github, facebook}
 
@@ -34,7 +33,7 @@ public class UserEntity {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private Status status = Status.inactive;
+    private UserStatus status = UserStatus.inactive;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)

@@ -1,5 +1,6 @@
 package com.nitrotech.api.domain.auth.usecase;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.auth.dto.AuthResult;
 import com.nitrotech.api.domain.auth.dto.LoginCommand;
 import com.nitrotech.api.domain.auth.exception.AccountNotActiveException;
@@ -24,7 +25,7 @@ public class LoginUseCase {
             throw new InvalidCredentialsException();
         }
 
-        if (!"active".equals(credential.status())) {
+        if (UserStatus.fromValue(credential.status()) != UserStatus.active) {
             throw new AccountNotActiveException(credential.status());
         }
 

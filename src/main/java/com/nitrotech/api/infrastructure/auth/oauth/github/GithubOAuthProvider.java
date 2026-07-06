@@ -5,8 +5,10 @@ import com.nitrotech.api.domain.auth.dto.OAuthTokenResponse;
 import com.nitrotech.api.domain.auth.dto.OAuthUserInfo;
 import com.nitrotech.api.domain.auth.provider.OAuthProvider;
 import com.nitrotech.api.shared.exception.BadRequestException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.MediaType;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -14,6 +16,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.time.Duration;
 import java.util.Arrays;
 
 @Component
@@ -24,9 +27,20 @@ public class GithubOAuthProvider implements OAuthProvider {
     private final RestClient apiClient;
     private final GithubOAuthProperties properties;
 
+    @Autowired
     public GithubOAuthProvider(RestClient.Builder builder, GithubOAuthProperties properties) {
-        this.authClient = builder.baseUrl("https://github.com").build();
-        this.apiClient = builder.baseUrl("https://api.github.com").build();
+        this(builder, properties, true);
+    }
+
+    GithubOAuthProvider(RestClient.Builder builder, GithubOAuthProperties properties, boolean applyTimeouts) {
+        RestClient.Builder authBuilder = applyTimeouts ? builder.requestFactory(requestFactory()) : builder;
+        RestClient.Builder apiBuilder = applyTimeouts ? builder.clone().requestFactory(requestFactory()) : builder.clone();
+        this.authClient = authBuilder
+                .baseUrl("https://github.com")
+                .build();
+        this.apiClient = apiBuilder
+                .baseUrl("https://api.github.com")
+                .build();
         this.properties = properties;
     }
 
@@ -36,14 +50,22 @@ public class GithubOAuthProvider implements OAuthProvider {
     }
 
     @Override
-    public String buildAuthorizationUrl() {
+    public String buildAuthorizationUrl(String state) {
         validateConfigured();
         return UriComponentsBuilder.fromUriString("https://github.com/login/oauth/authorize")
                 .queryParam("client_id", properties.clientId())
                 .queryParam("redirect_uri", properties.redirectUri())
                 .queryParam("scope", "read:user user:email")
+                .queryParam("state", state)
                 .build()
                 .toUriString();
+    }
+
+    private SimpleClientHttpRequestFactory requestFactory() {
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(Duration.ofSeconds(5));
+        factory.setReadTimeout(Duration.ofSeconds(10));
+        return factory;
     }
 
     @Override

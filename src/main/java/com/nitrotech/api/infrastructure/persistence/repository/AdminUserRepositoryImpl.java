@@ -1,5 +1,6 @@
 package com.nitrotech.api.infrastructure.persistence.repository;
 
+import com.nitrotech.api.domain.auth.UserStatus;
 import com.nitrotech.api.domain.user.dto.AdminUserData;
 import com.nitrotech.api.domain.user.dto.AdminUserFacets;
 import com.nitrotech.api.domain.user.dto.AdminUserFilter;
@@ -90,7 +91,7 @@ public class AdminUserRepositoryImpl implements AdminUserRepository {
         entity.setEmail(email);
         entity.setPhone(phone);
         entity.setPassword(hashedPassword);
-        entity.setStatus(UserEntity.Status.valueOf((status == null ? "active" : status).toLowerCase()));
+        entity.setStatus(UserStatus.fromValue(status == null ? "active" : status));
         UserEntity saved = jpa.save(entity);
         replaceRoles(saved.getId(), roleSlugs == null || roleSlugs.isEmpty() ? Set.of("customer") : roleSlugs);
         return findById(saved.getId()).orElseThrow();
@@ -105,7 +106,7 @@ public class AdminUserRepositoryImpl implements AdminUserRepository {
         if (name != null) entity.setName(name);
         if (email != null) entity.setEmail(email);
         if (phone != null) entity.setPhone(phone);
-        if (status != null) entity.setStatus(UserEntity.Status.valueOf(status.toLowerCase()));
+        if (status != null) entity.setStatus(UserStatus.fromValue(status));
         jpa.save(entity);
         return findById(id).orElseThrow();
     }
@@ -343,9 +344,9 @@ public class AdminUserRepositoryImpl implements AdminUserRepository {
     @Override
     @Transactional
     public List<Long> bulkUpdateStatus(List<Long> ids, String status) {
-        UserEntity.Status enumStatus;
+        UserStatus enumStatus;
         try {
-            enumStatus = UserEntity.Status.valueOf(status.toLowerCase());
+            enumStatus = UserStatus.fromValue(status);
         } catch (IllegalArgumentException e) {
             return List.of();
         }
