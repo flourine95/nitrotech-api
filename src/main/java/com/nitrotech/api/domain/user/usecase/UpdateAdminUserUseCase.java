@@ -5,12 +5,18 @@ import com.nitrotech.api.domain.auth.exception.EmailAlreadyExistsException;
 import com.nitrotech.api.domain.auth.exception.UserNotFoundException;
 import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.domain.auth.service.AuthSessionInvalidator;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.user.dto.AdminUserData;
 import com.nitrotech.api.domain.user.exception.SelfStatusChangeException;
 import com.nitrotech.api.domain.user.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +25,7 @@ public class UpdateAdminUserUseCase {
     private final AdminUserRepository adminUserRepository;
     private final UserRepository userRepository;
     private final AuthSessionInvalidator authSessionInvalidator;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public AdminUserData execute(Long id, String name, String email, String phone, String status, Long currentUserId) {
@@ -51,6 +58,14 @@ public class UpdateAdminUserUseCase {
                 authSessionInvalidator.invalidateByEmail(normalizedEmail);
             }
         }
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.USER_UPDATED,
+                AuditResourceType.USER,
+                id,
+                Map.of("email", current.email(), "status", current.status()),
+                Map.of("email", updated.email(), "status", updated.status()),
+                null
+        ));
         return updated;
     }
 

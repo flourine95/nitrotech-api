@@ -52,6 +52,7 @@ public class ReviewController {
     }
 
     @PostMapping("/reviews")
+    @PreAuthorize("hasAuthority('REVIEW_WRITE')")
     public ResponseEntity<ApiResult<ReviewData>> create(
             @AuthenticationPrincipal UserPrincipal principal,
             @Valid @RequestBody CreateReviewRequest req
@@ -63,6 +64,7 @@ public class ReviewController {
     }
 
     @PatchMapping("/reviews/{id}")
+    @PreAuthorize("hasAuthority('REVIEW_WRITE')")
     public ResponseEntity<ApiResult<ReviewData>> update(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id,
@@ -73,6 +75,7 @@ public class ReviewController {
     }
 
     @DeleteMapping("/reviews/{id}")
+    @PreAuthorize("hasAuthority('REVIEW_WRITE')")
     public ResponseEntity<ApiResult<Void>> delete(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id
@@ -82,6 +85,7 @@ public class ReviewController {
     }
 
     @PostMapping("/reviews/{id}/report")
+    @PreAuthorize("hasAuthority('REVIEW_WRITE')")
     public ResponseEntity<ApiResult<Void>> report(
             @AuthenticationPrincipal UserPrincipal principal,
             @PathVariable Long id,

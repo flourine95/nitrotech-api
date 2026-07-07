@@ -85,7 +85,7 @@ class GhtkShippingProviderTest {
     }
 
     @Test
-    void mapsAndCreatesShipmentSuccessfullyForPrepaid() {
+    void mapsAndCreatesShipmentSuccessfullyForPrepaid() throws Exception {
         OrderData order = order("sepay", new BigDecimal("500000"));
         GhtkOrderResponse.OrderDetails details = new GhtkOrderResponse.OrderDetails(
                 "123", "S123.456", new BigDecimal("30000"), BigDecimal.ZERO, null, "2026-06-12 18:00:00", 2
@@ -99,7 +99,8 @@ class GhtkShippingProviderTest {
         verify(ghtkClient).createOrder(requestCaptor.capture());
         GhtkOrderRequest captured = requestCaptor.getValue();
 
-        assertThat(captured.getOrder().getPickMoney()).isEqualTo(BigDecimal.ZERO); // Prepaid picks 0 COD
+        assertThat(captured.getOrder().getPickMoney()).isNull();
+        assertThat(new ObjectMapper().writeValueAsString(captured)).doesNotContain("pick_money");
     }
 
     @Test
@@ -115,8 +116,8 @@ class GhtkShippingProviderTest {
     }
 
     @Test
-    void capsDeclaredValueAt20MillionWithoutChangingCodAmount() {
-        OrderData order = order("cod", new BigDecimal("25000000"));
+    void capsDeclaredValueAt20MillionForPrepaidOrders() {
+        OrderData order = order("sepay", new BigDecimal("25000000"));
         when(ghtkClient.createOrder(any())).thenReturn(successResponse());
 
         provider.createShipment(order);
@@ -124,8 +125,28 @@ class GhtkShippingProviderTest {
         ArgumentCaptor<GhtkOrderRequest> requestCaptor = ArgumentCaptor.forClass(GhtkOrderRequest.class);
         verify(ghtkClient).createOrder(requestCaptor.capture());
 
-        assertThat(requestCaptor.getValue().getOrder().getPickMoney()).isEqualTo(new BigDecimal("25000000"));
+        assertThat(requestCaptor.getValue().getOrder().getPickMoney()).isNull();
         assertThat(requestCaptor.getValue().getOrder().getValue()).isEqualTo(new BigDecimal("20000000"));
+    }
+
+    @Test
+    void rejectsCodAmountBelowGhtkExpressMinimum() {
+        assertThatThrownBy(() -> provider.createShipment(order("cod", new BigDecimal("9999"))))
+                .isInstanceOf(ShippingException.class)
+                .hasMessageContaining("COD from 10,000 to 20,000,000")
+                .extracting("code").isEqualTo("GHTK_COD_AMOUNT_UNSUPPORTED");
+
+        verifyNoInteractions(ghtkClient);
+    }
+
+    @Test
+    void rejectsCodAmountAboveGhtkExpressMaximum() {
+        assertThatThrownBy(() -> provider.createShipment(order("cod", new BigDecimal("20000001"))))
+                .isInstanceOf(ShippingException.class)
+                .hasMessageContaining("COD from 10,000 to 20,000,000")
+                .extracting("code").isEqualTo("GHTK_COD_AMOUNT_UNSUPPORTED");
+
+        verifyNoInteractions(ghtkClient);
     }
 
     @Test

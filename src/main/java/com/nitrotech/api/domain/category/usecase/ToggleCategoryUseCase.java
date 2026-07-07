@@ -1,5 +1,9 @@
 package com.nitrotech.api.domain.category.usecase;
 
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.exception.CategoryNotFoundException;
@@ -8,11 +12,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class ToggleCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public CategoryData execute(Long id) {
@@ -22,7 +29,7 @@ public class ToggleCategoryUseCase {
         // Toggle active status
         boolean newActiveStatus = !category.active();
 
-        return categoryRepository.update(new UpdateCategoryCommand(
+        CategoryData updated = categoryRepository.update(new UpdateCategoryCommand(
                 id,
                 null,  // name
                 null,  // slug
@@ -31,5 +38,14 @@ public class ToggleCategoryUseCase {
                 null,  // parentId
                 newActiveStatus  // active
         ));
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.CATEGORY_UPDATED,
+                AuditResourceType.CATEGORY,
+                id,
+                Map.of("active", category.active()),
+                Map.of("active", updated.active()),
+                null
+        ));
+        return updated;
     }
 }

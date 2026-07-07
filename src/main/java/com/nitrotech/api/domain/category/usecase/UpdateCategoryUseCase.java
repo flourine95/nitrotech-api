@@ -1,5 +1,9 @@
 package com.nitrotech.api.domain.category.usecase;
 
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.category.dto.CategoryData;
 import com.nitrotech.api.domain.category.dto.UpdateCategoryCommand;
 import com.nitrotech.api.domain.category.exception.CategoryCircularReferenceException;
@@ -10,11 +14,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class UpdateCategoryUseCase {
 
     private final CategoryRepository categoryRepository;
+    private final AuditLogService auditLogService;
 
     @Transactional
     public CategoryData execute(UpdateCategoryCommand command) {
@@ -35,6 +42,15 @@ public class UpdateCategoryUseCase {
                 throw new CategoryCircularReferenceException("Cannot set parent: circular reference detected");
             }
         }
-        return categoryRepository.update(command);
+        CategoryData updated = categoryRepository.update(command);
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.CATEGORY_UPDATED,
+                AuditResourceType.CATEGORY,
+                updated.id(),
+                null,
+                Map.of("name", updated.name(), "slug", updated.slug(), "active", updated.active()),
+                null
+        ));
+        return updated;
     }
 }

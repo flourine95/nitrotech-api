@@ -1,5 +1,6 @@
 package com.nitrotech.api.infrastructure.shipping.ghtk.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -61,6 +62,7 @@ public class GhtkOrderRequest {
         private String hamlet;
         @JsonProperty("is_freeship")
         private Integer isFreeship; // 1: shop pays, 0: buyer pays
+        @JsonInclude(JsonInclude.Include.NON_NULL)
         @JsonProperty("pick_money")
         private BigDecimal pickMoney; // COD amount
         private String note;

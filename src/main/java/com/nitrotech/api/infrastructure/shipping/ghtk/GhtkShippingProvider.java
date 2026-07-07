@@ -30,6 +30,8 @@ public class GhtkShippingProvider implements ShippingProvider {
 
     private static final BigDecimal MIN_DECLARED_VALUE = BigDecimal.ONE;
     private static final BigDecimal MAX_DECLARED_VALUE = new BigDecimal("20000000");
+    private static final BigDecimal MIN_COD_AMOUNT = new BigDecimal("10000");
+    private static final BigDecimal MAX_COD_AMOUNT = new BigDecimal("20000000");
 
     private final GhtkClient ghtkClient;
     private final GhtkAddressNormalizer addressNormalizer;
@@ -121,11 +123,7 @@ public class GhtkShippingProvider implements ShippingProvider {
         // GHTK is_freeship = 1 means Shop pays shipping fee (since Shop collects shipping fee from Buyer during checkout)
         int isFreeship = 1;
 
-        // If payment method is COD, pick_money (amount to collect from buyer) is the finalAmount.
-        // If prepaid (sepay, etc.), pick_money is 0.
-        BigDecimal pickMoney = PaymentMethod.COD.value().equalsIgnoreCase(order.paymentMethod())
-                ? order.finalAmount() 
-                : BigDecimal.ZERO;
+        BigDecimal pickMoney = codAmount(order);
 
         GhtkOrderRequest.Order ghtkOrder = GhtkOrderRequest.Order.builder()
                 .id(order.id().toString())
@@ -174,6 +172,18 @@ public class GhtkShippingProvider implements ShippingProvider {
             return MIN_DECLARED_VALUE;
         }
         return value.min(MAX_DECLARED_VALUE);
+    }
+
+    private BigDecimal codAmount(OrderData order) {
+        if (!PaymentMethod.COD.value().equalsIgnoreCase(order.paymentMethod())) {
+            return null;
+        }
+        BigDecimal amount = order.finalAmount();
+        if (amount == null || amount.compareTo(MIN_COD_AMOUNT) < 0 || amount.compareTo(MAX_COD_AMOUNT) > 0) {
+            throw new ShippingException("GHTK_COD_AMOUNT_UNSUPPORTED",
+                    "GHTK EXPRESS only supports COD from 10,000 to 20,000,000 VND");
+        }
+        return amount;
     }
 
     private Instant parseEstimatedTime(String timeStr) {
