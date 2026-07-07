@@ -69,7 +69,8 @@ public class AddressRepositoryImpl implements AddressRepository {
     @Override
     @Transactional
     public void setAsDefault(Long userId, Long addressId) {
-        jpa.unsetAllDefaultAddresses(userId, addressId);
+        jpa.unsetAllDefaultAddresses(userId);
+        jpa.setDefaultAddress(userId, addressId);
     }
 
     @Override

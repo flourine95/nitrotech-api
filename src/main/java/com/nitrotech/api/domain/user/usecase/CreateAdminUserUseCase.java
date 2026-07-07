@@ -5,12 +5,18 @@ import com.nitrotech.api.domain.auth.repository.UserRepository;
 import com.nitrotech.api.domain.auth.usecase.ForgotPasswordUseCase;
 import com.nitrotech.api.domain.access.exception.RoleReferenceNotFoundException;
 import com.nitrotech.api.domain.access.repository.AccessManagementRepository;
+import com.nitrotech.api.domain.audit.AuditAction;
+import com.nitrotech.api.domain.audit.AuditResourceType;
+import com.nitrotech.api.domain.audit.dto.AuditLogCommand;
+import com.nitrotech.api.domain.audit.service.AuditLogService;
 import com.nitrotech.api.domain.user.dto.AdminUserData;
 import com.nitrotech.api.domain.user.repository.AdminUserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -23,7 +29,9 @@ public class CreateAdminUserUseCase {
     private final PasswordEncoder passwordEncoder;
     private final ForgotPasswordUseCase forgotPasswordUseCase;
     private final AccessManagementRepository accessManagementRepository;
+    private final AuditLogService auditLogService;
 
+    @Transactional
     public AdminUserData execute(String name, String email, String phone, String status, Set<String> roleSlugs) {
         String normalizedEmail = email.trim().toLowerCase();
         Set<String> roles = roleSlugs == null || roleSlugs.isEmpty() ? Set.of("customer") : roleSlugs;
@@ -42,6 +50,14 @@ public class CreateAdminUserUseCase {
                 passwordEncoder.encode(UUID.randomUUID().toString()),
                 roles
         );
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.USER_CREATED,
+                AuditResourceType.USER,
+                user.id(),
+                null,
+                Map.of("email", user.email(), "status", user.status(), "roleSlugs", user.roleSlugs()),
+                null
+        ));
         forgotPasswordUseCase.execute(normalizedEmail);
         return user;
     }

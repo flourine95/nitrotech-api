@@ -16,24 +16,21 @@ import java.util.concurrent.CopyOnWriteArrayList;
 @Service
 public class SseNotificationService {
 
+    static final long SSE_TIMEOUT_MS = Long.MAX_VALUE;
+
     private final Map<String, List<ClientEmitter>> userEmitters = new ConcurrentHashMap<>();
 
     public SseEmitter createEmitter(String userId, Set<String> permissions) {
-        SseEmitter emitter = new SseEmitter(30 * 60 * 1000L);
+        SseEmitter emitter = new SseEmitter(SSE_TIMEOUT_MS);
         ClientEmitter client = new ClientEmitter(emitter, Set.copyOf(permissions));
         
         List<ClientEmitter> emitters = userEmitters.computeIfAbsent(userId, k -> new CopyOnWriteArrayList<>());
         emitters.add(client);
 
-        Runnable cleanup = () -> {
-            List<ClientEmitter> list = userEmitters.get(userId);
-            if (list != null) {
-                list.remove(client);
-                if (list.isEmpty()) {
-                    userEmitters.remove(userId);
-                }
-            }
-        };
+        Runnable cleanup = () -> userEmitters.computeIfPresent(userId, (key, list) -> {
+            list.remove(client);
+            return list.isEmpty() ? null : list;
+        });
 
         emitter.onCompletion(cleanup);
         emitter.onTimeout(cleanup);

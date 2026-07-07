@@ -49,7 +49,16 @@ public class AccessManagementUseCase {
     @Transactional
     public RoleData createRole(String name, String slug, String description) {
         Long id = accessRepository.createRole(name, slug, description);
-        return getRole(id);
+        RoleData role = getRole(id);
+        auditLogService.record(AuditLogCommand.success(
+                AuditAction.ROLE_CREATED,
+                AuditResourceType.ROLE,
+                id,
+                null,
+                roleAuditData(role),
+                Map.of("roleSlug", role.slug())
+        ));
+        return role;
     }
 
     @Transactional

@@ -5,5 +5,10 @@ public enum AuditResourceType {
     USER,
     SHIPMENT,
     PRODUCT,
-    ORDER
+    ORDER,
+    CATEGORY,
+    BRAND,
+    BANNER,
+    PROMOTION,
+    REVIEW
 }

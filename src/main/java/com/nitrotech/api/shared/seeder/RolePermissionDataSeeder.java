@@ -63,6 +63,7 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
                 new PermissionSeed("Manage Inventory", "INVENTORY_MANAGE", "inventory", "Manage inventory"),
                 new PermissionSeed("Manage Promotions", "PROMOTION_MANAGE", "promotion", "Manage promotions"),
                 new PermissionSeed("Manage Reviews", "REVIEW_MANAGE", "review", "Manage reviews"),
+                new PermissionSeed("Write Reviews", "REVIEW_WRITE", "review", "Create, update, delete, and report reviews"),
                 new PermissionSeed("Manage Banners", "BANNER_MANAGE", "banner", "Manage banners"),
                 new PermissionSeed("Manage Media", "MEDIA_MANAGE", "media", "Upload and browse media assets"),
                 new PermissionSeed("Read Notifications", "NOTIFICATION_READ", "notification", "Read admin notifications")
@@ -108,6 +109,19 @@ public class RolePermissionDataSeeder implements CommandLineRunner {
                     'NOTIFICATION_READ'
                 )
                 WHERE r.slug = 'staff'
+                ON CONFLICT DO NOTHING
+                """);
+
+        jdbc.update("""
+                INSERT INTO role_permissions (role_id, permission_id)
+                SELECT r.id, p.id
+                FROM roles r
+                JOIN permissions p ON p.slug IN (
+                    'ORDER_READ_OWN', 'ORDER_CANCEL_OWN',
+                    'PRODUCT_READ', 'CATEGORY_READ', 'BRAND_READ',
+                    'REVIEW_WRITE'
+                )
+                WHERE r.slug = 'customer'
                 ON CONFLICT DO NOTHING
                 """);
 
