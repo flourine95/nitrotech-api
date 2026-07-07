@@ -25,8 +25,6 @@ public class GhtkOrderRequest {
         private String name;
         private Double weight; // in kg
         private Integer quantity;
-        @JsonProperty("product_code")
-        private String productCode;
         private BigDecimal price;
         private BigDecimal height;
         private BigDecimal width;
