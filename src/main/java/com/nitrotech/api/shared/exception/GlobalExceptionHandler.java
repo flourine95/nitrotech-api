@@ -1,9 +1,11 @@
 package com.nitrotech.api.shared.exception;
 
 import com.nitrotech.api.shared.response.ErrorResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
@@ -141,7 +143,11 @@ public class GlobalExceptionHandler {
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+    public ResponseEntity<?> handleGeneric(Exception ex, HttpServletResponse response) {
+        if (response.getContentType() != null
+                && response.getContentType().startsWith(MediaType.TEXT_EVENT_STREAM_VALUE)) {
+            return ResponseEntity.internalServerError().build();
+        }
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ErrorResponse.of(500, "INTERNAL_ERROR", "An unexpected error occurred"));
     }
