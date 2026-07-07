@@ -106,7 +106,6 @@ public class GhtkShippingProvider implements ShippingProvider {
                         .name(item.name())
                         .weight(weightKg(item))
                         .quantity(item.quantity())
-                        .productCode(item.sku())
                         .price(item.unitPrice())
                         .height(item.heightCm())
                         .width(item.widthCm())

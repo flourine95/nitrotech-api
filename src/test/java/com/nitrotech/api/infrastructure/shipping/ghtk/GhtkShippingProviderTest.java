@@ -1,5 +1,6 @@
 package com.nitrotech.api.infrastructure.shipping.ghtk;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nitrotech.api.domain.order.dto.OrderData;
 import com.nitrotech.api.domain.order.dto.OrderItemData;
 import com.nitrotech.api.domain.order.dto.ShippingAddressSnapshot;
@@ -101,6 +102,21 @@ class GhtkShippingProviderTest {
     }
 
     @Test
+    void doesNotSendInternalSkuAsGhtkProductCode() throws Exception {
+        OrderData order = order("cod", new BigDecimal("500000"), "SKU-" + "A".repeat(120));
+        GhtkOrderResponse.OrderDetails details = new GhtkOrderResponse.OrderDetails(
+                "123", "S123.456", new BigDecimal("30000"), BigDecimal.ZERO, null, "2026-06-12 18:00:00", 2
+        );
+        when(ghtkClient.createOrder(any())).thenReturn(new GhtkOrderResponse(true, "success", details));
+
+        provider.createShipment(order);
+
+        ArgumentCaptor<GhtkOrderRequest> requestCaptor = ArgumentCaptor.forClass(GhtkOrderRequest.class);
+        verify(ghtkClient).createOrder(requestCaptor.capture());
+        assertThat(new ObjectMapper().writeValueAsString(requestCaptor.getValue())).doesNotContain("product_code");
+    }
+
+    @Test
     void throwsShippingExceptionWhenGhtkThrowsException() {
         OrderData order = order("cod", new BigDecimal("500000"));
         when(ghtkClient.createOrder(any())).thenThrow(new RuntimeException("Connection timeout"));
@@ -138,11 +154,15 @@ class GhtkShippingProviderTest {
     }
 
     private OrderData order(String paymentMethod, BigDecimal finalAmount) {
+        return order(paymentMethod, finalAmount, "SKU-A");
+    }
+
+    private OrderData order(String paymentMethod, BigDecimal finalAmount, String sku) {
         ShippingAddressSnapshot addr = new ShippingAddressSnapshot(
                 "Nguyen Van A", "0909123456", "HCM", "79", "Q1", "760", "Ben Nghe", "20412", "123 Street"
         );
         OrderItemData item = new OrderItemData(
-                1L, 10L, 20L, "Item A", "SKU-A", 1, new BigDecimal("500000"), new BigDecimal("500000"), null,
+                1L, 10L, 20L, "Item A", sku, 1, new BigDecimal("500000"), new BigDecimal("500000"), null,
                 1000, null, null, null
         );
         return new OrderData(
