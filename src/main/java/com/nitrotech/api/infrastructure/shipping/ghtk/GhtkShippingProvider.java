@@ -28,6 +28,9 @@ import java.util.List;
 @EnableConfigurationProperties(GhtkPickupProperties.class)
 public class GhtkShippingProvider implements ShippingProvider {
 
+    private static final BigDecimal MIN_DECLARED_VALUE = BigDecimal.ONE;
+    private static final BigDecimal MAX_DECLARED_VALUE = new BigDecimal("20000000");
+
     private final GhtkClient ghtkClient;
     private final GhtkAddressNormalizer addressNormalizer;
     private final GhtkPickupProperties pickupProperties;
@@ -143,7 +146,7 @@ public class GhtkShippingProvider implements ShippingProvider {
                 .isFreeship(isFreeship)
                 .pickMoney(pickMoney)
                 .note(order.note())
-                .value(order.finalAmount()) // declared value for package insurance
+                .value(declaredValue(order.finalAmount()))
                 .build();
 
         return GhtkOrderRequest.builder()
@@ -164,6 +167,13 @@ public class GhtkShippingProvider implements ShippingProvider {
 
     private double weightKg(OrderItemData item) {
         return weightGrams(item) / 1000.0;
+    }
+
+    private BigDecimal declaredValue(BigDecimal value) {
+        if (value == null || value.compareTo(MIN_DECLARED_VALUE) < 0) {
+            return MIN_DECLARED_VALUE;
+        }
+        return value.min(MAX_DECLARED_VALUE);
     }
 
     private Instant parseEstimatedTime(String timeStr) {
