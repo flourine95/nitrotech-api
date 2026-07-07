@@ -75,6 +75,7 @@ class GhtkShippingProviderTest {
         assertThat(capturedOrder.getPickDistrict()).isEqualTo("Quận 3");
         assertThat(capturedOrder.getPickWard()).isEqualTo("Phường 1");
         assertThat(capturedOrder.getPickMoney()).isEqualTo(new BigDecimal("500000")); // COD picks order total
+        assertThat(capturedOrder.getValue()).isEqualTo(new BigDecimal("500000"));
         assertThat(capturedOrder.getIsFreeship()).isEqualTo(1);
         assertThat(capturedOrder.getProvince()).isEqualTo("TP. Hồ Chí Minh");
         assertThat(capturedOrder.getDistrict()).isEqualTo("Quận 1");
@@ -98,6 +99,33 @@ class GhtkShippingProviderTest {
         GhtkOrderRequest captured = requestCaptor.getValue();
 
         assertThat(captured.getOrder().getPickMoney()).isEqualTo(BigDecimal.ZERO); // Prepaid picks 0 COD
+    }
+
+    @Test
+    void capsDeclaredValueAt20MillionWithoutChangingCodAmount() {
+        OrderData order = order("cod", new BigDecimal("25000000"));
+        when(ghtkClient.createOrder(any())).thenReturn(successResponse());
+
+        provider.createShipment(order);
+
+        ArgumentCaptor<GhtkOrderRequest> requestCaptor = ArgumentCaptor.forClass(GhtkOrderRequest.class);
+        verify(ghtkClient).createOrder(requestCaptor.capture());
+
+        assertThat(requestCaptor.getValue().getOrder().getPickMoney()).isEqualTo(new BigDecimal("25000000"));
+        assertThat(requestCaptor.getValue().getOrder().getValue()).isEqualTo(new BigDecimal("20000000"));
+    }
+
+    @Test
+    void floorsDeclaredValueAtOneDong() {
+        OrderData order = order("sepay", BigDecimal.ZERO);
+        when(ghtkClient.createOrder(any())).thenReturn(successResponse());
+
+        provider.createShipment(order);
+
+        ArgumentCaptor<GhtkOrderRequest> requestCaptor = ArgumentCaptor.forClass(GhtkOrderRequest.class);
+        verify(ghtkClient).createOrder(requestCaptor.capture());
+
+        assertThat(requestCaptor.getValue().getOrder().getValue()).isEqualTo(BigDecimal.ONE);
     }
 
     @Test
@@ -148,5 +176,12 @@ class GhtkShippingProviderTest {
         return new OrderData(
                 123L, 10L, "SO-123", addr, "confirmed", paymentMethod, finalAmount, BigDecimal.ZERO, BigDecimal.ZERO, finalAmount, null, "call first", List.of(item), Instant.now(), Instant.now(), null, null
         );
+    }
+
+    private GhtkOrderResponse successResponse() {
+        GhtkOrderResponse.OrderDetails details = new GhtkOrderResponse.OrderDetails(
+                "123", "S123.456", new BigDecimal("30000"), BigDecimal.ZERO, null, "2026-06-12 18:00:00", 2
+        );
+        return new GhtkOrderResponse(true, "success", details);
     }
 }
