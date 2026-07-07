@@ -139,10 +139,12 @@ public class UserRepositoryImpl implements UserRepository {
     }
 
     private UserProfileData toProfileData(UserEntity e) {
+        UserAuthorities authorities = findAuthoritiesByUserId(e.getId());
         return new UserProfileData(
                 e.getId(), e.getName(), e.getEmail(),
                 e.getPhone(), e.getAvatar(),
-                e.getStatus().name(), e.getProvider().name()
+                e.getStatus().name(), e.getProvider().name(),
+                authorities.roles(), authorities.permissions()
         );
     }
 

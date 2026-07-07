@@ -4,7 +4,9 @@ import com.nitrotech.api.application.auth.service.AuthSessionService;
 import com.nitrotech.api.application.auth.service.OAuthAuthorizationService;
 import com.nitrotech.api.application.auth.service.OAuthLoginRedirectService;
 import com.nitrotech.api.domain.auth.dto.AuthResult;
+import com.nitrotech.api.domain.auth.dto.UserProfileData;
 import com.nitrotech.api.domain.auth.usecase.*;
+import com.nitrotech.api.shared.security.UserPrincipal;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -20,6 +22,7 @@ class AuthControllerTest {
     private OAuthAuthorizationService oauthAuthorizationService;
     private AuthSessionService authSessionService;
     private OAuthLoginRedirectService oauthLoginRedirectService;
+    private GetProfileUseCase getProfileUseCase;
     private AuthController controller;
 
     @BeforeEach
@@ -27,12 +30,13 @@ class AuthControllerTest {
         oauthAuthorizationService = mock(OAuthAuthorizationService.class);
         authSessionService = mock(AuthSessionService.class);
         oauthLoginRedirectService = mock(OAuthLoginRedirectService.class);
+        getProfileUseCase = mock(GetProfileUseCase.class);
 
         controller = new AuthController(
                 mock(RegisterUseCase.class),
                 mock(LoginUseCase.class),
                 mock(LogoutUseCase.class),
-                mock(GetProfileUseCase.class),
+                getProfileUseCase,
                 mock(UpdateProfileUseCase.class),
                 mock(ChangePasswordUseCase.class),
                 mock(ForgotPasswordUseCase.class),
@@ -84,6 +88,23 @@ class AuthControllerTest {
         controller.login(new com.nitrotech.api.application.auth.request.LoginRequest("user@example.com", "secret"), request);
 
         verify(authSessionService).create(result, request);
+    }
+
+    @Test
+    void meReturnsCurrentRolesAndPermissions() {
+        UserPrincipal principal = new UserPrincipal(
+                1L, "admin@example.com", "Admin", Set.of("admin"), Set.of("ORDER_READ_ALL")
+        );
+        UserProfileData profile = new UserProfileData(
+                1L, "Admin", "admin@example.com", null, null, "active", "local",
+                Set.of("admin"), Set.of("ORDER_READ_ALL")
+        );
+        when(getProfileUseCase.execute(1L)).thenReturn(profile);
+
+        var response = controller.me(principal);
+
+        assertThat(response.getBody().data().roles()).containsExactly("admin");
+        assertThat(response.getBody().data().permissions()).containsExactly("ORDER_READ_ALL");
     }
 
     @Test
