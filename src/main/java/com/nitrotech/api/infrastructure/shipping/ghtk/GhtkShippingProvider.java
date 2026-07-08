@@ -176,7 +176,7 @@ public class GhtkShippingProvider implements ShippingProvider {
 
     private BigDecimal codAmount(OrderData order) {
         if (!PaymentMethod.COD.value().equalsIgnoreCase(order.paymentMethod())) {
-            return null;
+            return BigDecimal.ZERO;
         }
         BigDecimal amount = order.finalAmount();
         if (amount == null || amount.compareTo(MIN_COD_AMOUNT) < 0 || amount.compareTo(MAX_COD_AMOUNT) > 0) {

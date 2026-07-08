@@ -99,8 +99,8 @@ class GhtkShippingProviderTest {
         verify(ghtkClient).createOrder(requestCaptor.capture());
         GhtkOrderRequest captured = requestCaptor.getValue();
 
-        assertThat(captured.getOrder().getPickMoney()).isNull();
-        assertThat(new ObjectMapper().writeValueAsString(captured)).doesNotContain("pick_money");
+        assertThat(captured.getOrder().getPickMoney()).isEqualTo(BigDecimal.ZERO);
+        assertThat(new ObjectMapper().writeValueAsString(captured)).contains("\"pick_money\":0");
     }
 
     @Test
@@ -125,7 +125,7 @@ class GhtkShippingProviderTest {
         ArgumentCaptor<GhtkOrderRequest> requestCaptor = ArgumentCaptor.forClass(GhtkOrderRequest.class);
         verify(ghtkClient).createOrder(requestCaptor.capture());
 
-        assertThat(requestCaptor.getValue().getOrder().getPickMoney()).isNull();
+        assertThat(requestCaptor.getValue().getOrder().getPickMoney()).isEqualTo(BigDecimal.ZERO);
         assertThat(requestCaptor.getValue().getOrder().getValue()).isEqualTo(new BigDecimal("20000000"));
     }
 
